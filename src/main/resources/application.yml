@@ -1,0 +1,40 @@
+server:
+  port: 8080
+logging:
+  level:
+    org.springframework: INFO
+    com.boehringer.componentcatalog.server.controllers: INFO
+spring:
+  profiles:
+    active: dev
+  http:
+    client:
+      factory: jdk
+  jackson:
+    date-format: com.boehringer.componentcatalog.util.RFC3339DateFormat
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+  cloud:
+    azure:
+      active-directory:
+        enabled: true
+        session-stateless: true
+        credential:
+          client-id: ${SPRING_CLOUD_AZURE_ACTIVE_DIRECTORY_CREDENTIAL_CLIENT_ID}
+        app-id-uri: ${SPRING_CLOUD_AZURE_ACTIVE_DIRECTORY_APP_ID_URI}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+component-catalog:
+  caching:
+    bitbucket-service-cache:
+      enabled: true
+      eviction-interval: ${CACHING_BITBUCKET_SERVICE_CACHE_EVICTION_INTERVAL}
+      max-size: ${CACHING_BITBUCKET_SERVICE_CACHE_MAX_SIZE}
+  bitbucket:
+    service:
+      base-rest-url: ${BITBUCKET_SERVICE_BASE_REST_URL}
+      base-raw-url: ${BITBUCKET_SERVICE_BASE_RAW_URL}
+      bearer-token: ${BITBUCKET_SERVICE_BEARER_TOKEN}
