@@ -1,0 +1,32 @@
+generatorName: java
+outputDir: generated-sources/openapi-client-bitbucket
+library: resttemplate
+inputSpec: ../../openapi/openapi-bitbucket-v89.yaml
+typeMappings: 
+  "string+byte": Resource
+importMappings: 
+  Resource: "org.springframework.core.io.Resource"
+serializableModel: true
+globalProperties:
+  generateAliasAsModel: true
+  # TODO these api, models options make other options not to work, find
+  #   an alternate way of pruning the output for both models and apis
+  #   from unnecessary classes
+  # apis: Repository
+  # models: ""
+  apiDocs: true
+  modelDocs: true
+  apiTests: false
+  modelTests: false
+additionalProperties:
+  useJakartaEe: true
+  java8: true
+  groupId: bitbucket
+  artifactId: bitbucket-v89-client
+  artifactVersion: 0.0.0-SNAPSHOT
+  invokerPackage: com.boehringer.componentcatalog.client.bitbucket.v89
+  apiPackage: com.boehringer.componentcatalog.client.bitbucket.v89.api
+  modelPackage: com.boehringer.componentcatalog.client.bitbucket.v89.model
+  generateClientAsBean: true
+  useSingleRequestParameter: true
+
