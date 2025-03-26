@@ -1,0 +1,45 @@
+logging:
+  level:
+    org.springframework: DEBUG
+    com.azure.spring.cloud.autoconfigure: DEBUG
+    com.boehringer.componentcatalog.config: DEBUG
+    com.boehringer.componentcatalog.server.controllers: INFO
+    com.boehringer.componentcatalog.server.services.BitbucketService: DEBUG
+spring:
+  http:
+    client:
+      factory: jdk
+management:
+  endpoints:
+    web:
+      exposure:
+        # /actuator endpoints only for development and/or debugging, do *not* include on PROD configs!
+        include: openapi, swagger-ui, beans, caches, configprops, env, health, httpexchanges, info, loggers, mappings
+  endpoint:
+    configprops:
+      show-values: always
+    env:
+      show-values: always
+    loggers:
+      access: unrestricted
+  info:
+    git:
+      # Show all build-time generated file git.properties info on /actuator/info endpoint
+      mode: full
+  httpexchanges:
+    recording:
+      # Show all available info in /actuator/httpexchanges and also in Swagger
+      include: request-headers, response-headers, authorization_header, cookie_headers, principal, remote_address, session_id, time_taken
+springdoc:
+  show-actuator: true
+  swagger-ui:
+    doc-expansion: none
+    try-it-out-enabled: true
+    filter: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+component-catalog:
+  caching:
+    bitbucket-service-cache:
+      eviction-interval: 5m
+

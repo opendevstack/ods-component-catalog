@@ -1,0 +1,24 @@
+generatorName: spring
+outputDir: generated-sources/openapi-server-componentcatalog
+library: spring-boot
+inputSpec: ../../openapi/openapi-componentcatalog-v1.0.0.yaml
+useTags: true
+interfaceOnly: true
+globalProperties:
+  generateAliasAsModel: true
+  apiDocs: true
+  modelDocs: true
+  apiTests: true # Inactive, maybe because of interfaceOnly: true, so no testable controllers are generated
+  modelTests: true
+additionalProperties:
+  groupId: componentcatalog
+  artifactId: componentcatalog-v0-server
+  artifactVersion: 0.0.0-SNAPSHOT
+  apiPackage: com.boehringer.componentcatalog.server.api
+  modelPackage: com.boehringer.componentcatalog.server.model
+  configPackage: com.boehringer.componentcatalog.config
+  documentationProvider: springdoc
+  generateBuilders: true
+  useSpringBoot3: true
+  useSpringController: true
+  useSwaggerUI: true

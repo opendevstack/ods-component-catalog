@@ -1,0 +1,15 @@
+# env vars values loaded from: application-testing.env, via: spring-dotenv
+server:
+  port: 9090
+logging:
+  level:
+    org.springframework: DEBUG
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+component-catalog:
+  caching:
+    bitbucket-service-cache:
+      enabled: false

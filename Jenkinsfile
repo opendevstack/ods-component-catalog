@@ -1,0 +1,36 @@
+// See https://www.opendevstack.org/ods-documentation/ for usage and customization.
+
+@Library('ods-jenkins-shared-library@4.x') _
+
+odsComponentPipeline(
+  imageStreamTag: 'ods/jenkins-agent-jdk:4.x',
+  branchToEnvironmentMapping: [
+    'master': 'dev',
+//     'feature/xxx': 'dev'
+  ],
+  sonarQubeBranch: '*'
+) { context ->
+  odsComponentFindOpenShiftImageOrElse(context) {
+    stageBuild(context)
+    odsComponentStageScanWithSonar(context)
+    odsComponentStageBuildOpenShiftImage(context)
+  }
+  odsComponentStageRolloutOpenShiftDeployment(context)
+}
+
+def stageBuild(def context) {
+  def javaOpts = "-Xmx512m"
+  def gradleTestOpts = "-Xmx128m"
+  def springBootEnv = context.environment
+  if (springBootEnv.contains('-dev')) {
+    springBootEnv = 'dev'
+  }
+  stage('Build and Unit Test') {
+    withEnv(["TAGVERSION=${context.tagversion}", "NEXUS_HOST=${context.nexusHost}", "NEXUS_USERNAME=${context.nexusUsername}", "NEXUS_PASSWORD=${context.nexusPassword}", "JAVA_OPTS=${javaOpts}","GRADLE_TEST_OPTS=${gradleTestOpts}","ENVIRONMENT=${springBootEnv}"]) {
+      def status = sh(script: "source use-j21.sh && ./gradlew clean build --stacktrace --no-daemon && source use-j17.sh", returnStatus: true)
+      if (status != 0) {
+        error "Build failed!"
+      }
+    }
+  }
+}
