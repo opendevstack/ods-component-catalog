@@ -12,5 +12,6 @@ public class CatalogItemEntityMetadata {
     private String description;
     private String contributors;
     private String image;
+    private String type;
     private Map<String, Set<String>> tags;
 }

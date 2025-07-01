@@ -52,6 +52,10 @@ public class BitbucketPathAt implements Serializable {
                            String projectKey, String repoSlug,
                            String subPath, String at) {
         // Both mandatory
+        if (baseRawUrl == null || baseRestUrl == null) {
+            throw new IllegalArgumentException("baseRawUrl and baseRestUrl are mandatory");
+        }
+
         this.baseRawUrl = baseRawUrl;
         this.baseRestUrl = baseRestUrl;
 

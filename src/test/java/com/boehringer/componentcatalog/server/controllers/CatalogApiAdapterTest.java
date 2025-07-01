@@ -2,6 +2,9 @@ package com.boehringer.componentcatalog.server.controllers;
 
 import com.boehringer.componentcatalog.server.model.CatalogItem;
 import com.boehringer.componentcatalog.server.model.CatalogItemFilter;
+import com.boehringer.componentcatalog.server.mother.CatalogEntityContextMother;
+import com.boehringer.componentcatalog.server.mother.CatalogEntityMother;
+import com.boehringer.componentcatalog.server.mother.CatalogsCollectionsEntityMother;
 import com.boehringer.componentcatalog.server.services.catalog.CatalogEntity;
 import com.boehringer.componentcatalog.server.services.catalog.CatalogItemEntityContext;
 import com.boehringer.componentcatalog.server.services.catalog.CatalogEntityMetadata;
@@ -17,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Base64.getEncoder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -178,5 +182,40 @@ class CatalogApiAdapterTest {
 
         assertEquals(1, actual.size());
         assertTrue(actual.contains("option1"));
+    }
+
+    @Test
+    void givenACatalogsCollectionsEntity_whenAsCatalogDescriptors_thenAListOfCatalogsIsReturned() {
+        // given
+        var catalogsCollectionsEntity = CatalogsCollectionsEntityMother.of();
+
+        // when
+        var catalogs = CatalogApiAdapter.asCatalogDescriptors(catalogsCollectionsEntity);
+
+        // then
+        assertThat(catalogs).isNotNull();
+        assertThat(catalogs.size()).isEqualTo(2);
+        assertThat(catalogs.get(0).getId()).isEqualTo("L3BhdGgvdG8vY2F0YWxvZzE=");
+        assertThat(catalogs.get(0).getSlug()).isEqualTo("catalog1");
+        assertThat(catalogs.get(1).getId()).isEqualTo("L3BhdGgvdG8vY2F0YWxvZzI=");
+        assertThat(catalogs.get(1).getSlug()).isEqualTo("catalog2");
+    }
+
+    @Test
+    void givenACatalogContext_whenAsCatalog_thenReturnCatalog() {
+        // given
+        var catalogEntityContext = CatalogEntityContextMother.of();
+
+        // when
+        var catalog = CatalogApiAdapter.asCatalog(catalogEntityContext);
+
+        // then
+        assertThat(catalog).isNotNull();
+        assertThat(catalog.getName()).isEqualTo("Catalog Name");
+        assertThat(catalog.getDescription()).isEqualTo("Catalog Description");
+        assertThat(catalog.getCommunityPageId()).isEqualTo("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1NvbWVGaWxlT3JEaXI_YXQ9cmVmcy9oZWFkcy9tYXN0ZXI=");
+        assertThat(catalog.getLinks()).hasSize(3);
+        assertThat(catalog.getTags()).hasSize(2);
+
     }
 }

@@ -17,6 +17,10 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+### secrets skip for token generation ###
+/openshift/*.key
+/openshift/*.p12
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -41,3 +45,4 @@ out/
 
 # Exclude executable JAR file from gradle build
 /docker/app.jar
+

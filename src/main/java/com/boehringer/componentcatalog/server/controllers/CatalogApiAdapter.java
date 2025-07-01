@@ -1,19 +1,12 @@
 package com.boehringer.componentcatalog.server.controllers;
 
-import com.boehringer.componentcatalog.server.model.CatalogItem;
-import com.boehringer.componentcatalog.server.model.CatalogItemFilter;
-import com.boehringer.componentcatalog.server.model.CatalogItemTag;
-import com.boehringer.componentcatalog.server.services.catalog.CatalogEntity;
-import com.boehringer.componentcatalog.server.services.catalog.CatalogEntityPermissionEnum;
-import com.boehringer.componentcatalog.server.services.catalog.CatalogItemEntityContext;
+import com.boehringer.componentcatalog.server.model.*;
+import com.boehringer.componentcatalog.server.services.catalog.*;
 import com.boehringer.componentcatalog.server.services.common.IdEncoderDecoder;
 import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Optional.ofNullable;
 import static one.util.streamex.MoreCollectors.entriesToCustomMap;
@@ -36,6 +29,7 @@ public class CatalogApiAdapter {
                 .shortDescription(itemEntityCtx.getShortDescription())
                 .itemSrc(hasRepoAccess ? itemEntityCtx.getRepoItemSrc() : null)
                 .path(hasRepoAccess ? itemEntityCtx.getRepoItemPath() : null)
+                .type(itemEntityCtx.getType())
                 .tags(toCatalogItemTags(itemEntityCtx.getRepoItemTags()))
                 .date(itemEntityCtx.getRepoLastCommitDateUTC());
 
@@ -87,6 +81,29 @@ public class CatalogApiAdapter {
 
         // Return filters according to the order in the Catalog.yaml
         return List.copyOf(catalogLabelsItemFilters.values());
+    }
+
+    public static Catalog asCatalog(CatalogEntityContext catalogEntityCtx) {
+        var links = catalogEntityCtx.getLinks().stream()
+                .map(catalogEntityLink -> CatalogLink.builder().name(catalogEntityLink.getName()).url(catalogEntityLink.getUrl()).build())
+                .toList();
+
+        return Catalog.builder()
+                .name(catalogEntityCtx.getName())
+                .description(catalogEntityCtx.getDescription())
+                .communityPageId(IdEncoderDecoder.idEncode(catalogEntityCtx.getCommunityPagePath()))
+                .links(links)
+                .tags(catalogEntityCtx.getTags())
+                .build();
+    }
+
+    public static List<CatalogDescriptor> asCatalogDescriptors(CatalogsCollectionsEntity catalogsCollectionsEntity) {
+        return Arrays.stream(catalogsCollectionsEntity.getMetadata().getSpec().getTargets())
+                .map( target -> CatalogDescriptor.builder()
+                            .id(IdEncoderDecoder.idEncode(target.getUrl()))
+                            .slug(target.getSlug())
+                            .build()
+                ).toList();
     }
 
     private static List<CatalogItemTag> toCatalogItemTags(Map<String, Set<String>> itemsEntitiesLabelsOptions) {
