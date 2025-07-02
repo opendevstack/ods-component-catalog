@@ -55,6 +55,10 @@ public class CatalogItemEntityContext {
         return this.catalogItemEntity.getMetadata().getShortDescription();
     }
 
+    public String getType() {
+        return this.catalogItemEntity.getMetadata().getType();
+    }
+
     public Map<String, Set<String>> getRepoItemTags() {
         return this.catalogItemEntity.getMetadata().getTags();
     }
