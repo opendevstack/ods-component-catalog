@@ -27,6 +27,8 @@ management:
     web:
       exposure:
         include: health
+catalog-collection:
+  id: ${CATALOG_COLLECTION_ID}
 component-catalog:
   caching:
     bitbucket-service-cache:

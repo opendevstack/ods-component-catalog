@@ -91,3 +91,11 @@ To do that:
 
 **TODO** link to the documentation for the required directory structure and Catalog(Item).yaml specifications 
 
+# Security and local development
+In order to get access to the different bickbucket repositories, the local development environment needs to be configured with the required credentials. Those credentials will be part of the request, as a token.
+
+To get the token for the local development, feel free to get security token from any page where azure SSO is required. (you can also execute the script below in your browser console)
+```javascript
+javascript:(function(){let value=JSON.parse(localStorage[Object.keys(localStorage).find(key=>key.includes('idtoken'))])['secret'];navigator.clipboard.writeText(value);alert('Token copied to clipboard');})();
+```
+

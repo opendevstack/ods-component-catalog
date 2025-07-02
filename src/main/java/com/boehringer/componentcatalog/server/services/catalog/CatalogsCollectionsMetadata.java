@@ -3,9 +3,8 @@ package com.boehringer.componentcatalog.server.services.catalog;
 import lombok.Data;
 
 @Data
-public class CatalogEntityMetadata {
+public class CatalogsCollectionsMetadata {
     private String name;
     private String description;
-    private String communityPage;
-    private CatalogEntitySpec spec;
+    private CatalogsCollectionsSpec spec;
 }
