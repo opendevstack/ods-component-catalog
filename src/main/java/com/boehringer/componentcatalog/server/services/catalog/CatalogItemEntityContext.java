@@ -3,40 +3,39 @@ package com.boehringer.componentcatalog.server.services.catalog;
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketPathAt;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Getter
+@ToString
 public class CatalogItemEntityContext {
 
-    private final String catalogItemId;
+    private final String id;
     private final BitbucketPathAt repoCatalogItemPathAt;
-    private final CatalogItemEntity catalogItemEntity;
+    public final CatalogItemEntity catalogItemEntity;
     private final String descriptionPath;
     private final String imagePath;
-    private final String repoItemPath;
-    private final String repoItemSrc;
-    private final OffsetDateTime repoLastCommitDateUTC;
+    private final String path;
+    private final String itemSrc;
+    private final OffsetDateTime lastCommitDateUTC;
     private final List<String> contributors;
 
     @Builder
-    public CatalogItemEntityContext(String catalogItemId,
+    public CatalogItemEntityContext(String id,
                                     BitbucketPathAt repoCatalogItemPathAt,
                                     CatalogItemEntity catalogItemEntity,
-                                    OffsetDateTime repoLastCommitDateUTC,
+                                    OffsetDateTime lastCommitDateUTC,
                                     List<String> contributors,
                                     BitbucketPathAt descriptionPath,
                                     BitbucketPathAt imagePath) {
-        this.catalogItemId = catalogItemId;
+        this.id = id;
         this.repoCatalogItemPathAt = repoCatalogItemPathAt;
-        this.repoItemPath = repoCatalogItemPathAt.getPathAt();
-        this.repoItemSrc = repoCatalogItemPathAt.getParent().getBrowseUrl();
+        this.path = repoCatalogItemPathAt.getPathAt();
+        this.itemSrc = repoCatalogItemPathAt.getParent().getBrowseUrl();
         this.catalogItemEntity = catalogItemEntity;
-        this.repoLastCommitDateUTC = repoLastCommitDateUTC;
+        this.lastCommitDateUTC = lastCommitDateUTC;
         this.descriptionPath = descriptionPath != null ? descriptionPath.getPathAt() : null;
         this.imagePath = imagePath != null ? imagePath.getPathAt() : null;
 
@@ -55,11 +54,8 @@ public class CatalogItemEntityContext {
         return this.catalogItemEntity.getMetadata().getShortDescription();
     }
 
-    public String getType() {
-        return this.catalogItemEntity.getMetadata().getType();
-    }
-
-    public Map<String, Set<String>> getRepoItemTags() {
+    public Map<String, Set<String>> getTags() {
         return this.catalogItemEntity.getMetadata().getTags();
     }
+
 }

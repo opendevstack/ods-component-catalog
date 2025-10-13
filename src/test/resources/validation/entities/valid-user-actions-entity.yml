@@ -1,0 +1,204 @@
+---
+kind: UserActions
+spec:
+  actions:
+    - id: "CODE"
+      mandatory: true
+      displayName: "View Code"
+      url: null
+      triggerMessage: null
+      messagesTitles: []
+      messagesDefinitions: []
+      parameters: []
+    - id: "PROVISION"
+      mandatory: false
+      displayName: "Provision"
+      url: "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions"
+      triggerMessage: "is being provisioned, it will take some minutes"
+      messagesTitles:
+        - id: "success"
+          title: 'Component "${component_id}" has been created in ${project_key}'
+        - id: "error"
+          title: 'The component "${component_id}" could not be provisioned in ${project_key}'
+      messagesDefinitions:
+        - id: "PROVISION_SUCCESS"
+          type: "success"
+          message: "New component \"${component_id}\" has successfully been created in ${project_key} and it's ready to be used."
+        - id: "OPENSHIFT_PASSWORD_NOT_CHANGED_ERROR"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+
+            Please update the password of the project's x2 account to be able to provision components with the EDP Marketplace.
+            <a href="https://confluence.biscrum.com/x/Q0EvD" target="_blank">Here is how you can change your project's x2 account.</a>
+        - id: "USER_WITHOUT_JIRA_GROUP"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Jira users group.
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Jira user".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_BITBUCKET_GROUP"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Bitbucket users group.
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Bitbucket user".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_JIRA_BITBUCKET_GROUPS"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Jira and Bitbucket users group.
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Bitbucket user", "Jira user".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_MANAGER_GROUP"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in the Manager Role group for the ${project_key}
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Manager role".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_JIRA_MANAGER_GROUPS"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Jira users group.
+            X2 account for the project is not in the Manager Role group for the ${project_key}
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Jira user", "Manager role".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_BITBUCKET_MANAGER_GROUPS"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Bitbucket users group.
+            X2 account for the project is not in the Manager Role group for the ${project_key}
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Bitbucket user", "Manager role".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "USER_WITHOUT_JIRA_BITBUCKET_MANAGER_GROUPS"
+          type: "error"
+          message: |
+            The component \"${component_id}\" could not be provisioned in ${project_key}.
+            Reason:
+
+            X2 account for the project is not in Jira and Bitbucket users group.
+            X2 account for the project is not in the Manager Role group for the ${project_key}
+
+            To resolve this issue/s:
+            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            2. Request the missing permissions: "Bitbucket user", "Jira user", "Manager role".
+
+            For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
+        - id: "DEFAULT_ERROR"
+          type: "error"
+          message: |
+            There was an error when creating the component \"${component_id}\" in ${project_key}.
+
+            The error has been reported to our Support team as an incident. You will be informed about the incident via email.
+      parameters:
+        - name: "workflow"
+          customizable: true
+          type: "string"
+          required: true
+          defaultValue: "2650"
+          label: "Workflow to execute."
+          placeholder: "workflow placeholder"
+          hint: "workflow hint"
+          visible: false
+        - name: "project_key"
+          customizable: false
+          type: "string"
+          required: true
+          defaultValue: ""
+          label: "Project key"
+          placeholder: "Enter a project key"
+          hint: "The project key must be of an EDP project."
+          visible: true
+          validations:
+            - regex: "^.{1,50}$"
+              errorMessage: "The max size for a project key is 50 characters"
+        - name: "component_id"
+          customizable: false
+          type: "string"
+          required: true
+          defaultValue: ""
+          label: "Component name"
+          placeholder: "Enter a component name"
+          hint: "Only lowercase letters and numbers are allowed (example: componentname8), with optional dashes in between (example: my-component). The first character must be a letter."
+          visible: true
+          validations:
+            - regex: "^[a-z](-?[a-z0-9])*$"
+              errorMessage: "Only lowercase letters and numbers are allowed (example: componentname8), with optional dashes in between (example: my-component). The first character must be a letter."
+            - regex: "^.{1,52}$"
+              errorMessage: "Component name must not exceed 52 characters."
+            - regex: "^(?!docs$)(?!common$)(?!scripts$).+$"
+              errorMessage: "This component name is not allowed."
+        - name: "component_type"
+          customizable: true
+          type: "string"
+          required: true
+          defaultValue: "docker-plain"
+          label: "Quickstarter id"
+          placeholder: "Enter the quickstarter id"
+          hint: "Example of a valid quickstarter id: docker-plain"
+          visible: false
+        - name: "ods_namespace"
+          customizable: true
+          type: "string"
+          required: true
+          defaultValue: "vilaxicoip-cd"
+          label: "ODS namespace"
+          placeholder: "Enter the ODS namespace"
+          hint: "Name of the namespace where the ODS installation is within openshift."
+          visible: false
+        - name: "quickstarter_repo"
+          customizable: true
+          type: "string"
+          required: true
+          defaultValue: "https://bitbucket-vilaxicoip-cd.apps.us-test.ocp.aws.boehringer.com/scm/vilaxicoip/ods-quickstarters.git"
+          label: "Quickstarter repository"
+          placeholder: "Enter the quickstarter repository"
+          hint: "Full url for the quickstarter source code repository."
+          visible: false
+    - id: "DUMMY"
+      mandatory: false
+      displayName: "Dummy Action"
+      url: null
+      triggerMessage: null
+      parameters: []

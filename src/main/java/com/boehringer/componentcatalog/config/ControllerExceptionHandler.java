@@ -4,6 +4,7 @@ import com.boehringer.componentcatalog.server.controllers.exceptions.BadRequestE
 import com.boehringer.componentcatalog.server.controllers.exceptions.InvalidRestEntityException;
 import com.boehringer.componentcatalog.server.controllers.exceptions.RestEntityNotFoundException;
 import com.boehringer.componentcatalog.server.model.RestErrorMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +14,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ControllerAdvice
+@Slf4j
 public class ControllerExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RestErrorMessage> handleAllExceptions(Exception ex) {
+        log.error("Unhandled exception", ex);
         return defaultErrResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestRepositoryPullRequestSettings.JSON_PROPERTY_REQUIRED_SUCCESSFUL_BUILDS,
   RestRepositoryPullRequestSettings.JSON_PROPERTY_REQUIRED_SUCCESSFUL_BUILDS_DEPRECATED
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestRepositoryPullRequestSettings implements Serializable {
   private static final long serialVersionUID = 1L;
 

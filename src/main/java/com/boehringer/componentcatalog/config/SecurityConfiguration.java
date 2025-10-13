@@ -5,11 +5,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 @AllArgsConstructor
@@ -21,7 +21,14 @@ public class SecurityConfiguration {
 
         http
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/swagger-ui/**", "/swagger-boeh/**", "v3/api-docs/**")
+                        .requestMatchers(
+                                "/v1/catalog-items/*/user-actions/**",
+                                "/v1/user-actions/**",
+                                "/v1/schema-validation/**",
+                                "/swagger-ui/**",
+                                "/swagger-boeh/**",
+                                "v3/api-docs/**"
+                        )
                         .permitAll()
                         .requestMatchers("/actuator/health")
                         .permitAll()
@@ -29,7 +36,8 @@ public class SecurityConfiguration {
                         .hasAuthority("ROLE_USER") // If required, change or add proper roles set by AAD
                 )
                 .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
-                .cors(CorsConfigurer::disable)
+                .cors(c -> c.configurationSource(request ->
+                        new CorsConfiguration().applyPermitDefaultValues()))
                 .sessionManagement(configurer ->
                         // Avoid session caching and validation e.g. via JSESSIONID cookie, as we are stateless
                         configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -37,5 +45,4 @@ public class SecurityConfiguration {
 
         return http.build();
     }
-
 }

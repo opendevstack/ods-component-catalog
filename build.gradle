@@ -73,10 +73,12 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
     implementation "org.springframework:spring-aspects"
     implementation 'javax.cache:cache-api:1.1.1'
+    implementation 'org.modelmapper:modelmapper:3.2.4'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
-    implementation 'one.util:streamex:0.8.2'
+    implementation 'com.networknt:json-schema-validator:1.5.7'
     implementation 'org.apache.tika:tika-core:2.9.2'
     implementation 'org.apache.commons:commons-text:1.11.0'
+    implementation 'org.apache.commons:commons-collections4:4.5.0'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
     implementation 'nl.basjes.codeowners:codeowners-reader:1.9.0'
 

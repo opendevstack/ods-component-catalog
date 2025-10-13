@@ -1,0 +1,39 @@
+---
+kind: CatalogItem
+metadata:
+  name: Appshell with User Actions
+  shortDescription: Testing product in D to verify user actions.
+  description: README.md
+  contributors: CODEOWNERS # Same format that the github CONTRIBUTING file https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/setting-guidelines-for-repository-contributors#adding-a-contributing-file
+  tags:
+    Type:
+      - appshell
+    Technology:
+      - user-actions
+    GXP readiness:
+      - non-gxp
+spec:
+  userActions:
+    - id: "PROVISION"
+      displayName: "Provision"
+      url: "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions"
+      triggerMessage: "is being provisioned, it will take some minutes"
+      messagesTitles:
+        - id: "success"
+          title: 'Component "${component_id}" has been created in ${project_key}'
+        - id: "error"
+          title: 'The component "${component_id}" could not be provisioned in ${project_key}'
+      messagesDefinitions:
+        - id: "PROVISION_SUCCESS"
+          type: "success"
+          message: "New component \"${component_id}\" has successfully been created in ${project_key} and it's ready to be used."
+          # Implicitely not adding all message definitions, so we can test fallback message logic.
+      parameters:
+        - name: "workflow"
+          type: "string"
+          required: true
+          defaultValue: "2650"
+          label: "Workflow to execute."
+          visible: false
+          placeholder: "New placeholder not visible"
+          hint: "Hint never seen due to visibility"

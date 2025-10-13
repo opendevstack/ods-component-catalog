@@ -1,18 +1,17 @@
 package com.boehringer.componentcatalog.util;
 
 import lombok.Data;
-import one.util.streamex.StreamEx;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.net.URI;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.boehringer.componentcatalog.util.EitherUtils.maybeValue;
 
@@ -24,19 +23,20 @@ public class MarkdownUtils {
     }
 
     public static Set<MarkdownImgLink> parseMarkdownImgLinks(String markdown) {
-        return StreamEx.of(new Scanner(markdown).findAll(IMG_LINK_PATTERN))
+        return IMG_LINK_PATTERN.matcher(markdown).results()
                 .map(MatchResult::group)
                 .map(grp -> maybeValue(MarkdownImgLink::from, grp))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .toSet();
+                .collect(Collectors.toSet());
     }
 
+
     public static Set<MarkdownImgLink> parseMarkdownImgRelLinks(String markdown) {
-        return StreamEx.of(parseMarkdownImgLinks(markdown).stream())
+        return parseMarkdownImgLinks(markdown).stream()
                 .filter(imgLink -> !imgLink.getUri().isAbsolute())
                 .filter(imgLink -> !Objects.equals(imgLink.getUri().getScheme(), "data"))
-                .toSet();
+                .collect(Collectors.toSet());
     }
 
     public static String replaceImgLinks(String markdown, Set<Pair<MarkdownImgLink, MarkdownImgLink>> imgLinkPairs) {

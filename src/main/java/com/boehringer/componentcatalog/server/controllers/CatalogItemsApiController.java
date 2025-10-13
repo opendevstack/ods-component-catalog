@@ -8,6 +8,7 @@ import com.boehringer.componentcatalog.server.model.CatalogItem;
 import com.boehringer.componentcatalog.server.model.SortOrder;
 import com.boehringer.componentcatalog.server.security.AuthorizationInfo;
 import com.boehringer.componentcatalog.server.services.CatalogEntitiesService;
+import com.boehringer.componentcatalog.server.services.UserActionsEntitiesService;
 import com.boehringer.componentcatalog.server.services.exceptions.InvalidIdException;
 import com.boehringer.componentcatalog.server.services.catalog.InvalidCatalogEntityException;
 import com.boehringer.componentcatalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -18,15 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.context.request.NativeWebRequest;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.boehringer.componentcatalog.server.controllers.CatalogApiAdapter.asCatalogItem;
-import static com.boehringer.componentcatalog.util.SortingUtils.fieldSorter;
-import static java.util.Optional.ofNullable;
+import static com.boehringer.componentcatalog.server.controllers.CatalogApiAdapter.sortCatalogItems;
 
 @Controller
 @RequestMapping("${openapi.componentCatalogREST.base-path:/v1}")
@@ -34,14 +32,9 @@ import static java.util.Optional.ofNullable;
 @Slf4j
 public class CatalogItemsApiController implements CatalogItemsApi {
 
-    private final NativeWebRequest request;
     private final AuthorizationInfo authInfo;
     private final CatalogEntitiesService catalogEntitiesService;
-
-    @Override
-    public Optional<NativeWebRequest> getRequest() {
-        return ofNullable(request);
-    }
+    private final UserActionsEntitiesService userActionsEntitiesService;
 
     @Override
     public ResponseEntity<List<CatalogItem>> getCatalogItems(String catalogId, SortOrder sortByTitle) {
@@ -50,14 +43,16 @@ public class CatalogItemsApiController implements CatalogItemsApi {
                 catalogId);
         try {
             var principalPermissions = this.currentPrincipalCatalogPermissions(catalogId);
-            var repoCatalogItems = this.catalogEntitiesService.getCatalogItemsEntities(catalogId);
+            var itemsEntitiesCtxs = this.catalogEntitiesService.getCatalogItemsEntities(catalogId);
+            var userActionsEntity = this.userActionsEntitiesService.getDefaultUserActionsEntity();
 
-            var catalogItems = repoCatalogItems.stream()
-                    .map(context -> asCatalogItem(context, principalPermissions))
-                    .sorted(fieldSorter(CatalogItem::getTitle, sortByTitle))
+            var items = itemsEntitiesCtxs.stream()
+                    .map(context -> asCatalogItem(context, userActionsEntity, principalPermissions))
                     .toList();
 
-            return new ResponseEntity<>(catalogItems, HttpStatus.OK);
+            items = sortCatalogItems(items, sortByTitle);
+
+            return new ResponseEntity<>(items, HttpStatus.OK);
         } catch (InvalidIdException | InvalidCatalogEntityException e) {
             throw new BadRequestException("Invalid catalog id: " + catalogId);
         }
@@ -69,10 +64,11 @@ public class CatalogItemsApiController implements CatalogItemsApi {
 
         try {
             var principalPermissions = this.currentPrincipalCatalogPermissions(id);
-            var maybeRepoCatalogItemCtx = this.catalogEntitiesService.getCatalogItemEntity(id);
+            var maybeItemEntityCtx = this.catalogEntitiesService.getCatalogItemEntity(id);
+            var userActionsEntity = this.userActionsEntitiesService.getDefaultUserActionsEntity();
 
-            return maybeRepoCatalogItemCtx
-                    .map(repoItem -> asCatalogItem(repoItem, principalPermissions))
+            return maybeItemEntityCtx
+                    .map(itemEntity -> asCatalogItem(itemEntity, userActionsEntity, principalPermissions))
                     .map(ResponseEntity::ok)
                     .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
         } catch (InvalidIdException e) {

@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestProperties.JSON_PROPERTY_DEFAULT_BRANCH_ID,
   RestProperties.JSON_PROPERTY_CONTENT_HASH
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestProperties implements Serializable {
   private static final long serialVersionUID = 1L;
 

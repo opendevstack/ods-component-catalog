@@ -8,5 +8,5 @@ import lombok.Data;
 @Data
 public class CatalogsCollectionsEntity {
     private String kind;
-    private CatalogsCollectionsMetadata metadata;
+    private CatalogsCollectionsEntityMetadata metadata;
 }

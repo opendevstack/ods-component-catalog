@@ -34,20 +34,15 @@ public class FileEntitiesService {
     public Optional<Pair<MediaType, byte[]>> getFileById(String id) throws InvalidIdException, InvalidEntityException {
         var filePathAt = this.bitbucketPathAtFromId(id);
 
-        try {
-            return bitbucketService.getBinaryFileContents(filePathAt);
-        } catch (BitbucketInvalidEntityException e) {
-            throw new InvalidEntityException("Requested file exists but it's not a valid file, file path: " + filePathAt, e);
+        if(filePathAt.isEmpty()) {
+            return Optional.empty();
         }
-    }
 
-    private BitbucketPathAt bitbucketPathAtFromId(String id) throws InvalidIdException {
-        var builder = bitbucketService.pathAtBuilder();
-
-        return Optional.of(idDecode(id))
-                .flatMap(maybeValueFrom(builder::pathAt))
-                .flatMap(maybeValueFrom(BitbucketPathAtBuilder::build))
-                .orElseThrow(() -> new InvalidIdException(id));
+        try {
+            return bitbucketService.getBinaryFileContents(filePathAt.get());
+        } catch (BitbucketInvalidEntityException e) {
+            throw new InvalidEntityException("Requested file exists but it's not a valid file, file path: " + filePathAt.get(), e);
+        }
     }
 
     public String inlineMarkdownImgs(String id, String markdown) {
@@ -73,10 +68,20 @@ public class FileEntitiesService {
         return MarkdownUtils.replaceImgLinks(markdown, imLinkPairs);
     }
 
+    private Optional<BitbucketPathAt> bitbucketPathAtFromId(String id) throws InvalidIdException {
+        var builder = bitbucketService.pathAtBuilder();
+
+        return Optional.of(idDecode(id))
+                .flatMap(maybeValueFrom(builder::pathAt))
+                .flatMap(maybeValueFrom(BitbucketPathAtBuilder::build));
+    }
+
     private Supplier<Pair<String, byte[]>> imgSupplier(BitbucketPathAt imgPathAt) {
         return () -> {
             var imgContents = bitbucketService.getBinaryFileContents(imgPathAt);
-            var imgMediaType = imgContents.get().getLeft();
+            var imgMediaType = imgContents
+                    .orElseThrow( () -> new BitbucketInvalidEntityException("Requested image is problably corrupted, image path: " + imgPathAt.getPathAt()))
+                    .getLeft();
 
             if(!FileFormatUtils.isImage(imgMediaType)) {
                 throw new BitbucketInvalidEntityException("Requested image is problably corrupted, image path: " + imgPathAt.getPathAt());

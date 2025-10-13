@@ -1,0 +1,111 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: UserActions
+type: object
+properties:
+  kind:
+    type: string
+    enum:
+      - UserActions
+    description: The type of the item.
+  spec:
+    type: object
+    properties:
+      actions:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: The ID of the user action.
+            mandatory:
+              type: boolean
+              description: The action is mandatory or not.
+            displayName:
+              type: string
+              description: The name to be displayed on the front end app.
+            url:
+              type:
+                - string
+                - "null"
+              format: uri
+              description: The URL to trigger the action.
+            triggerMessage:
+              type:
+                - string
+                - "null"
+              description: A custom message for triggering the action.
+            messagesTitles:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the message.
+                  title:
+                    type: string
+                    description: The title of the message itself.
+                required:
+                  - id
+                  - title
+            messagesDefinitions:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The ID of the message.
+                  type:
+                    type: string
+                    description: The type of the message.
+                  message:
+                    type: string
+                    description: The content of the message itself.
+                required:
+                  - id
+                  - type
+                  - message
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: The name of the parameter.
+                  type:
+                    type: string
+                    description: The type of the parameter.
+                  required:
+                    type: boolean
+                    description: Indicates if the parameter is required.
+                  defaultValue:
+                    type: string
+                    description: The default value of the parameter.
+                  label:
+                    type: string
+                    description: The label for the parameter.
+                  visible:
+                    type: boolean
+                    description: Indicates if the parameter is visible.
+                required:
+                  - name
+                  - type
+                  - required
+                  - defaultValue
+                  - label
+                  - visible
+          required:
+            - id
+            - mandatory
+            - displayName
+            - url
+            - triggerMessage
+            - parameters
+    required:
+      - actions
+required:
+  - kind
+  - spec

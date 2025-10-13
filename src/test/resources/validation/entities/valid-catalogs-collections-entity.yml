@@ -1,0 +1,16 @@
+---
+# The kind of object, in this case, a Catalog
+kind: CatalogsCollection
+
+# Metadata about the Catalog
+metadata:
+  name: CatalogsCollection
+  description: Collection of catalogs
+  spec:
+    targets:
+      - url: /projects/CATSHELL/repos/catalog/raw/Catalog.yaml?at=refs/heads/feature/EPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+        slug: Appshell
+      - url: /projects/DSMC/repos/catalog/raw/Catalog.yaml?at=refs/heads/master
+        slug: Data Science Models
+      - url: /projects/CATINF/repos/catalog/raw/Catalog.yaml?at=refs/heads/master
+        slug: Infrastructure

@@ -22,3 +22,4 @@ additionalProperties:
   useSpringBoot3: true
   useSpringController: true
   useSwaggerUI: true
+  hideGenerationTimestamp: true

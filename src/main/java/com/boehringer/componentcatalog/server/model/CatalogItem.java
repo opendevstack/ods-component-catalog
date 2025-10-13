@@ -1,22 +1,31 @@
 package com.boehringer.componentcatalog.server.model;
 
+import java.net.URI;
+import java.util.Objects;
+import com.boehringer.componentcatalog.server.model.CatalogItemTag;
+import com.boehringer.componentcatalog.server.model.CatalogItemUserAction;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import org.springframework.format.annotation.DateTimeFormat;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * CatalogItem
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-22T15:19:11.274820600+02:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class CatalogItem {
 
   private String id;
@@ -33,8 +42,6 @@ public class CatalogItem {
 
   private String itemSrc;
 
-  private String type;
-
   @Valid
   private List<@Valid CatalogItemTag> tags = new ArrayList<>();
 
@@ -43,6 +50,9 @@ public class CatalogItem {
 
   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
   private OffsetDateTime date;
+
+  @Valid
+  private List<@Valid CatalogItemUserAction> userActions = new ArrayList<>();
 
   public CatalogItem() {
     super();
@@ -68,7 +78,7 @@ public class CatalogItem {
    * Get id
    * @return id
    */
-  @NotNull
+  @NotNull 
   @Schema(name = "id", example = "aSdFam...yCg==", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("id")
   public String getId() {
@@ -88,7 +98,7 @@ public class CatalogItem {
    * Get path
    * @return path
    */
-
+  
   @Schema(name = "path", example = "projects/SOMEPROJECT/repos/some-repo/raw/CatalogItem.yaml?at=refs/heads/master", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("path")
   public String getPath() {
@@ -108,7 +118,7 @@ public class CatalogItem {
    * Get title
    * @return title
    */
-  @NotNull
+  @NotNull 
   @Schema(name = "title", example = "An item title", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("title")
   public String getTitle() {
@@ -128,7 +138,7 @@ public class CatalogItem {
    * Get shortDescription
    * @return shortDescription
    */
-  @NotNull
+  @NotNull 
   @Schema(name = "shortDescription", example = "This is a short description for the item", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("shortDescription")
   public String getShortDescription() {
@@ -148,7 +158,7 @@ public class CatalogItem {
    * Get descriptionFileId
    * @return descriptionFileId
    */
-
+  
   @Schema(name = "descriptionFileId", example = "cHJvam...0ZXIK", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("descriptionFileId")
   public String getDescriptionFileId() {
@@ -168,7 +178,7 @@ public class CatalogItem {
    * Get imageFileId
    * @return imageFileId
    */
-
+  
   @Schema(name = "imageFileId", example = "cHJvam...YXN0Z", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("imageFileId")
   public String getImageFileId() {
@@ -188,7 +198,7 @@ public class CatalogItem {
    * Get itemSrc
    * @return itemSrc
    */
-
+  
   @Schema(name = "itemSrc", example = "https://bitbucket.some-company.com/projects/SOMEPROJECT/repos/some-repo/browse/CatalogItem.yaml?at=refs/heads/master", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("itemSrc")
   public String getItemSrc() {
@@ -197,26 +207,6 @@ public class CatalogItem {
 
   public void setItemSrc(String itemSrc) {
     this.itemSrc = itemSrc;
-  }
-
-  public CatalogItem type(String type) {
-    this.type = type;
-    return this;
-  }
-
-  /**
-   * Get type
-   * @return type
-   */
-
-  @Schema(name = "type", example = "machine-learning-model", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("type")
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
   }
 
   public CatalogItem tags(List<@Valid CatalogItemTag> tags) {
@@ -236,7 +226,7 @@ public class CatalogItem {
    * Get tags
    * @return tags
    */
-  @Valid
+  @Valid 
   @Schema(name = "tags", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("tags")
   public List<@Valid CatalogItemTag> getTags() {
@@ -264,7 +254,7 @@ public class CatalogItem {
    * Get authors
    * @return authors
    */
-  @NotNull
+  @NotNull 
   @Schema(name = "authors", example = "[\"@SomeAuthor\",\"@SomeOtherAuthor\"]", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("authors")
   public List<String> getAuthors() {
@@ -284,7 +274,7 @@ public class CatalogItem {
    * Get date
    * @return date
    */
-  @NotNull @Valid
+  @NotNull @Valid 
   @Schema(name = "date", example = "2021-07-01T00:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
   @JsonProperty("date")
   public OffsetDateTime getDate() {
@@ -293,6 +283,34 @@ public class CatalogItem {
 
   public void setDate(OffsetDateTime date) {
     this.date = date;
+  }
+
+  public CatalogItem userActions(List<@Valid CatalogItemUserAction> userActions) {
+    this.userActions = userActions;
+    return this;
+  }
+
+  public CatalogItem addUserActionsItem(CatalogItemUserAction userActionsItem) {
+    if (this.userActions == null) {
+      this.userActions = new ArrayList<>();
+    }
+    this.userActions.add(userActionsItem);
+    return this;
+  }
+
+  /**
+   * Get userActions
+   * @return userActions
+   */
+  @Valid 
+  @Schema(name = "userActions", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @JsonProperty("userActions")
+  public List<@Valid CatalogItemUserAction> getUserActions() {
+    return userActions;
+  }
+
+  public void setUserActions(List<@Valid CatalogItemUserAction> userActions) {
+    this.userActions = userActions;
   }
 
   @Override
@@ -305,21 +323,21 @@ public class CatalogItem {
     }
     CatalogItem catalogItem = (CatalogItem) o;
     return Objects.equals(this.id, catalogItem.id) &&
-            Objects.equals(this.path, catalogItem.path) &&
-            Objects.equals(this.title, catalogItem.title) &&
-            Objects.equals(this.shortDescription, catalogItem.shortDescription) &&
-            Objects.equals(this.descriptionFileId, catalogItem.descriptionFileId) &&
-            Objects.equals(this.imageFileId, catalogItem.imageFileId) &&
-            Objects.equals(this.itemSrc, catalogItem.itemSrc) &&
-            Objects.equals(this.type, catalogItem.type) &&
-            Objects.equals(this.tags, catalogItem.tags) &&
-            Objects.equals(this.authors, catalogItem.authors) &&
-            Objects.equals(this.date, catalogItem.date);
+        Objects.equals(this.path, catalogItem.path) &&
+        Objects.equals(this.title, catalogItem.title) &&
+        Objects.equals(this.shortDescription, catalogItem.shortDescription) &&
+        Objects.equals(this.descriptionFileId, catalogItem.descriptionFileId) &&
+        Objects.equals(this.imageFileId, catalogItem.imageFileId) &&
+        Objects.equals(this.itemSrc, catalogItem.itemSrc) &&
+        Objects.equals(this.tags, catalogItem.tags) &&
+        Objects.equals(this.authors, catalogItem.authors) &&
+        Objects.equals(this.date, catalogItem.date) &&
+        Objects.equals(this.userActions, catalogItem.userActions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, path, title, shortDescription, descriptionFileId, imageFileId, itemSrc, type, tags, authors, date);
+    return Objects.hash(id, path, title, shortDescription, descriptionFileId, imageFileId, itemSrc, tags, authors, date, userActions);
   }
 
   @Override
@@ -333,10 +351,10 @@ public class CatalogItem {
     sb.append("    descriptionFileId: ").append(toIndentedString(descriptionFileId)).append("\n");
     sb.append("    imageFileId: ").append(toIndentedString(imageFileId)).append("\n");
     sb.append("    itemSrc: ").append(toIndentedString(itemSrc)).append("\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    tags: ").append(toIndentedString(tags)).append("\n");
     sb.append("    authors: ").append(toIndentedString(authors)).append("\n");
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
+    sb.append("    userActions: ").append(toIndentedString(userActions)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -351,7 +369,7 @@ public class CatalogItem {
     }
     return o.toString().replace("\n", "\n    ");
   }
-
+  
   public static class Builder {
 
     private CatalogItem instance;
@@ -364,7 +382,7 @@ public class CatalogItem {
       this.instance = instance;
     }
 
-    protected Builder copyOf(CatalogItem value) {
+    protected Builder copyOf(CatalogItem value) { 
       this.instance.setId(value.id);
       this.instance.setPath(value.path);
       this.instance.setTitle(value.title);
@@ -372,10 +390,10 @@ public class CatalogItem {
       this.instance.setDescriptionFileId(value.descriptionFileId);
       this.instance.setImageFileId(value.imageFileId);
       this.instance.setItemSrc(value.itemSrc);
-      this.instance.setType(value.type);
       this.instance.setTags(value.tags);
       this.instance.setAuthors(value.authors);
       this.instance.setDate(value.date);
+      this.instance.setUserActions(value.userActions);
       return this;
     }
 
@@ -383,62 +401,62 @@ public class CatalogItem {
       this.instance.id(id);
       return this;
     }
-
+    
     public CatalogItem.Builder path(String path) {
       this.instance.path(path);
       return this;
     }
-
+    
     public CatalogItem.Builder title(String title) {
       this.instance.title(title);
       return this;
     }
-
+    
     public CatalogItem.Builder shortDescription(String shortDescription) {
       this.instance.shortDescription(shortDescription);
       return this;
     }
-
+    
     public CatalogItem.Builder descriptionFileId(String descriptionFileId) {
       this.instance.descriptionFileId(descriptionFileId);
       return this;
     }
-
+    
     public CatalogItem.Builder imageFileId(String imageFileId) {
       this.instance.imageFileId(imageFileId);
       return this;
     }
-
+    
     public CatalogItem.Builder itemSrc(String itemSrc) {
       this.instance.itemSrc(itemSrc);
       return this;
     }
-
-    public CatalogItem.Builder type(String type) {
-      this.instance.type(type);
-      return this;
-    }
-
+    
     public CatalogItem.Builder tags(List<@Valid CatalogItemTag> tags) {
       this.instance.tags(tags);
       return this;
     }
-
+    
     public CatalogItem.Builder authors(List<String> authors) {
       this.instance.authors(authors);
       return this;
     }
-
+    
     public CatalogItem.Builder date(OffsetDateTime date) {
       this.instance.date(date);
       return this;
     }
-
+    
+    public CatalogItem.Builder userActions(List<@Valid CatalogItemUserAction> userActions) {
+      this.instance.userActions(userActions);
+      return this;
+    }
+    
     /**
-     * returns a built CatalogItem instance.
-     *
-     * The builder is not reusable (NullPointerException)
-     */
+    * returns a built CatalogItem instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
     public CatalogItem build() {
       try {
         return this.instance;
@@ -455,15 +473,15 @@ public class CatalogItem {
   }
 
   /**
-   * Create a builder with no initialized field (except for the default values).
-   */
+  * Create a builder with no initialized field (except for the default values).
+  */
   public static CatalogItem.Builder builder() {
     return new CatalogItem.Builder();
   }
 
   /**
-   * Create a builder with a shallow copy of this instance.
-   */
+  * Create a builder with a shallow copy of this instance.
+  */
   public CatalogItem.Builder toBuilder() {
     CatalogItem.Builder builder = new CatalogItem.Builder();
     return builder.copyOf(this);

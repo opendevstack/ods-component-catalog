@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestCreateBranchRequest.JSON_PROPERTY_NAME,
   RestCreateBranchRequest.JSON_PROPERTY_START_POINT
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestCreateBranchRequest implements Serializable {
   private static final long serialVersionUID = 1L;
 

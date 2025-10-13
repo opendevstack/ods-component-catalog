@@ -4,7 +4,10 @@ logging:
     com.azure.spring.cloud.autoconfigure: DEBUG
     com.boehringer.componentcatalog.config: DEBUG
     com.boehringer.componentcatalog.server.controllers: INFO
+    com.boehringer.componentcatalog.server.api: INFO
+    com.boehringer.componentcatalog.server.mappers: INFO
     com.boehringer.componentcatalog.server.services.BitbucketService: DEBUG
+    com.boehringer.componentcatalog.util: DEBUG
 spring:
   http:
     client:

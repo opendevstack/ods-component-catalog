@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import jakarta.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-24T11:45:31.559862900+02:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 @Validated
 @Controller
 @Tag(name = "Catalogs", description = "the Catalogs API")
@@ -46,7 +46,7 @@ public interface CatalogsApi {
 
     /**
      * GET /catalogs/{id} : Get a catalog by id.
-     * Returns a valid catalog.
+     * Returns a valid catalog. 
      *
      * @param id id for the Catalog. (required)
      * @return A Single catalog. (status code 200)
@@ -56,39 +56,39 @@ public interface CatalogsApi {
      *         or Server error. (status code 500)
      */
     @Operation(
-            operationId = "getCatalog",
-            summary = "Get a catalog by id.",
-            description = "Returns a valid catalog. ",
-            tags = { "Catalogs" },
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "A Single catalog.", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = Catalog.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Invalid client token on the request.", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "Insufficient permissions for the client to access the resource.", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Catalog not found", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
-                    }),
-                    @ApiResponse(responseCode = "500", description = "Server error.", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "bearerAuth")
-            }
+        operationId = "getCatalog",
+        summary = "Get a catalog by id.",
+        description = "Returns a valid catalog. ",
+        tags = { "Catalogs" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "A Single catalog.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = Catalog.class))
+            }),
+            @ApiResponse(responseCode = "401", description = "Invalid client token on the request.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions for the client to access the resource.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Catalog not found", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "500", description = "Server error.", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            })
+        },
+        security = {
+            @SecurityRequirement(name = "bearerAuth")
+        }
     )
     @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/catalogs/{id}",
-            produces = { "application/json" }
+        method = RequestMethod.GET,
+        value = "/catalogs/{id}",
+        produces = { "application/json" }
     )
-
+    
     default ResponseEntity<Catalog> getCatalog(
-            @Parameter(name = "id", description = "id for the Catalog.", required = true, in = ParameterIn.PATH) @PathVariable("id") String id
+        @Parameter(name = "id", description = "id for the Catalog.", required = true, in = ParameterIn.PATH) @PathVariable("id") String id
     ) {
         getRequest().ifPresent(request -> {
             for (MediaType mediaType: MediaType.parseMediaTypes(request.getHeader("Accept"))) {

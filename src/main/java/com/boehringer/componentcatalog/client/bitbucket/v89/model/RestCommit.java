@@ -42,7 +42,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestCommit.JSON_PROPERTY_DISPLAY_ID,
   RestCommit.JSON_PROPERTY_ID
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestCommit implements Serializable {
   private static final long serialVersionUID = 1L;
 

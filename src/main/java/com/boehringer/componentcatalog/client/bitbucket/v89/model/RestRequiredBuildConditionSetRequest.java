@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestRequiredBuildConditionSetRequest.JSON_PROPERTY_EXEMPT_REF_MATCHER,
   RestRequiredBuildConditionSetRequest.JSON_PROPERTY_REF_MATCHER
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestRequiredBuildConditionSetRequest implements Serializable {
   private static final long serialVersionUID = 1L;
 
