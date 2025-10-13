@@ -1,16 +1,24 @@
 package com.boehringer.componentcatalog.server.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
-
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * CatalogLink
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-11T10:37:51.884432900+02:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class CatalogLink {
 
   private String url;
@@ -47,7 +55,7 @@ public class CatalogLink {
    * @return name
    */
   
-  @Schema(name = "name", example = "aSdFam...yCg==", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  @Schema(name = "name", example = "whatever name", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("name")
   public String getName() {
     return name;
@@ -114,12 +122,12 @@ public class CatalogLink {
       return this;
     }
 
-    public Builder url(String url) {
+    public CatalogLink.Builder url(String url) {
       this.instance.url(url);
       return this;
     }
     
-    public Builder name(String name) {
+    public CatalogLink.Builder name(String name) {
       this.instance.name(name);
       return this;
     }
@@ -147,15 +155,15 @@ public class CatalogLink {
   /**
   * Create a builder with no initialized field (except for the default values).
   */
-  public static Builder builder() {
-    return new Builder();
+  public static CatalogLink.Builder builder() {
+    return new CatalogLink.Builder();
   }
 
   /**
   * Create a builder with a shallow copy of this instance.
   */
-  public Builder toBuilder() {
-    Builder builder = new Builder();
+  public CatalogLink.Builder toBuilder() {
+    CatalogLink.Builder builder = new CatalogLink.Builder();
     return builder.copyOf(this);
   }
 

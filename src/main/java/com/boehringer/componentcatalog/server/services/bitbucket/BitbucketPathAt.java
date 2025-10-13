@@ -4,9 +4,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import one.util.streamex.EntryStream;
-import one.util.streamex.IntCollector;
-import one.util.streamex.IntStreamEx;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -15,6 +12,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +28,7 @@ public class BitbucketPathAt implements Serializable {
     private static final String PATH_TEMPLATE = "projects/${projectKey}/repos/${repoSlug}/raw/${subPath}?at=${at}";
     private static final String BROWSE_URL_TEMPLATE = "${baseUrl}/${path}";
     private static final String REST_URL_TEMPLATE = "${baseUrl}/api/latest/${path}";
+    private static final String BASE_URL = "baseUrl";
 
     private final String baseRawUrl;
     private final String baseRestUrl;
@@ -99,7 +98,7 @@ public class BitbucketPathAt implements Serializable {
         return this.toBuilder().build();
     }
 
-    private BitbucketPathAt fromFullUrl(String fullUrl) {
+    private void fromFullUrl(String fullUrl) {
         // Example URL to parse:
         // https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/browse/some-package/SomeFileOrDir?at=refs%2Fheads%2Fmaster
         var builder = fromUriString(fullUrl);
@@ -117,7 +116,7 @@ public class BitbucketPathAt implements Serializable {
                 .replaceQueryParam("at", decodedAt)
                 .build();
 
-        return this.fromComponents(comps);
+        this.fromComponents(comps);
     }
 
     private BitbucketPathAt fromPathVars(String projectKey, String repoSlug, String subPath, String at) {
@@ -129,8 +128,8 @@ public class BitbucketPathAt implements Serializable {
         this.pathAt = urlFromTemplate(PATH_TEMPLATE, "projectKey", this.projectKey, "repoSlug", this.repoSlug,
                 "subPath", this.subPath, "at", this.at);
 
-        this.restUrl = urlFromTemplate(REST_URL_TEMPLATE, "baseUrl", this.baseRestUrl, "path", this.pathAt);
-        this.rawUrl = urlFromTemplate(BROWSE_URL_TEMPLATE, "baseUrl", this.baseRawUrl, "path", this.pathAt);
+        this.restUrl = urlFromTemplate(REST_URL_TEMPLATE, BASE_URL, this.baseRestUrl, "path", this.pathAt);
+        this.rawUrl = urlFromTemplate(BROWSE_URL_TEMPLATE, BASE_URL, this.baseRawUrl, "path", this.pathAt);
 
         this.restUri = fromUriString(this.restUrl).build().toUri();
         this.rawUri = fromUriString(this.rawUrl).build().toUri();
@@ -141,10 +140,10 @@ public class BitbucketPathAt implements Serializable {
         return this;
     }
 
-    private BitbucketPathAt fromPathAt(String pathAt) {
-        var fullUrl = urlFromTemplate(BROWSE_URL_TEMPLATE, "baseUrl", baseRawUrl, "path", pathAt);
+    private void fromPathAt(String pathAt) {
+        var fullUrl = urlFromTemplate(BROWSE_URL_TEMPLATE, BASE_URL, baseRawUrl, "path", pathAt);
 
-        return this.fromFullUrl(fullUrl);
+        this.fromFullUrl(fullUrl);
     }
 
     private BitbucketPathAt fromComponents(UriComponents comps) {
@@ -205,19 +204,15 @@ public class BitbucketPathAt implements Serializable {
     }
 
     private static Map<String, String> pairsToMap(List<String> pairs) {
-        // keys: elements at even indexes, values: at odd ones
-        var indexes = IntStreamEx.ofIndices(pairs)
-                .collect(IntCollector.groupingBy(i -> (i % 2 == 0) ? "keys" : "values"));
+        Map<String, String> result = new HashMap<>();
 
-        var keys = IntStreamEx.of(indexes.get("keys"))
-                .elements(pairs)
-                .toList();
+        for (int i = 0; i < pairs.size() - 1; i += 2) {
+            String key = pairs.get(i);
+            String value = pairs.get(i + 1);
+            result.put(key, value);
+        }
 
-        var values = IntStreamEx.of(indexes.get("values"))
-                .elements(pairs)
-                .toList();
-
-        return EntryStream.zip(keys, values).toMap();
+        return result;
     }
 
     private static String sanitizePathSegment(String segment) {

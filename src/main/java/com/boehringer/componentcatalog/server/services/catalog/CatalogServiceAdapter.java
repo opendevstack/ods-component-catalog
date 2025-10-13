@@ -5,11 +5,13 @@ import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketInvali
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketPathAt;
 import com.boehringer.componentcatalog.server.services.exceptions.InvalidEntityException;
 import com.boehringer.componentcatalog.server.services.exceptions.InvalidIdException;
+import com.boehringer.componentcatalog.util.YamlSchemaValidator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.introspector.BeanAccess;
 
 import java.util.Optional;
 
@@ -70,6 +72,17 @@ public class CatalogServiceAdapter {
     }
 
     private <T> T fromYaml(String yamlStr, Class<T> clazz) {
-        return new Yaml().loadAs(yamlStr, clazz);
+        var validationMessages = YamlSchemaValidator.validate(yamlStr, clazz);
+        validationMessages.forEach(msg -> log.warn("YAML schema validation issue: {}", msg.getMessage()));
+
+        try {
+            var parser = new Yaml();
+            parser.setBeanAccess(BeanAccess.FIELD);
+
+            return parser.loadAs(yamlStr, clazz);
+        } catch (Exception e) {
+            log.error("Error while parsing YAML string: {}", yamlStr, e);
+            throw e;
+        }
     }
 }

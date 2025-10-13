@@ -1,11 +1,11 @@
 package com.boehringer.componentcatalog.server.mother;
 
-import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsMetadata;
+import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsEntityMetadata;
 
 public class CatalogsCollectionsMetadataMother {
 
-    public static CatalogsCollectionsMetadata of() {
-        var catalogOfCatalogsMetadata = new CatalogsCollectionsMetadata();
+    public static CatalogsCollectionsEntityMetadata of() {
+        var catalogOfCatalogsMetadata = new CatalogsCollectionsEntityMetadata();
 
         catalogOfCatalogsMetadata.setName("catalogOfCatalogs");
         catalogOfCatalogsMetadata.setDescription("A catalog of catalogs");

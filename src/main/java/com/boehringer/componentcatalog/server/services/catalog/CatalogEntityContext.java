@@ -3,11 +3,13 @@ package com.boehringer.componentcatalog.server.services.catalog;
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketPathAt;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.List;
 import java.util.Optional;
 
 @Getter
+@ToString
 public class CatalogEntityContext {
     private CatalogEntity catalogEntity;
 

@@ -14,7 +14,6 @@ import com.boehringer.componentcatalog.config.ApplicationPropertiesConfiguration
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketIOException;
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketInvalidEntityException;
 import com.boehringer.componentcatalog.server.services.bitbucket.BitbucketPathAt;
-import com.boehringer.componentcatalog.util.EitherUtils;
 import com.boehringer.componentcatalog.util.FileFormatUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +21,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import one.util.streamex.StreamEx;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
@@ -34,11 +32,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,12 +64,6 @@ public class BitbucketService {
         return BitbucketPathAt.builder()
                 .baseRawUrl(this.bitbucketServiceProps.getBaseRawUrl().toString())
                 .baseRestUrl(this.bitbucketServiceProps.getBaseRestUrl().toString());
-    }
-
-    public <T> Optional<Pair<MediaType, T>> getFileContents(BitbucketPathAt pathAt, Function<byte[], T> transformer)
-            throws BitbucketInvalidEntityException {
-        return this.getFileContents(pathAt.getProjectKey(), pathAt.getRepoSlug(), pathAt.getSubPath(),
-                pathAt.getAt(), transformer);
     }
 
     @Cacheable
@@ -192,29 +180,29 @@ public class BitbucketService {
 
             var permitted = (List<Map<String, Object>>) values;
 
-            var permittedUsers = StreamEx.of(permitted)
+            var permittedUsers = permitted.stream()
                     .filter(m -> m.containsKey("user"))
                     .map(m -> this.objectMapper.convertValue(m, RestPermittedUser.class))
                     .filter(u -> u.getUser().getActive())
-                    .toSet();
+                    .collect(Collectors.toSet());
 
-            var permittedGroups = StreamEx.of(permitted)
+            var permittedGroups = permitted.stream()
                     .filter(m -> m.containsKey("group"))
                     .map(m -> Pair.of((String) m.get("group"), (String) m.get("permission")))
-                    .toSet();
+                    .collect(Collectors.toSet());
 
             var userGroupsNames = this.getUserGroupsNames(username);
 
-            var userPermissions = StreamEx.of(permittedUsers)
+            var userPermissions = permittedUsers.stream()
                     .filter(u -> Objects.equals(username, u.getUser().getName()))
                     .map(RestPermittedUser::getPermission)
-                    .toSet();
+                    .collect(Collectors.toSet());
 
-            var userGroupsPermissions = StreamEx.of(permittedGroups)
-                    .filter(g -> StreamEx.of(userGroupsNames).anyMatch(ug -> ug.equalsIgnoreCase(g.getLeft())))
+            var userGroupsPermissions = permittedGroups.stream()
+                    .filter(g -> userGroupsNames.stream().anyMatch(ug -> ug.equalsIgnoreCase(g.getLeft())))
                     .map(Pair::getRight)
                     .map(PermissionEnum::fromValue)
-                    .toSet();
+                    .collect(Collectors.toSet());
 
             // Return without duplicates
             return Stream.concat(userPermissions.stream(), userGroupsPermissions.stream())
@@ -253,9 +241,9 @@ public class BitbucketService {
         var values = this.permissionApi.findGroupsForUser(username, null,null, BigDecimal.valueOf(1000))
                 .getValues();
 
-        return StreamEx.of(values)
+        return values.stream()
                 .map(RestDetailedUser::getName)
-                .toSet();
+                .collect(Collectors.toSet());
     }
 
 }

@@ -10,7 +10,6 @@ import com.boehringer.componentcatalog.util.Either;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.basjes.codeowners.CodeOwners;
-import one.util.streamex.StreamEx;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,6 +18,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.boehringer.componentcatalog.server.services.common.IdEncoderDecoder.idEncode;
 import static com.boehringer.componentcatalog.util.EitherUtils.*;
@@ -59,24 +60,27 @@ public class CatalogEntitiesService {
         });
     }
 
-    public List<CatalogItemEntityContext> getCatalogItemsEntities(String catalogId) throws InvalidIdException, InvalidCatalogEntityException {
+    public List<CatalogItemEntityContext> getCatalogItemsEntities(String catalogId)
+            throws InvalidIdException, InvalidCatalogEntityException {
         // In order to return a valid list of RepoCatalogItemContexts, we need a valid RepoCatalog, that's
         // an existing file, a valid yaml file and also a valid RepoCatalog object
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogId);
-        var repoCatalog = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
 
-        if(repoCatalog.isEmpty()) {
+        if(catalogEntity.isEmpty()) {
             throw new InvalidCatalogEntityException(catalogId);
         }
 
-        return this.allCatalogItemsEntitiesCtxs(repoCatalog.get());
+        return this.allCatalogItemsEntitiesCtxs(catalogEntity.get());
     }
 
-    public Optional<CatalogItemEntityContext> getCatalogItemEntity(String id) throws InvalidIdException, InvalidCatalogItemEntityException {
+    public Optional<CatalogItemEntityContext> getCatalogItemEntity(String id)
+            throws InvalidIdException, InvalidCatalogItemEntityException {
         return this.buildCatalogItemEntityCtx(catalogServiceAdapter.bitbucketPathAtFromId(id));
     }
 
-    private Optional<CatalogItemEntity> getCatalogItemEntity(BitbucketPathAt catalogItemPathAt) throws InvalidCatalogItemEntityException {
+    private Optional<CatalogItemEntity> getCatalogItemEntity(BitbucketPathAt catalogItemPathAt)
+            throws InvalidCatalogItemEntityException {
         try {
             return catalogServiceAdapter.getYamlEntity(catalogItemPathAt, CatalogItemEntity.class);
         } catch (InvalidEntityException e) {
@@ -85,11 +89,11 @@ public class CatalogEntitiesService {
         }
     }
 
-    private List<CatalogItemEntityContext> allCatalogItemsEntitiesCtxs(CatalogEntity catalog) {
-        var repoTargets = catalog.getMetadata().getSpec().getTargets();
+    private List<CatalogItemEntityContext> allCatalogItemsEntitiesCtxs(CatalogEntity catalogEntity) {
+        var catalogEntityTargets = catalogEntity.getMetadata().getSpec().getTargets();
 
         // For this particular case, we will ignore any errored CatalogItems
-        return List.of(repoTargets).parallelStream() // TODO review this, it doesn't yield much performance improvements //NOSONAR
+        return Stream.of(catalogEntityTargets)
                 .map(target -> either(this::buildCatalogItemEntityCtx, target))
                 .filter(Either::isOk)
                 .map(Either::getValue)
@@ -98,20 +102,20 @@ public class CatalogEntitiesService {
                 .toList();
     }
 
-    private Optional<CatalogItemEntityContext> buildCatalogItemEntityCtx(CatalogEntityTarget repoTarget)
+    private Optional<CatalogItemEntityContext> buildCatalogItemEntityCtx(CatalogEntityTarget catalogEntityTarget)
             throws InvalidCatalogEntityException, InvalidCatalogItemEntityException {
         // Examples:
         // https://my-bitbucket.boehringer.com/projects/MYPROJECT/repos/catalogitem-repo/raw/CatalogItem.yaml?at=refs%2Fheads%2Fmaster
         // https://my-bitbucket.boehringer.com/projects/MYPROJECT/repos/catalogitem-repo/raw/first-package/PackageCatalogItem.yaml?at=refs%2Fheads%2Fmaster
-        var catalogItemUrl = repoTarget.getUrl();
+        var catalogEntityItemUrl = catalogEntityTarget.getUrl();
 
         try {
             var catalogItemPathAt = bitbucketService.pathAtBuilder()
-                    .rawUrl(catalogItemUrl)
+                    .rawUrl(catalogEntityItemUrl)
                     .build();
             return buildCatalogItemEntityCtx(catalogItemPathAt);
         } catch (Exception e) {
-            var errMsg = "Error while parsing catalog item URL: %s".formatted(catalogItemUrl);
+            var errMsg = "Error while parsing catalog item URL: %s".formatted(catalogEntityItemUrl);
             log.error(errMsg, e);
             throw new InvalidCatalogItemEntityException(errMsg);
         }
@@ -121,9 +125,9 @@ public class CatalogEntitiesService {
             throws InvalidCatalogItemEntityException {
 
         var catalogItemId = idEncode(catalogItemPathAt.getPathAt());
-        var maybeCatalogItem = getCatalogItemEntity(catalogItemPathAt);
+        var maybeCatalogItemEntity = getCatalogItemEntity(catalogItemPathAt);
 
-        if(maybeCatalogItem.isEmpty()) {
+        if(maybeCatalogItemEntity.isEmpty()) {
             return Optional.empty();
         }
 
@@ -141,8 +145,8 @@ public class CatalogEntitiesService {
                 .orElse(null);
 
         // Get UTC string representation of the last commit date
-        var catalogItem = maybeCatalogItem.get();
-        var metadata = catalogItem.getMetadata();
+        var catalogItemEntity = maybeCatalogItemEntity.get();
+        var metadata = catalogItemEntity.getMetadata();
 
         var pathAtParent = catalogItemPathAt.getParent();
 
@@ -161,10 +165,10 @@ public class CatalogEntitiesService {
 
         // Set mandatory fields
         var catalogItemCtxBuilder = CatalogItemEntityContext.builder()
-                .catalogItemId(catalogItemId)
-                .catalogItemEntity(catalogItem)
+                .id(catalogItemId)
+                .catalogItemEntity(catalogItemEntity)
                 .repoCatalogItemPathAt(catalogItemPathAt)
-                .repoLastCommitDateUTC(lastCommitDate);
+                .lastCommitDateUTC(lastCommitDate);
 
         // Set optional fields
         codeOwners.ifPresent(catalogItemCtxBuilder::contributors);
@@ -179,29 +183,35 @@ public class CatalogEntitiesService {
 
         // We will assume that the user has no permissions if either the principalName is null
         // or we can't retrieve the permissions from Bitbucket
-        return ofNullable(principalName)
+        return Optional.ofNullable(principalName)
                 .flatMap(username -> maybeValueFrom(this.bitbucketService::searchRepoUserPermissions).apply(catalogPathAt, username))
-                .map(permissions -> StreamEx.of(permissions)
+                .map(permissions -> permissions.stream()
                         .map(PermissionEnum::getValue)
                         .map(CatalogEntityPermissionEnum::fromValue)
-                        .toSet())
+                        .collect(Collectors.toSet()))
                 .orElse(Set.of());
     }
 
+
     private List<String> parseContributors(String contributorsStr) {
-        // TODO unit test this method, just in case the codeowners file contains errors
         try {
-            return StreamEx.ofNullable(contributorsStr)
-                    .map(CodeOwners::new)
-                    .flatCollection(CodeOwners::getAllDefinedSections)
-                    .flatCollection(CodeOwners.Section::getApprovalRules)
-                    .flatCollection(CodeOwners.ApprovalRule::getApprovers)
+            if (contributorsStr == null) {
+                return List.of();
+            }
+
+            CodeOwners codeOwners = new CodeOwners(contributorsStr);
+
+            return codeOwners.getAllDefinedSections().stream()
+                    .flatMap(section -> section.getApprovalRules().stream())
+                    .flatMap(rule -> rule.getApprovers().stream())
                     .distinct()
                     .toList();
+
         } catch (RuntimeException e) {
             log.error("Error while parsing contributors from codeowners file: {}", contributorsStr, e);
             throw e;
         }
     }
+
 
 }

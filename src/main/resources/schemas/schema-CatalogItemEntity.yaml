@@ -1,0 +1,110 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: CatalogItem
+type: object
+properties:
+  kind:
+    type: string
+    enum:
+      - CatalogItem
+    description: The type of the item.
+  metadata:
+    type: object
+    properties:
+      name:
+        type: string
+        description: The name of the catalog item.
+      shortDescription:
+        type: string
+        description: A short description of the catalog item.
+      description:
+        type: string
+        description: A reference to the detailed description file.
+      contributors:
+        type: string
+        description: A reference to the contributors file.
+      image:
+        type: string
+        description: A path to the image file.
+      tags:
+        type: object
+        properties:
+          Type:
+            type: array
+            items:
+              type: string
+            description: Tags related to the type of the catalog item.
+          Technology:
+            type: array
+            items:
+              type: string
+            description: Tags related to the technology of the catalog item.
+          GXP readiness:
+            type: array
+            items:
+              type: string
+            description: Tags related to GXP readiness of the catalog item.
+    required:
+      - name
+      - shortDescription
+      - description
+      - contributors
+      - tags
+  spec:
+    type: object
+    properties:
+      userActions:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              description: The ID of the user action.
+            url:
+              type: string
+              format: uri
+              description: The URL to trigger the action.
+            triggerMessage:
+              type: string
+              description: A custom message for triggering the action.
+            parameters:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: The name of the parameter.
+                  type:
+                    type: string
+                    description: The type of the parameter.
+                  required:
+                    type: boolean
+                    description: Indicates if the parameter is required.
+                  defaultValue:
+                    type: string
+                    description: The default value of the parameter.
+                  label:
+                    type: string
+                    description: The label for the parameter.
+                  visible:
+                    type: boolean
+                    description: Indicates if the parameter is visible.
+                required:
+                  - name
+                  - type
+                  - required
+                  - defaultValue
+                  - label
+                  - visible
+          required:
+            - id
+            - url
+            - triggerMessage
+            - parameters
+    required:
+      - userActions
+required:
+  - kind
+  - metadata
+  - spec

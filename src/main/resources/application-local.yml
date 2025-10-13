@@ -2,9 +2,14 @@
 logging:
   level:
     org.springframework: DEBUG
+    org.springframework.security: TRACE
     com.azure.spring.cloud.autoconfigure: DEBUG
-    com.boehringer.componentcatalog.server.controllers: INFO
+    com.boehringer.componentcatalog.config: INFO
+    com.boehringer.componentcatalog.server.controllers: DEBUG
+    com.boehringer.componentcatalog.server.api: INFO
+    com.boehringer.componentcatalog.server.mappers: DEBUG
     com.boehringer.componentcatalog.server.services.BitbucketService: DEBUG
+    com.boehringer.componentcatalog.util: DEBUG
 management:
   endpoints:
     web:

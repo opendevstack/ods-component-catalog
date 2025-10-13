@@ -99,3 +99,7 @@ To get the token for the local development, feel free to get security token from
 javascript:(function(){let value=JSON.parse(localStorage[Object.keys(localStorage).find(key=>key.includes('idtoken'))])['secret'];navigator.clipboard.writeText(value);alert('Token copied to clipboard');})();
 ```
 
+# Azure tokens
+That's important to know, that tokens are environment dependent. I mean, if you have configured your local environment to use the `dev` environment, you will need to get the token from a `dev` azure page, or Front app in DEV.
+If you have configured your local environment to use the `local` environment, you will need to get the token from a `local` azure page, or Front app in LOCAL.
+

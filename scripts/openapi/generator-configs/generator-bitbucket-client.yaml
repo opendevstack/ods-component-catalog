@@ -29,4 +29,5 @@ additionalProperties:
   modelPackage: com.boehringer.componentcatalog.client.bitbucket.v89.model
   generateClientAsBean: true
   useSingleRequestParameter: true
+  hideGenerationTimestamp: true
 

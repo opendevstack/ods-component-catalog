@@ -1,19 +1,28 @@
 package com.boehringer.componentcatalog.server.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
-import jakarta.validation.Valid;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 import java.util.Objects;
+import com.boehringer.componentcatalog.server.model.CatalogLink;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * Catalog
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-23T15:55:16.196547600+02:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class Catalog {
 
   private String name;
@@ -37,7 +46,7 @@ public class Catalog {
    * Get name
    * @return name
    */
-
+  
   @Schema(name = "name", example = "catalog-name", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("name")
   public String getName() {
@@ -57,7 +66,7 @@ public class Catalog {
    * Get description
    * @return description
    */
-
+  
   @Schema(name = "description", example = "A brief description for a catalog", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("description")
   public String getDescription() {
@@ -77,7 +86,7 @@ public class Catalog {
    * Get communityPageId
    * @return communityPageId
    */
-
+  
   @Schema(name = "communityPageId", example = "aSdFam...yCg==", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("communityPageId")
   public String getCommunityPageId() {
@@ -105,7 +114,7 @@ public class Catalog {
    * Get links
    * @return links
    */
-  @Valid
+  @Valid 
   @Schema(name = "links", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("links")
   public List<@Valid CatalogLink> getLinks() {
@@ -133,7 +142,7 @@ public class Catalog {
    * Get tags
    * @return tags
    */
-
+  
   @Schema(name = "tags", example = "[\"tasks\",\"technologies\"]", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("tags")
   public List<String> getTags() {
@@ -154,10 +163,10 @@ public class Catalog {
     }
     Catalog catalog = (Catalog) o;
     return Objects.equals(this.name, catalog.name) &&
-            Objects.equals(this.description, catalog.description) &&
-            Objects.equals(this.communityPageId, catalog.communityPageId) &&
-            Objects.equals(this.links, catalog.links) &&
-            Objects.equals(this.tags, catalog.tags);
+        Objects.equals(this.description, catalog.description) &&
+        Objects.equals(this.communityPageId, catalog.communityPageId) &&
+        Objects.equals(this.links, catalog.links) &&
+        Objects.equals(this.tags, catalog.tags);
   }
 
   @Override
@@ -188,7 +197,7 @@ public class Catalog {
     }
     return o.toString().replace("\n", "\n    ");
   }
-
+  
   public static class Builder {
 
     private Catalog instance;
@@ -201,7 +210,7 @@ public class Catalog {
       this.instance = instance;
     }
 
-    protected Builder copyOf(Catalog value) {
+    protected Builder copyOf(Catalog value) { 
       this.instance.setName(value.name);
       this.instance.setDescription(value.description);
       this.instance.setCommunityPageId(value.communityPageId);
@@ -214,32 +223,32 @@ public class Catalog {
       this.instance.name(name);
       return this;
     }
-
+    
     public Catalog.Builder description(String description) {
       this.instance.description(description);
       return this;
     }
-
+    
     public Catalog.Builder communityPageId(String communityPageId) {
       this.instance.communityPageId(communityPageId);
       return this;
     }
-
+    
     public Catalog.Builder links(List<@Valid CatalogLink> links) {
       this.instance.links(links);
       return this;
     }
-
+    
     public Catalog.Builder tags(List<String> tags) {
       this.instance.tags(tags);
       return this;
     }
-
+    
     /**
-     * returns a built Catalog instance.
-     *
-     * The builder is not reusable (NullPointerException)
-     */
+    * returns a built Catalog instance.
+    *
+    * The builder is not reusable (NullPointerException)
+    */
     public Catalog build() {
       try {
         return this.instance;
@@ -256,15 +265,15 @@ public class Catalog {
   }
 
   /**
-   * Create a builder with no initialized field (except for the default values).
-   */
+  * Create a builder with no initialized field (except for the default values).
+  */
   public static Catalog.Builder builder() {
     return new Catalog.Builder();
   }
 
   /**
-   * Create a builder with a shallow copy of this instance.
-   */
+  * Create a builder with a shallow copy of this instance.
+  */
   public Catalog.Builder toBuilder() {
     Catalog.Builder builder = new Catalog.Builder();
     return builder.copyOf(this);

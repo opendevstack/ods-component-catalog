@@ -29,6 +29,9 @@ management:
         include: health
 catalog-collection:
   id: ${CATALOG_COLLECTION_ID}
+user-actions:
+  id: ${USER_ACTIONS_ID}
+  default-message-definition-id: ${USER_ACTIONS_DEFAULT_MESSAGE_DEFINITION_ID}
 component-catalog:
   caching:
     bitbucket-service-cache:

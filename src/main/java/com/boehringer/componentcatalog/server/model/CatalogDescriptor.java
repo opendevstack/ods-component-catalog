@@ -1,16 +1,24 @@
 package com.boehringer.componentcatalog.server.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
-
+import java.net.URI;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import org.openapitools.jackson.nullable.JsonNullable;
+import java.time.OffsetDateTime;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+
+import java.util.*;
+import jakarta.annotation.Generated;
 
 /**
  * CatalogDescriptor
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-23T15:29:02.750449100+02:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", comments = "Generator version: 7.10.0")
 public class CatalogDescriptor {
 
   private String id;
@@ -114,12 +122,12 @@ public class CatalogDescriptor {
       return this;
     }
 
-    public Builder id(String id) {
+    public CatalogDescriptor.Builder id(String id) {
       this.instance.id(id);
       return this;
     }
     
-    public Builder slug(String slug) {
+    public CatalogDescriptor.Builder slug(String slug) {
       this.instance.slug(slug);
       return this;
     }
@@ -147,15 +155,15 @@ public class CatalogDescriptor {
   /**
   * Create a builder with no initialized field (except for the default values).
   */
-  public static Builder builder() {
-    return new Builder();
+  public static CatalogDescriptor.Builder builder() {
+    return new CatalogDescriptor.Builder();
   }
 
   /**
   * Create a builder with a shallow copy of this instance.
   */
-  public Builder toBuilder() {
-    Builder builder = new Builder();
+  public CatalogDescriptor.Builder toBuilder() {
+    CatalogDescriptor.Builder builder = new CatalogDescriptor.Builder();
     return builder.copyOf(this);
   }
 

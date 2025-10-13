@@ -5,6 +5,7 @@ import com.boehringer.componentcatalog.server.controllers.exceptions.BadRequestE
 import com.boehringer.componentcatalog.server.model.CatalogItemFilter;
 import com.boehringer.componentcatalog.server.security.AuthorizationInfo;
 import com.boehringer.componentcatalog.server.services.CatalogEntitiesService;
+import com.boehringer.componentcatalog.server.services.UserActionsEntitiesService;
 import com.boehringer.componentcatalog.server.services.exceptions.InvalidIdException;
 import com.boehringer.componentcatalog.server.services.catalog.InvalidCatalogEntityException;
 import com.boehringer.componentcatalog.server.services.catalog.CatalogEntityPermissionEnum;
@@ -31,6 +32,7 @@ public class CatalogFiltersApiController implements CatalogFiltersApi {
     private final NativeWebRequest request;
     private final AuthorizationInfo authInfo;
     private final CatalogEntitiesService catalogEntitiesService;
+    private final UserActionsEntitiesService userActionsEntitiesService;
 
     @Override
     public Optional<NativeWebRequest> getRequest() {
@@ -45,15 +47,21 @@ public class CatalogFiltersApiController implements CatalogFiltersApi {
                 catalogId);
         try {
             var principalPermissions = this.currentPrincipalCatalogPermissions(catalogId);
-            var maybeRepoCatalog = this.catalogEntitiesService.getCatalogEntity(catalogId);
+            var maybeCatalogEntity = this.catalogEntitiesService.getCatalogEntity(catalogId);
+            var userActionsEntity = this.userActionsEntitiesService.getDefaultUserActionsEntity();
 
             // The provided catalog id should be valid and associated to an existing and well-formed catalog
-            if(maybeRepoCatalog.isEmpty()) {
+            if(maybeCatalogEntity.isEmpty()) {
                 throw new BadRequestException("Invalid catalog id: " + catalogId);
             }
 
-            var repoCatalogItems = this.catalogEntitiesService.getCatalogItemsEntities(catalogId);
-            var catalogItemsFilters = catalogItemFiltersFrom(maybeRepoCatalog.get(), repoCatalogItems, principalPermissions);
+            var catalogItemsEntities = this.catalogEntitiesService.getCatalogItemsEntities(catalogId);
+            var catalogItemsFilters = catalogItemFiltersFrom(
+                    maybeCatalogEntity.get(),
+                    catalogItemsEntities,
+                    userActionsEntity,
+                    principalPermissions
+            );
 
             return new ResponseEntity<>(catalogItemsFilters, HttpStatus.OK);
         } catch (InvalidIdException | InvalidCatalogEntityException e) {

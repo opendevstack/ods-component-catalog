@@ -1,20 +1,20 @@
 package com.boehringer.componentcatalog.server.mother;
 
-import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsSpec;
-import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsTarget;
+import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsEntitySpec;
+import com.boehringer.componentcatalog.server.services.catalog.CatalogsCollectionsEntityTarget;
 
 import java.util.Arrays;
 
 public class CatalogsCollectionsSpecMother {
 
-    public static CatalogsCollectionsSpec of() {
-        var catalogOfCatalogsSpec = new CatalogsCollectionsSpec();
+    public static CatalogsCollectionsEntitySpec of() {
+        var catalogOfCatalogsSpec = new CatalogsCollectionsEntitySpec();
         var targets = Arrays.asList(
-                CatalogsCollectionsTargetMother.of("catalog1"),
-                CatalogsCollectionsTargetMother.of("catalog2")
+                CatalogsCollectionsEntityTargetMother.of("catalog1"),
+                CatalogsCollectionsEntityTargetMother.of("catalog2")
         );
 
-        catalogOfCatalogsSpec.setTargets(targets.toArray(new CatalogsCollectionsTarget[]{}));
+        catalogOfCatalogsSpec.setTargets(targets.toArray(new CatalogsCollectionsEntityTarget[]{}));
 
         return catalogOfCatalogsSpec;
     }

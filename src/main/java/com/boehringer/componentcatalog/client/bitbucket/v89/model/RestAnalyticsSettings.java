@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
   RestAnalyticsSettings.JSON_PROPERTY_SERVER_TIME,
   RestAnalyticsSettings.JSON_PROPERTY_CAN_COLLECT_ANALYTICS
 })
-@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2025-02-28T09:35:07.114611322+01:00[Europe/Berlin]", comments = "Generator version: 7.10.0")
+@jakarta.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.10.0")
 public class RestAnalyticsSettings implements Serializable {
   private static final long serialVersionUID = 1L;
 
