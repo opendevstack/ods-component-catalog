@@ -115,3 +115,13 @@ javascript:(function(){let value=JSON.parse(localStorage[Object.keys(localStorag
 That's important to know, that tokens are environment dependent. I mean, if you have configured your local environment to use the `dev` environment, you will need to get the token from a `dev` azure page, or Front app in DEV.
 If you have configured your local environment to use the `local` environment, you will need to get the token from a `local` azure page, or Front app in LOCAL.
 
+# Quality
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=coverage)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=bugs)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=opendevstack_ods-component-catalog&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=opendevstack_ods-component-catalog)
+
