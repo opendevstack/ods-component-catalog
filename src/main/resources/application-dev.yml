@@ -2,12 +2,12 @@ logging:
   level:
     org.springframework: DEBUG
     com.azure.spring.cloud.autoconfigure: DEBUG
-    com.boehringer.componentcatalog.config: DEBUG
-    com.boehringer.componentcatalog.server.controllers: INFO
-    com.boehringer.componentcatalog.server.api: INFO
-    com.boehringer.componentcatalog.server.mappers: INFO
-    com.boehringer.componentcatalog.server.services.BitbucketService: DEBUG
-    com.boehringer.componentcatalog.util: DEBUG
+    org.opendevstack.component_catalog.config: DEBUG
+    org.opendevstack.component_catalog.server.controllers: INFO
+    org.opendevstack.component_catalog.server.api: INFO
+    org.opendevstack.component_catalog.server.mappers: INFO
+    org.opendevstack.component_catalog.server.services.org.opendevstack.component_catalog.server.services.BitbucketService: DEBUG
+    org.opendevstack.component_catalog.util: DEBUG
 spring:
   http:
     client:

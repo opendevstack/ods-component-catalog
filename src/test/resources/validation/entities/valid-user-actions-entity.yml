@@ -13,7 +13,7 @@ spec:
     - id: "PROVISION"
       mandatory: false
       displayName: "Provision"
-      url: "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions"
+      url: "https://component-provisioner-devstack-dev.openshift.com/v1/provision-actions"
       triggerMessage: "is being provisioned, it will take some minutes"
       messagesTitles:
         - id: "success"
@@ -40,7 +40,7 @@ spec:
             X2 account for the project is not in Jira users group.
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Jira user".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -53,7 +53,7 @@ spec:
             X2 account for the project is not in Bitbucket users group.
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Bitbucket user".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -66,7 +66,7 @@ spec:
             X2 account for the project is not in Jira and Bitbucket users group.
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Bitbucket user", "Jira user".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -79,7 +79,7 @@ spec:
             X2 account for the project is not in the Manager Role group for the ${project_key}
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Manager role".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -93,7 +93,7 @@ spec:
             X2 account for the project is not in the Manager Role group for the ${project_key}
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Jira user", "Manager role".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -107,7 +107,7 @@ spec:
             X2 account for the project is not in the Manager Role group for the ${project_key}
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Bitbucket user", "Manager role".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -121,7 +121,7 @@ spec:
             X2 account for the project is not in the Manager Role group for the ${project_key}
 
             To resolve this issue/s:
-            1. Go to the <a href="https://boehringer.service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
+            1. Go to the <a href="https://service-now.com/bi?id=sc_cat_item&sys_id=649919f7dbe40894497151c6f4961960" target="_blank">Atlassian - Request / Remove Access</a> form.
             2. Request the missing permissions: "Bitbucket user", "Jira user", "Manager role".
 
             For further details on how to fill the form, please follow the steps shown in the <a href="https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDPON&title=How+To+re+activate+Atlassian+accounts#HowToreactivateAtlassianaccounts-RequestingAtlassianaccess" target="_blank">FAQ</a>.
@@ -191,7 +191,7 @@ spec:
           customizable: true
           type: "string"
           required: true
-          defaultValue: "https://bitbucket-vilaxicoip-cd.apps.us-test.ocp.aws.boehringer.com/scm/vilaxicoip/ods-quickstarters.git"
+          defaultValue: "https://bitbucket.com/scm/ods/ods-quickstarters.git"
           label: "Quickstarter repository"
           placeholder: "Enter the quickstarter repository"
           hint: "Full url for the quickstarter source code repository."

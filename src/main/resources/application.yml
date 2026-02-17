@@ -3,15 +3,20 @@ server:
 logging:
   level:
     org.springframework: INFO
-    com.boehringer.componentcatalog.server.controllers: INFO
+    org.opendevstack.component_catalog.server.controllers: INFO
 spring:
+  security:
+    user:
+      name: ${SPRING_SECURITY_PROVISIONER_USERNAME}
+      password: ${SPRING_SECURITY_PROVISIONER_PASSWORD}
+      roles: PROVISIONER
   profiles:
     active: dev
   http:
     client:
       factory: jdk
   jackson:
-    date-format: com.boehringer.componentcatalog.util.RFC3339DateFormat
+    date-format: org.opendevstack.component_catalog.util.RFC3339DateFormat
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   cloud:
@@ -43,3 +48,25 @@ component-catalog:
       base-rest-url: ${BITBUCKET_SERVICE_BASE_REST_URL}
       base-raw-url: ${BITBUCKET_SERVICE_BASE_RAW_URL}
       bearer-token: ${BITBUCKET_SERVICE_BEARER_TOKEN}
+  projects-info-service:
+    service:
+      base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
+
+catalog:
+  user-action:
+    groups-restriction:
+      prefix:
+        - BI-AS-ATLASSIAN
+      suffix:
+        - MANAGER
+        - TEAM
+catalog-item:
+  reference:
+    encoded: P2F0PXJlZnMvaGVhZHMvbWFzdGVy
+provisioner:
+  bitbucket:
+    project-key: ${PROVISIONER_BITBUCKET_PROJECT_KEY}
+    repository-slug: ${PROVISIONER_BITBUCKET_REPOSITORY_SLUG}
+    sub-path: ${PROVISIONER_BITBUCKET_SUB_PATH}
+    sub-path-token: ${PROVISIONER_BITBUCKET_SUB_PATH_TOKEN}
+    branch-name: ${PROVISIONER_BITBUCKET_BRANCH_NAME}
