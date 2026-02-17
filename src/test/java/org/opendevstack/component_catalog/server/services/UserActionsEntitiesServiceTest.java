@@ -9,7 +9,6 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.UserActionEntityMessageType;
 import org.opendevstack.component_catalog.server.services.catalog.business.*;
-import org.opendevstack.component_catalog.server.services.catalog.business.*;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageDefinition;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageTitle;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;

@@ -5,7 +5,6 @@ import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionMessageType;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.mother.*;
-import org.opendevstack.component_catalog.server.mother.*;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityUserActionParameterValidationMother;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityParameter;

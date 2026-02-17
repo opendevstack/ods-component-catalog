@@ -2,7 +2,6 @@ package org.opendevstack.component_catalog.server.mappers;
 
 import org.opendevstack.component_catalog.server.model.*;
 import org.opendevstack.component_catalog.server.services.catalog.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageDefinition;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageTitle;

@@ -4,7 +4,6 @@ import org.opendevstack.component_catalog.server.mother.UserActionEntityMessageD
 import org.opendevstack.component_catalog.server.mother.UserActionEntityMessageTitleMother;
 import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.*;
-import org.opendevstack.component_catalog.server.services.catalog.common.*;
 
 public class UserActionEntityMother {
 

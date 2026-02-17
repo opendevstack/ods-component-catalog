@@ -4,7 +4,6 @@ import org.opendevstack.component_catalog.server.model.CatalogItemUserActionPara
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterValidation;
 import org.opendevstack.component_catalog.server.services.catalog.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityParameter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
