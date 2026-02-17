@@ -8,9 +8,8 @@ COPY app.jar app.jar
 
 USER root
 
-# TODO: error cannot install the best update candidate for package glibc-minimal-langpack-2.34-231.el9_7.2.x86_64
-#RUN microdnf upgrade -y && \
-#    microdnf clean all
+RUN microdnf upgrade -y && \
+    microdnf clean all
 
 RUN JAVA_HOME=${JAVA_HOME:-""} \
     && chown -c 1001:0 $JAVA_HOME/lib/security/cacerts \
