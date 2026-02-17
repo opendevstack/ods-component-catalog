@@ -1,15 +1,16 @@
 # See: README.md for details about setting up your local environment
 logging:
   level:
-    org.springframework: DEBUG
-    org.springframework.security: TRACE
-    com.azure.spring.cloud.autoconfigure: DEBUG
-    com.boehringer.componentcatalog.config: INFO
-    com.boehringer.componentcatalog.server.controllers: DEBUG
-    com.boehringer.componentcatalog.server.api: INFO
-    com.boehringer.componentcatalog.server.mappers: DEBUG
-    com.boehringer.componentcatalog.server.services.BitbucketService: DEBUG
-    com.boehringer.componentcatalog.util: DEBUG
+    org.springframework: INFO
+    org.springframework.security: INFO
+    com.azure.spring.cloud.autoconfigure: INFO
+    org.opendevstack.component_catalog.config: INFO
+    org.opendevstack.component_catalog.server.controllers: INFO
+    org.opendevstack.component_catalog.server.api: INFO
+    org.opendevstack.component_catalog.server.mappers: INFO
+    org.opendevstack.component_catalog.server.services.org.opendevstack.component_catalog.server.services.BitbucketService: INFO
+    org.opendevstack.component_catalog.util: INFO
+    org.opendevstack.component_catalog.server.services.restrictions.evaluators: DEBUG
 management:
   endpoints:
     web:

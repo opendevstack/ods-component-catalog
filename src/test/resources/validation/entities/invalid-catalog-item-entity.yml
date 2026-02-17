@@ -9,7 +9,7 @@ spec:
   userActions:
     - id: "PROVISION"
       displayName: "Provision"
-      url: "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions"
+      url: "https://component-provisioner-devstack-dev.openshift.com/v1/provision-actions"
       messagesTitles:
         - id: "success"
           title: 'Component "${component_id}" has been created in ${project_key}'

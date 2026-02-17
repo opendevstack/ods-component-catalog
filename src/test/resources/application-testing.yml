@@ -3,7 +3,7 @@ server:
   port: 9090
 logging:
   level:
-    org.springframework: DEBUG
+    org.springframework: INFO
 management:
   endpoints:
     web:

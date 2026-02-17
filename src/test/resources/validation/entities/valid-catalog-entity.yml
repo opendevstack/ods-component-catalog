@@ -6,15 +6,15 @@ metadata:
   description: Collection of templates for AppShell and its components
   spec:
     links:
-      - url: https://boehringer.service-now.com/esc?id=sc_cat_item&sys_id=76883a3a1b90a41499bd63546b4bcbc5
+      - url: https://service-now.com/esc?id=sc_cat_item&sys_id=76883a3a1b90a41499bd63546b4bcbc5
         name: Create EDP Project
     tags:
       - Type
       - Technology
       - GXP readiness
     targets:
-      - url: https://bitbucket-dev.biscrum.com/projects/CATSHELL/repos/appshell-in-angular/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
-      - url: https://bitbucket-dev.biscrum.com/projects/CATSHELL/repos/appshell-in-react/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
-      - url: https://bitbucket-dev.biscrum.com/projects/CATSHELL/repos/sso-login/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
-      - url: https://bitbucket-dev.biscrum.com/projects/CATSHELL/repos/notifications/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
-      - url: https://bitbucket-dev.biscrum.com/projects/CATSHELL/repos/user-actions-item/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+      - url: https://bitbucket.com/projects/CATSHELL/repos/appshell-in-angular/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+      - url: https://bitbucket.com/projects/CATSHELL/repos/appshell-in-react/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+      - url: https://bitbucket.com/projects/CATSHELL/repos/sso-login/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+      - url: https://bitbucket.com/projects/CATSHELL/repos/notifications/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions
+      - url: https://bitbucket.com/projects/CATSHELL/repos/user-actions-item/raw/CatalogItem.yaml?at=refs%2Fheads%2Ffeature%2FEPIC-EDPC-3350-enable-marketplace-component-providers-to-define-a-component-s-user-actions

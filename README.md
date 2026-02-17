@@ -16,7 +16,7 @@ For setting up a local development environment, the required steps are:
 4. **(Optional)** Add the required certificates to the JVM truststore
 
 ## 1. Create a Spring Boot launch configuration
-- Go to the main() method for the application: `com.boehringer.componentcatalog.ComponentCatalogApplication.main()`
+- Go to the main() method for the application: `org.opendevstack.component_catalog.ComponentCatalogApplication.main()`
 - Click on its "Play" icon > Modify Run Configuration...
  
 ![cc-backend-run-config-01.png](doc/cc-backend-run-config-01.png)
@@ -70,7 +70,19 @@ This means that no further customization is required regarding those inherited p
 
 Set other properties in the `application-local.yml` file as needed for local development, e.g. debug level, enabled actuators, local server port, etc.
 
-## 4. **(Optional)** Add the required certificates to the JVM truststore
+## 4. Edit secrets in the local Vault server
+To do this you will need both the tailor installation and the oc executable.
+- For the tailor installation: https://github.com/opendevstack/tailor and follow the README
+- For the oc console, download it from the openshift site, click on the question mark next to the user profile link
+- Once everything is set, you can run the following command:
+  `tailor secrets edit devstack-dev.env.enc --private-key="${ROUTE_TO_folderXYZ}/tailor-private.key" --public-key-dir="${ROUTE_TO_folderXYZ}"`
+  notes:
+  - press a to enter in insert mode
+  - do your updates
+  - press esc to exit insert mode
+  - type :wq to save and exit
+
+## 5. **(Optional)** Add the required certificates to the JVM truststore
 Some HTTPS SSL connectivity issues due to missing SSL certificates can be prevented by adding the required certificates to the JVM truststore.
 
 To do that:

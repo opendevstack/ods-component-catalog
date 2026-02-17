@@ -1,3 +1,5 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 buildscript {
     ext {
         springCloudAzureVersion = "5.19.0"
@@ -23,17 +25,18 @@ plugins {
     id 'jacoco'
     id 'maven-publish'
 	id 'java'
-	id 'org.springframework.boot' version '3.4.7'
+	id 'org.springframework.boot' version '3.5.9'
 	id 'io.spring.dependency-management' version '1.1.7'
     id "com.gorylenko.gradle-git-properties" version "2.4.1" // Adds git info on /actuator/info endpoint
+    id "org.openapi.generator" version "7.10.0"
 }
 
-group = 'devstack'
+group = 'opendevstack'
 version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
 
@@ -76,11 +79,10 @@ dependencies {
     implementation 'org.modelmapper:modelmapper:3.2.4'
     implementation 'org.ehcache:ehcache:3.10.8:jakarta'
     implementation 'com.networknt:json-schema-validator:1.5.7'
-    implementation 'org.apache.tika:tika-core:2.9.2'
+    implementation 'org.apache.tika:tika-core:3.2.2'
     implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'org.apache.commons:commons-collections4:4.5.0'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
-    implementation 'nl.basjes.codeowners:codeowners-reader:1.9.0'
 
     // Development dependencies
     implementation 'org.projectlombok:lombok'
@@ -129,6 +131,141 @@ bootJar {
 jacocoTestReport {
     reports {
         xml.required = true
+    }
+}
+
+openApiGenerate {
+    generatorName = "spring"
+    outputDir = "$projectDir/target/generated-sources/openapi-server-component_catalog"
+    inputSpec = "$projectDir/openapi/openapi-component_catalog-v1.0.0.yaml"
+    library = "spring-boot"
+
+    globalProperties = [
+            generateAliasAsModel: "true",
+            apiDocs             : "true",
+            modelDocs           : "true",
+            apiTests            : "true",
+            modelTests          : "true"
+    ]
+
+    additionalProperties = [
+            useTags              : "true",
+            interfaceOnly        : "true",
+            groupId              : "component_catalog",
+            artifactId           : "component_catalog-v0-server",
+            artifactVersion      : "0.0.0-SNAPSHOT",
+            apiPackage           : "org.opendevstack.component_catalog.server.api",
+            modelPackage         : "org.opendevstack.component_catalog.server.model",
+            configPackage        : "org.opendevstack.component_catalog.config",
+            documentationProvider: "springdoc",
+            generateBuilders     : "true",
+            useSpringBoot3       : "true",
+            useSpringController  : "true",
+            useSwaggerUI         : "true",
+            hideGenerationTimestamp: "true"
+    ]
+}
+
+tasks.register("openApiGenerateBitbucketClient", GenerateTask) {
+    generatorName = "java"
+    outputDir = "$projectDir/target/generated-sources/openapi-client-bitbucket"
+    inputSpec = "$projectDir/openapi/openapi-bitbucket-v89.yaml"
+    library = "resttemplate"
+
+    // Type and import mappings
+    typeMappings.put("string+byte", "Resource")
+    importMappings.put("Resource", "org.springframework.core.io.Resource")
+
+    globalProperties = [
+            generateAliasAsModel: "true",
+            apiDocs             : "true",
+            modelDocs           : "true",
+            apiTests            : "false",
+            modelTests          : "false"
+    ]
+
+    additionalProperties = [
+            serializableModel               : "true",
+            useJakartaEe                    : "true",
+            java8                           : "true",
+            groupId                         : "bitbucket",
+            artifactId                      : "bitbucket-v89-client",
+            artifactVersion                 : "0.0.0-SNAPSHOT",
+            invokerPackage                  : "org.opendevstack.component_catalog.client.bitbucket.v89",
+            apiPackage                      : "org.opendevstack.component_catalog.client.bitbucket.v89.api",
+            modelPackage                    : "org.opendevstack.component_catalog.client.bitbucket.v89.model",
+            additionalModelTypeAnnotations  : "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            generateBuilders                : "true",
+            generateClientAsBean            : "true",
+            useSingleRequestParameter       : "true",
+            hideGenerationTimestamp         : "true"
+    ]
+}
+
+tasks.register("openApiGenerateProjectInfoServicesClient", GenerateTask) {
+    generatorName = "java"
+    outputDir = "$projectDir/target/generated-sources/openapi-client-projects-info-service"
+    inputSpec = "$projectDir/openapi/openapi-projects-info-service-v1.0.0.yaml"
+    library = "resttemplate"
+
+    // Type and import mappings
+    typeMappings.put("string+byte", "Resource")
+    importMappings.put("Resource", "org.springframework.core.io.Resource")
+
+    globalProperties = [
+            generateAliasAsModel: "true",
+            apiDocs             : "true",
+            modelDocs           : "true",
+            apiTests            : "false",
+            modelTests          : "false"
+    ]
+
+    additionalProperties = [
+            serializableModel               : "true",
+            useJakartaEe                    : "true",
+            java8                           : "true",
+            groupId                         : "bitbucket",
+            artifactId                      : "bitbucket-v89-client",
+            artifactVersion                 : "0.0.0-SNAPSHOT",
+            invokerPackage                  : "org.opendevstack.component_catalog.client.projects_info_service.v1_0_0",
+            apiPackage                      : "org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.api",
+            modelPackage                    : "org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model",
+            additionalModelTypeAnnotations  : "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            generateBuilders                : "true",
+            generateClientAsBean            : "true",
+            useSingleRequestParameter       : "true",
+            hideGenerationTimestamp         : "true"
+    ]
+}
+
+// Ensure code generation runs before Java compilation
+tasks.named("compileJava") {
+    dependsOn(
+            tasks.named("openApiGenerate"),
+            tasks.named("openApiGenerateBitbucketClient"),
+            tasks.named("openApiGenerateProjectInfoServicesClient")
+    )
+}
+
+tasks.named("clean").configure {
+    doLast {
+        delete("$projectDir/target")
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [
+                    "src/main/java",
+                    "$projectDir/target/generated-sources/openapi-server-component_catalog/src/main/java",
+                    "$projectDir/target/generated-sources/openapi-client-bitbucket/src/main/java",
+                    "$projectDir/target/generated-sources/openapi-client-projects-info-service/src/main/java"
+            ]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
     }
 }
 
