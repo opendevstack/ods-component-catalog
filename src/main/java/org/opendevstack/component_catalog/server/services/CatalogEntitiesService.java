@@ -216,7 +216,10 @@ public class CatalogEntitiesService {
 
             CodeOwnersContainer codeOwners = new CodeOwnersContainer(contributorsStr);
 
-            return codeOwners.getCodeOwners();
+            var codeOwnersList = codeOwners.getCodeOwners();
+
+            log.debug("CodeOwners extracted: {}", codeOwnersList);
+            return codeOwnersList;
 
         } catch (RuntimeException e) {
             log.error("Error while parsing contributors from codeowners file: {}", contributorsStr, e);
