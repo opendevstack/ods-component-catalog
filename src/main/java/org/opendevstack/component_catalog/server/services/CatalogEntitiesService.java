@@ -13,7 +13,7 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
-import org.opendevstack.component_catalog.server.services.codeowners.CodeOwners;
+import org.opendevstack.component_catalog.server.services.codeowners.CodeOwnersContainer;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.util.Either;
@@ -214,9 +214,12 @@ public class CatalogEntitiesService {
                 return List.of();
             }
 
-            CodeOwners codeOwners = new CodeOwners(contributorsStr);
+            CodeOwnersContainer codeOwners = new CodeOwnersContainer(contributorsStr);
 
-            return codeOwners.getCodeOwners();
+            var codeOwnersList = codeOwners.getCodeOwners();
+
+            log.debug("CodeOwners extracted: {}", codeOwnersList);
+            return codeOwnersList;
 
         } catch (RuntimeException e) {
             log.error("Error while parsing contributors from codeowners file: {}", contributorsStr, e);

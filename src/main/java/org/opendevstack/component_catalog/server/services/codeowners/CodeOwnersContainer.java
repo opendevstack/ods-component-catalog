@@ -6,17 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Slf4j
-public class CodeOwners {
+public class CodeOwnersContainer {
     @Getter
     private List<String> codeOwners;
 
-    public CodeOwners(String baseText) {
+    public CodeOwnersContainer(String baseText) {
         populateCodeOwners(baseText);
     }
 
@@ -27,12 +26,24 @@ public class CodeOwners {
         BufferedReader reader = new BufferedReader(new StringReader(baseText));
         String line;
         while ((line = reader.readLine()) != null) {
-            Set<String> codeOwners = extract(line);
+            Set<String> codeOwnersLine = extract(line);
 
-            codeOwnersSet.addAll(codeOwners);
+            codeOwnersSet.addAll(codeOwnersLine);
         }
 
-        this.codeOwners = new ArrayList<>(codeOwnersSet);
+        this.codeOwners = codeOwnersSet.stream()
+                .map(this::removeEmailSuffix)
+                .toList();
+    }
+
+    private String removeEmailSuffix(String email) {
+        if (email.startsWith("@")) {
+            email = email.substring(1);
+        }
+
+        var emailParts = email.split("@");
+
+        return emailParts[0];
     }
 
     private Set<String> extract(String baseTextLine) {
