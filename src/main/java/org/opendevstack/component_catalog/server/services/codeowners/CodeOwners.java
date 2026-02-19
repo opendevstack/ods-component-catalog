@@ -14,7 +14,7 @@ import java.util.Set;
 @Slf4j
 public class CodeOwners {
     @Getter
-    private List<String> codeOwners;
+    private List<String> codeOwnersList;
 
     public CodeOwners(String baseText) {
         populateCodeOwners(baseText);
@@ -32,7 +32,7 @@ public class CodeOwners {
             codeOwnersSet.addAll(codeOwners);
         }
 
-        this.codeOwners = new ArrayList<>(codeOwnersSet);
+        this.codeOwnersList = new ArrayList<>(codeOwnersSet);
     }
 
     private Set<String> extract(String baseTextLine) {
