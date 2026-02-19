@@ -46,8 +46,8 @@ class CatalogEntitiesServiceTest {
         var result = catalogEntitiesService.getCatalogEntity(id);
 
         // Then
-        assertThat(result).isPresent();
-        assertThat(result).contains(catalogEntity);
+        assertThat(result).isPresent()
+                .contains(catalogEntity);
     }
 
     @Test
@@ -90,9 +90,13 @@ class CatalogEntitiesServiceTest {
         // Given
         var metadata = CatalogItemEntityMetadataMother.of();
         var pathAt = mock(BitbucketPathAt.class);
-        var firstUserEmail = "any.user@my-domain.com";
-        var secondUserEmail = "another.user@example.com";
-        var thirdUserEmail = "third.user@free-domain.com";
+        var firstUserEmailName = "any.user";
+        var secondUserEmailName = "another.user";
+        var thirdUserEmailName = "third.user";
+
+        var firstUserEmail = firstUserEmailName + "@my-domain.com";
+        var secondUserEmail = secondUserEmailName + "@example.com";
+        var thirdUserEmail = thirdUserEmailName + "@free-domain.com";
         var baseText = "** " + firstUserEmail + System.lineSeparator()
                 + ".gitignore " + secondUserEmail + System.lineSeparator()
                 + "* " + secondUserEmail + " " + firstUserEmail + " " + thirdUserEmail;
@@ -109,6 +113,6 @@ class CatalogEntitiesServiceTest {
         // Then
         assertThat(codeowners).isNotEmpty();
         assertThat(codeowners.get()).hasSize(3);
-        assertThat(codeowners.get()).containsAll(List.of(firstUserEmail, secondUserEmail, thirdUserEmail));
+        assertThat(codeowners.get()).containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
     }
 }
