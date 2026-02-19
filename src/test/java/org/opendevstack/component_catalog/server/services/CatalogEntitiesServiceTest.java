@@ -46,7 +46,8 @@ class CatalogEntitiesServiceTest {
         var result = catalogEntitiesService.getCatalogEntity(id);
 
         // Then
-        assertThat(result).isPresent()
+        assertThat(result)
+                .isPresent()
                 .contains(catalogEntity);
     }
 
