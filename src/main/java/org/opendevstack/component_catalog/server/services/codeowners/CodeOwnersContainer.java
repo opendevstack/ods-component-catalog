@@ -37,6 +37,10 @@ public class CodeOwnersContainer {
     }
 
     private String removeEmailSuffix(String email) {
+        if (email.startsWith("@")) {
+            email = email.substring(1);
+        }
+
         var emailParts = email.split("@");
 
         return emailParts[0];

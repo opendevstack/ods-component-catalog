@@ -97,7 +97,7 @@ class CatalogEntitiesServiceTest {
 
         var firstUserEmail = firstUserEmailName + "@my-domain.com";
         var secondUserEmail = secondUserEmailName + "@example.com";
-        var thirdUserEmail = thirdUserEmailName + "@free-domain.com";
+        var thirdUserEmail = "@" + thirdUserEmailName + "@free-domain.com";
         var baseText = "** " + firstUserEmail + System.lineSeparator()
                 + ".gitignore " + secondUserEmail + System.lineSeparator()
                 + "* " + secondUserEmail + " " + firstUserEmail + " " + thirdUserEmail;
