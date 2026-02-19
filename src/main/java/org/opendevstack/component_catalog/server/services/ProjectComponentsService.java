@@ -1,14 +1,14 @@
 package org.opendevstack.component_catalog.server.services;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidCatalogItemIdStructureException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -26,10 +26,10 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents addNewComponent(ProjectComponents projectComponents,
-                                                String componentId,
-                                                String catalogItemId,
-                                                Status status,
-                                                String componentUrl) {
+                                             String componentId,
+                                             String catalogItemId,
+                                             Status status,
+                                             String componentUrl) {
         var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
         var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
 
@@ -56,50 +56,47 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents updateExistingComponent(ProjectComponents projectComponents,
-                                                        String componentId,
-                                                        String catalogItemId,
-                                                        Status status,
-                                                        String componentUrl) {
-        var componentAlreadyExists = projectComponents.getComponents().containsKey(componentId);
-
-        if (componentAlreadyExists) {
-            var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
-            var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
-            Map<String, ProjectComponent> componentsMap = new HashMap<>();
-
-            projectComponents.getComponents().forEach((key, value) -> {
-                if (key.equals(componentId)) {
-                    if (value.getCatalogItemId().equals(catalogItemIdWithoutBranch)) {
-                        ProjectComponent pc = ProjectComponent.builder()
-                                .componentId(value.getComponentId())
-                                .catalogItemId(value.getCatalogItemId())
-                                .status(status)
-                                .catalogItemRef(branchReference)
-                                .componentUrl(StringUtils.isBlank(componentUrl) ? value.getComponentUrl() : componentUrl)
-                                .build();
-                        componentsMap.put(key, pc);
-                    } else {
-                        componentsMap.put(key, value);
-                    }
-                } else {
-                    componentsMap.put(key, value);
-                }
-            });
-
-            return ProjectComponents.builder()
-                    .components(componentsMap)
-                    .build();
-        } else {
-            throw new InvalidComponentStateException("Component with id " + componentId + " does not exist");
-        }
-    }
-
-    @SneakyThrows
-    public ProjectComponents updatePartiallyExistingComponent(ProjectComponents projectComponents,
                                                      String componentId,
                                                      String catalogItemId,
                                                      Status status,
                                                      String componentUrl) {
+
+        Map<String, ProjectComponent> components = projectComponents.getComponents();
+
+        if (!components.containsKey(componentId)) {
+            throw new InvalidComponentStateException("Component with id " + componentId + " does not exist");
+        }
+
+        var existing = components.get(componentId);
+        var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
+        var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
+
+        if (!existing.getCatalogItemId().equals(catalogItemIdWithoutBranch)) {
+            return projectComponents;
+        }
+
+        ProjectComponent updated = ProjectComponent.builder()
+                .componentId(existing.getComponentId())
+                .catalogItemId(existing.getCatalogItemId())
+                .status(status)
+                .catalogItemRef(branchReference)
+                .componentUrl(StringUtils.isBlank(componentUrl) ? existing.getComponentUrl() : componentUrl)
+                .build();
+
+        Map<String, ProjectComponent> updatedMap = new HashMap<>(components);
+        updatedMap.put(componentId, updated);
+
+        return ProjectComponents.builder()
+                .components(updatedMap)
+                .build();
+    }
+
+    @SneakyThrows
+    public ProjectComponents updatePartiallyExistingComponent(ProjectComponents projectComponents,
+                                                              String componentId,
+                                                              String catalogItemId,
+                                                              Status status,
+                                                              String componentUrl) {
         var projectComponent = projectComponents.getComponents().get(componentId);
 
         if (projectComponent != null) {
