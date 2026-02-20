@@ -115,47 +115,44 @@ public class CodeownersCommentStripper {
     private static String stripInlineCommentPreserveFormat(String line) {
         StringBuilder sb = new StringBuilder(line.length());
         int pendingBackslashes = 0;
+        boolean stop = false;
 
-        for (int i = 0; i < line.length(); i++) {
+        for (int i = 0; i < line.length() && !stop; i++) {
             char ch = line.charAt(i);
 
             if (ch == '\\') {
-                //Accumulate the contiguous backslashes
                 pendingBackslashes++;
-                continue;
-            }
+                // no continue
+            } else if (ch == '#') {
+                boolean escaped = (pendingBackslashes & 1) == 1;
 
-            if (ch == '#') {
-                if ((pendingBackslashes & 1) == 1) {
-                    // '#' escapado: writes (n-1) backslashes
+                if (escaped) {
                     if (pendingBackslashes > 1) {
                         sb.append("\\".repeat(pendingBackslashes - 1));
                     }
                     sb.append('#');
                     pendingBackslashes = 0;
-                    continue;
                 } else {
-                    // '#' not escaped: end of useful content
-                    // Writes all pending backslashes (even quantity) before ending
+                    // '#' not escaped → end
                     if (pendingBackslashes > 0) {
                         sb.append("\\".repeat(pendingBackslashes));
                     }
-                    pendingBackslashes = 0; // Restart the count
-                    break; // End here without including '#'
+                    pendingBackslashes = 0;
+                    stop = true;
                 }
-            }
 
-            // Any other caracter: empty pending backslashes
-            if (pendingBackslashes > 0) {
-                sb.append("\\".repeat(pendingBackslashes));
-                pendingBackslashes = 0;
+            } else {
+                // normal character
+                if (pendingBackslashes > 0) {
+                    sb.append("\\".repeat(pendingBackslashes));
+                    pendingBackslashes = 0;
+                }
+                sb.append(ch);
             }
-
-            sb.append(ch);
         }
 
-        // At the end, if there are pending backslashes, write them
-        if (pendingBackslashes > 0) {
+        // reach the end without finding a '#' not escaped
+        if (!stop && pendingBackslashes > 0) {
             sb.append("\\".repeat(pendingBackslashes));
         }
 
