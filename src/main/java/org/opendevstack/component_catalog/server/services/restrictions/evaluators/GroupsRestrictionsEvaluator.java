@@ -26,12 +26,15 @@ public class GroupsRestrictionsEvaluator implements RestrictionsEvaluator {
         return restrictions.getGroups() != null
                 && params.getUserGroups() != null
                 && restrictions.getGroups().getPrefix() != null
-                && restrictions.getGroups().getSuffix() != null;
+                && restrictions.getGroups().getSuffix() != null
+                && params.getProjectKey() != null;
     }
 
     private boolean evaluateConditions(UserActionEntityRestrictions restrictions, RestrictionsParams params) {
         return params.getUserGroups().stream().anyMatch(group ->
                 restrictions.getGroups().getPrefix().stream().anyMatch(group::startsWith) &&
-                        restrictions.getGroups().getSuffix().stream().anyMatch(group::endsWith));
+                restrictions.getGroups().getSuffix().stream().anyMatch(group::endsWith) &&
+                group.contains(params.getProjectKey())
+        );
     }
 }
