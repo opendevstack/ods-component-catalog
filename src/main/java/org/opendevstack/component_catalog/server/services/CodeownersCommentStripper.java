@@ -105,55 +105,52 @@ public class CodeownersCommentStripper {
         return -1;
     }
 
-    /**
-     * Returns the line with inline comment removed, preserving leading whitespace
-     * and internal spacing up to the first unescaped '#'.
-     * If the '#' is escaped (preceded by an odd number of backslashes), it is kept
-     * as a literal and one backslash is consumed.
-     * Trailing spaces before the comment marker are preserved.
-     */
     private static String stripInlineCommentPreserveFormat(String line) {
         StringBuilder sb = new StringBuilder(line.length());
-        int pendingBackslashes = 0;
-        boolean stop = false;
+        int pending = 0;
+        boolean commentStarted = false;
 
-        for (int i = 0; i < line.length() && !stop; i++) {
+        for (int i = 0; i < line.length() && !commentStarted; i++) {
             char ch = line.charAt(i);
 
-            if (ch == '\\') {
-                pendingBackslashes++;
-                // no continue
-            } else if (ch == '#') {
-                boolean escaped = (pendingBackslashes & 1) == 1;
+            switch (ch) {
+                case '\\':
+                    pending++;
+                    break;
 
-                if (escaped) {
-                    if (pendingBackslashes > 1) {
-                        sb.append("\\".repeat(pendingBackslashes - 1));
-                    }
-                    sb.append('#');
-                    pendingBackslashes = 0;
-                } else {
-                    // '#' not escaped → end
-                    if (pendingBackslashes > 0) {
-                        sb.append("\\".repeat(pendingBackslashes));
-                    }
-                    pendingBackslashes = 0;
-                    stop = true;
-                }
+                case '#':
+                    boolean escaped = (pending & 1) == 1;
 
-            } else {
-                // normal character
-                if (pendingBackslashes > 0) {
-                    sb.append("\\".repeat(pendingBackslashes));
-                    pendingBackslashes = 0;
-                }
-                sb.append(ch);
+                    if (escaped) {
+                        // Emit (n-1) backslashes + '#'
+                        if (pending > 1) {
+                            sb.append("\\".repeat(pending - 1));
+                        }
+                        sb.append('#');
+                    } else {
+                        // End of useful content – emit pending and stop
+                        if (pending > 0) {
+                            sb.append("\\".repeat(pending));
+                        }
+                        commentStarted = true;
+                    }
+                    pending = 0;
+                    break;
+
+                default:
+                    // Normal char: flush backslashes, then char
+                    if (pending > 0) {
+                        sb.append("\\".repeat(pending));
+                        pending = 0;
+                    }
+                    sb.append(ch);
+                    break;
             }
         }
 
-        // reach the end without finding a '#' not escaped
-        if (!stop && pendingBackslashes > 0) {
-            sb.append("\\".repeat(pendingBackslashes));
+        // If the loop ended without hitting an unescaped '#'
+        if (!commentStarted && pending > 0) {
+            sb.append("\\".repeat(pending));
         }
 
         return sb.toString();
