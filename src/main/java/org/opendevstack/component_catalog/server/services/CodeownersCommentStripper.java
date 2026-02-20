@@ -5,13 +5,16 @@ import java.util.List;
 
 public class CodeownersCommentStripper {
 
+    private CodeownersCommentStripper() {
+    }
+
     // --- existing methods (strip(List<String>), helpers, etc.) stay unchanged ---
 
     /**
      * Strips comments from a CODEOWNERS file content provided as a single String.
      * Preserves:
-     *   - original line separators (LF, CRLF, or CR)
-     *   - blank lines
+     * - original line separators (LF, CRLF, or CR)
+     * - blank lines
      *
      * @param content CODEOWNERS file content as one full string
      * @return same content with full-line and inline comments removed
@@ -100,7 +103,7 @@ public class CodeownersCommentStripper {
      * odd number of backslashes), it is treated as literal and kept (one backslash is consumed).
      * Trailing spaces right before the comment marker are preserved (we only cut at the marker).
      */
-    private static String stripInlineCommentPreserveFormat(String line) {
+    private static String stripInlineCommentPreserveFormat2(String line) {
         StringBuilder sb = new StringBuilder(line.length());
         int i = 0;
         while (i < line.length()) {
@@ -135,6 +138,63 @@ public class CodeownersCommentStripper {
             sb.append(ch);
             i++;
         }
+        return sb.toString();
+    }
+
+    /**
+     * Returns the line with inline comment removed, preserving leading whitespace
+     * and internal spacing up to the first unescaped '#'.
+     * If the '#' is escaped (preceded by an odd number of backslashes), it is kept
+     * as a literal and one backslash is consumed.
+     * Trailing spaces before the comment marker are preserved.
+     */
+    private static String stripInlineCommentPreserveFormat(String line) {
+        StringBuilder sb = new StringBuilder(line.length());
+        int pendingBackslashes = 0;
+
+        for (int i = 0; i < line.length(); i++) {
+            char ch = line.charAt(i);
+
+            if (ch == '\\') {
+                // Acumula la racha de backslashes
+                pendingBackslashes++;
+                continue;
+            }
+
+            if (ch == '#') {
+                if ((pendingBackslashes & 1) == 1) {
+                    // '#' escapado: emite (n-1) backslashes y el '#'
+                    if (pendingBackslashes > 1) {
+                        sb.append("\\".repeat(pendingBackslashes - 1));
+                    }
+                    sb.append('#');
+                    pendingBackslashes = 0;
+                    continue;
+                } else {
+                    // '#' no escapado: fin del contenido útil
+                    // Emite los backslashes pendientes (pares) antes de cortar
+                    if (pendingBackslashes > 0) {
+                        sb.append("\\".repeat(pendingBackslashes));
+                    }
+                    pendingBackslashes = 0; // ← FIX CRÍTICO
+                    break; // Cortar aquí sin incluir '#'
+                }
+            }
+
+            // Cualquier otro carácter: primero vacía los backslashes pendientes
+            if (pendingBackslashes > 0) {
+                sb.append("\\".repeat(pendingBackslashes));
+                pendingBackslashes = 0;
+            }
+
+            sb.append(ch);
+        }
+
+        // Al final, si quedan backslashes pendientes, emítelos
+        if (pendingBackslashes > 0) {
+            sb.append("\\".repeat(pendingBackslashes));
+        }
+
         return sb.toString();
     }
 }
