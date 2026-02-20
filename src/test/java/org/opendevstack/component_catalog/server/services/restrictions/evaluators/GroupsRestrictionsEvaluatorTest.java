@@ -22,7 +22,8 @@ class GroupsRestrictionsEvaluatorTest {
 
         CatalogItemUserActionGroupsRestriction groupsRestriction = CatalogItemUserActionGroupsRestrictionMother.of();
         UserActionEntityRestrictions restrictions = UserActionEntityRestrictionsMother.of(groupsRestriction);
-        RestrictionsParams params = RestrictionsParamsMother.of(List.of("prefix-1-group-1-suffix-2"));
+        RestrictionsParams params = RestrictionsParamsMother.of(List.of("prefix-1-projectKey-suffix-2"));
+        params.setProjectKey(projectKey);
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // When
@@ -30,6 +31,23 @@ class GroupsRestrictionsEvaluatorTest {
 
         // Then
         assertThat(evaluateResult.getLeft()).isTrue();
+    }
+
+    @Test
+    void givenValidRestrictions_AndInValidParams_whenEvaluate_ThenEvaluationNotPass_AndReturnFalse() {
+        // Given
+        var projectKey = "projectKey";
+
+        CatalogItemUserActionGroupsRestriction groupsRestriction = CatalogItemUserActionGroupsRestrictionMother.of();
+        UserActionEntityRestrictions restrictions = UserActionEntityRestrictionsMother.of(groupsRestriction);
+        RestrictionsParams params = RestrictionsParamsMother.of(List.of("prefix-1-group-1-suffix-2"));
+        var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
+
+        // When
+        Pair<Boolean, String> evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+
+        // Then
+        assertThat(evaluateResult.getLeft()).isFalse();
     }
 
     @Test
