@@ -219,11 +219,15 @@ class CodeownersCommentStripperTest {
     void givenEscapedHashInString_whenStrip_thenLiteralHashIsPreserved() {
         // given
         String input =
-                "scripts/**   @devops/ci     \\#not-a-comment  # real comment\n" +
-                        "frontend/**  @web/ux   # UX owns frontend\n";
+                """
+                        scripts/**   @devops/ci     \\#not-a-comment  # real comment
+                        frontend/**  @web/ux   # UX owns frontend
+                        """;
         String expected =
-                "scripts/**   @devops/ci     #not-a-comment  \n" +
-                        "frontend/**  @web/ux   \n";
+                """
+                        scripts/**   @devops/ci     #not-a-comment \s
+                        frontend/**  @web/ux  \s
+                        """;
 
         // when
         String out = CodeownersCommentStripper.strip(input);

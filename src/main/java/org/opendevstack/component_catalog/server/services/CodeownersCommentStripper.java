@@ -1,8 +1,11 @@
 package org.opendevstack.component_catalog.server.services;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class CodeownersCommentStripper {
 
     private CodeownersCommentStripper() {
@@ -44,29 +47,34 @@ public class CodeownersCommentStripper {
      */
     public static List<String> strip(List<String> lines) {
         List<String> out = new ArrayList<>(lines.size());
+
         for (String line : lines) {
-            if (line.isEmpty()) { // preserve blank lines
-                out.add(line);
-                continue;
+
+            String result = null;
+
+            if (line.isEmpty()) {
+                result = line;
+
+            } else {
+                int firstNonWs = firstNonWhitespaceIndex(line);
+
+                if (firstNonWs == -1) {
+                    result = line;
+
+                } else if (line.charAt(firstNonWs) == '#') {
+                    // Full line comment -> Do nothing
+                    log.debug("strip - full line comment, do nothing");
+
+                } else {
+                    result = stripInlineCommentPreserveFormat(line);
+                }
             }
 
-            // Check for full-line comment (after leading whitespace)
-            int firstNonWs = firstNonWhitespaceIndex(line);
-            if (firstNonWs == -1) { // line is all whitespace: preserve it
-                out.add(line);
-                continue;
+            if (result != null) {
+                out.add(result);
             }
-            if (line.charAt(firstNonWs) == '#') {
-                // Drop full-line comment completely
-                continue;
-            }
-
-            // Strip inline comments, respecting escaped '#'
-            String withoutInline = stripInlineCommentPreserveFormat(line);
-
-            // If after stripping the line becomes only whitespace, preserve it as whitespace
-            out.add(withoutInline);
         }
+
         return out;
     }
 
@@ -112,14 +120,14 @@ public class CodeownersCommentStripper {
             char ch = line.charAt(i);
 
             if (ch == '\\') {
-                // Acumula la racha de backslashes
+                //Accumulate the contiguous backslashes
                 pendingBackslashes++;
                 continue;
             }
 
             if (ch == '#') {
                 if ((pendingBackslashes & 1) == 1) {
-                    // '#' escapado: emite (n-1) backslashes y el '#'
+                    // '#' escapado: writes (n-1) backslashes
                     if (pendingBackslashes > 1) {
                         sb.append("\\".repeat(pendingBackslashes - 1));
                     }
@@ -127,17 +135,17 @@ public class CodeownersCommentStripper {
                     pendingBackslashes = 0;
                     continue;
                 } else {
-                    // '#' no escapado: fin del contenido útil
-                    // Emite los backslashes pendientes (pares) antes de cortar
+                    // '#' not escaped: end of useful content
+                    // Writes all pending backslashes (even quantity) before ending
                     if (pendingBackslashes > 0) {
                         sb.append("\\".repeat(pendingBackslashes));
                     }
-                    pendingBackslashes = 0; // ← FIX CRÍTICO
-                    break; // Cortar aquí sin incluir '#'
+                    pendingBackslashes = 0; // Restart the count
+                    break; // End here without including '#'
                 }
             }
 
-            // Cualquier otro carácter: primero vacía los backslashes pendientes
+            // Any other caracter: empty pending backslashes
             if (pendingBackslashes > 0) {
                 sb.append("\\".repeat(pendingBackslashes));
                 pendingBackslashes = 0;
@@ -146,7 +154,7 @@ public class CodeownersCommentStripper {
             sb.append(ch);
         }
 
-        // Al final, si quedan backslashes pendientes, emítelos
+        // At the end, if there are pending backslashes, write them
         if (pendingBackslashes > 0) {
             sb.append("\\".repeat(pendingBackslashes));
         }
