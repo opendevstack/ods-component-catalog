@@ -1,17 +1,23 @@
 package org.opendevstack.component_catalog.server.services;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class CodeownersCommentStripper {
+
+    private CodeownersCommentStripper() {
+    }
 
     // --- existing methods (strip(List<String>), helpers, etc.) stay unchanged ---
 
     /**
      * Strips comments from a CODEOWNERS file content provided as a single String.
      * Preserves:
-     *   - original line separators (LF, CRLF, or CR)
-     *   - blank lines
+     * - original line separators (LF, CRLF, or CR)
+     * - blank lines
      *
      * @param content CODEOWNERS file content as one full string
      * @return same content with full-line and inline comments removed
@@ -41,29 +47,34 @@ public class CodeownersCommentStripper {
      */
     public static List<String> strip(List<String> lines) {
         List<String> out = new ArrayList<>(lines.size());
+
         for (String line : lines) {
-            if (line.isEmpty()) { // preserve blank lines
-                out.add(line);
-                continue;
+
+            String result = null;
+
+            if (line.isEmpty()) {
+                result = line;
+
+            } else {
+                int firstNonWs = firstNonWhitespaceIndex(line);
+
+                if (firstNonWs == -1) {
+                    result = line;
+
+                } else if (line.charAt(firstNonWs) == '#') {
+                    // Full line comment -> Do nothing
+                    log.debug("strip - full line comment, do nothing");
+
+                } else {
+                    result = stripInlineCommentPreserveFormat(line);
+                }
             }
 
-            // Check for full-line comment (after leading whitespace)
-            int firstNonWs = firstNonWhitespaceIndex(line);
-            if (firstNonWs == -1) { // line is all whitespace: preserve it
-                out.add(line);
-                continue;
+            if (result != null) {
+                out.add(result);
             }
-            if (line.charAt(firstNonWs) == '#') {
-                // Drop full-line comment completely
-                continue;
-            }
-
-            // Strip inline comments, respecting escaped '#'
-            String withoutInline = stripInlineCommentPreserveFormat(line);
-
-            // If after stripping the line becomes only whitespace, preserve it as whitespace
-            out.add(withoutInline);
         }
+
         return out;
     }
 
@@ -96,45 +107,55 @@ public class CodeownersCommentStripper {
 
     /**
      * Returns the line with inline comment removed, preserving leading whitespace
-     * and internal spacing up to the first unescaped '#'. If the '#' is escaped (i.e., preceded by an
-     * odd number of backslashes), it is treated as literal and kept (one backslash is consumed).
-     * Trailing spaces right before the comment marker are preserved (we only cut at the marker).
+     * and internal spacing up to the first unescaped '#'.
+     * If the '#' is escaped (preceded by an odd number of backslashes), it is kept
+     * as a literal and one backslash is consumed.
+     * Trailing spaces before the comment marker are preserved.
      */
     private static String stripInlineCommentPreserveFormat(String line) {
         StringBuilder sb = new StringBuilder(line.length());
-        int i = 0;
-        while (i < line.length()) {
+        int pendingBackslashes = 0;
+        boolean stop = false;
+
+        for (int i = 0; i < line.length() && !stop; i++) {
             char ch = line.charAt(i);
-            if (ch == '#') {
-                // count consecutive backslashes immediately before '#'
-                int backslashCount = 0;
-                int j = i - 1;
-                while (j >= 0 && line.charAt(j) == '\\') {
-                    backslashCount++;
-                    j--;
-                }
-                boolean escaped = (backslashCount % 2 == 1);
+
+            if (ch == '\\') {
+                pendingBackslashes++;
+                // no continue
+            } else if (ch == '#') {
+                boolean escaped = (pendingBackslashes & 1) == 1;
+
                 if (escaped) {
-                    // remove one escaping backslash and keep '#'
-                    // We need to replace the last '\' with nothing, then add '#'
-                    // Copy content up to (but not including) that last backslash,
-                    // but since we're streaming, we effectively drop one backslash.
-                    // Implementation detail: remove the last char if it's '\'
-                    int lastIndex = sb.length() - 1;
-                    if (lastIndex >= 0 && sb.charAt(lastIndex) == '\\') {
-                        sb.deleteCharAt(lastIndex);
+                    if (pendingBackslashes > 1) {
+                        sb.append("\\".repeat(pendingBackslashes - 1));
                     }
                     sb.append('#');
-                    i++;
-                    continue;
+                    pendingBackslashes = 0;
                 } else {
-                    // unescaped -> start of inline comment: cut here
-                    break;
+                    // '#' not escaped → end
+                    if (pendingBackslashes > 0) {
+                        sb.append("\\".repeat(pendingBackslashes));
+                    }
+                    pendingBackslashes = 0;
+                    stop = true;
                 }
+
+            } else {
+                // normal character
+                if (pendingBackslashes > 0) {
+                    sb.append("\\".repeat(pendingBackslashes));
+                    pendingBackslashes = 0;
+                }
+                sb.append(ch);
             }
-            sb.append(ch);
-            i++;
         }
+
+        // reach the end without finding a '#' not escaped
+        if (!stop && pendingBackslashes > 0) {
+            sb.append("\\".repeat(pendingBackslashes));
+        }
+
         return sb.toString();
     }
 }
