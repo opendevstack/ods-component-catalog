@@ -99,50 +99,6 @@ public class CodeownersCommentStripper {
 
     /**
      * Returns the line with inline comment removed, preserving leading whitespace
-     * and internal spacing up to the first unescaped '#'. If the '#' is escaped (i.e., preceded by an
-     * odd number of backslashes), it is treated as literal and kept (one backslash is consumed).
-     * Trailing spaces right before the comment marker are preserved (we only cut at the marker).
-     */
-    private static String stripInlineCommentPreserveFormat2(String line) {
-        StringBuilder sb = new StringBuilder(line.length());
-        int i = 0;
-        while (i < line.length()) {
-            char ch = line.charAt(i);
-            if (ch == '#') {
-                // count consecutive backslashes immediately before '#'
-                int backslashCount = 0;
-                int j = i - 1;
-                while (j >= 0 && line.charAt(j) == '\\') {
-                    backslashCount++;
-                    j--;
-                }
-                boolean escaped = (backslashCount % 2 == 1);
-                if (escaped) {
-                    // remove one escaping backslash and keep '#'
-                    // We need to replace the last '\' with nothing, then add '#'
-                    // Copy content up to (but not including) that last backslash,
-                    // but since we're streaming, we effectively drop one backslash.
-                    // Implementation detail: remove the last char if it's '\'
-                    int lastIndex = sb.length() - 1;
-                    if (lastIndex >= 0 && sb.charAt(lastIndex) == '\\') {
-                        sb.deleteCharAt(lastIndex);
-                    }
-                    sb.append('#');
-                    i++;
-                    continue;
-                } else {
-                    // unescaped -> start of inline comment: cut here
-                    break;
-                }
-            }
-            sb.append(ch);
-            i++;
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Returns the line with inline comment removed, preserving leading whitespace
      * and internal spacing up to the first unescaped '#'.
      * If the '#' is escaped (preceded by an odd number of backslashes), it is kept
      * as a literal and one backslash is consumed.
