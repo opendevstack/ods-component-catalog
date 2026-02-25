@@ -326,8 +326,15 @@ public class CatalogApiAdapter {
         var baseNonCustomizableParamsNames = baseNonCustomizableUserActionParams.stream()
                 .map(CatalogItemUserActionParameter::getName)
                 .collect(Collectors.toSet());
+
         var customizableParamsPairs = customizableParamsPairsJoinedWithUserParams.stream()
-                .filter(pair -> !baseNonCustomizableParamsNames.contains(pair.getLeft().getName()))
+                .filter(pair -> {
+                    var userDefinedParamName = Optional.ofNullable(pair.getLeft())
+                            .map(CatalogItemUserActionParameter::getName)
+                            .orElse(Strings.EMPTY);
+
+                    return !baseNonCustomizableParamsNames.contains(userDefinedParamName);
+                })
                 .toList();
 
 

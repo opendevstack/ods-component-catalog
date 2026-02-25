@@ -430,6 +430,54 @@ class CatalogApiAdapterTest {
         assertThat(parameterNonCustomizable.get().getDefaultValue().get()).isEqualTo("123");
     }
 
+    @Test
+    void givenACatalogItem_AndItemContainsParameters_AndOneParameterIsCustomizable_andCustomUserActionDoesNotDefineIt_whenFinalizeUserActions_thenCustomParameterAppers() {
+        // given
+        var customUserActionProvision = generateCustomUserActions();
+        var defaultUserActionProvision = generateDefaultUserActionEntity();
+        var parametersWithExtraOneList = new ArrayList<>(Arrays.asList(defaultUserActionProvision.getParameters()));
+        var extraCustomizableParameterName = "extraCustomizableParameter";
+        var extraCustomizableParameterValue = "123999";
+        var extraCustomizableParameter = UserActionEntityParameterMother.of(extraCustomizableParameterName,
+                "string",
+                true,
+                extraCustomizableParameterValue,
+                Collections.emptyList(),
+                List.of(UserActionEntityParameterLocationMother.of()),
+                Collections.emptyList(),
+                "Workflow to execute.",
+                "workflow placeholder",
+                "workflow hint",
+                true,
+                false,
+                List.of(UserActionEntityParameterValidationMother.of()));
+        parametersWithExtraOneList.add(extraCustomizableParameter);
+
+        defaultUserActionProvision.setParameters(parametersWithExtraOneList.toArray(UserActionEntityParameter[]::new));
+
+        var clusters = Collections.<String>emptyList();
+        var userGroups = Collections.<String>emptyList();
+        var projectKey = Strings.EMPTY;
+        var catalogItemId = Strings.EMPTY;
+
+        List<CatalogItemUserAction> customUserActions = List.of(customUserActionProvision);
+        UserActionEntity[] defaultUserActions = {defaultUserActionProvision};
+
+        // when
+        var mergedUserActions = catalogApiAdapter.finalizeUserActions(
+                customUserActions, defaultUserActions, clusters, userGroups, projectKey, catalogItemId);
+
+        // then
+        assertThat(mergedUserActions).hasSize(1);
+
+        var parameters =  mergedUserActions.getFirst().getParameters();
+
+        assertThat(parameters).hasSize(4);
+        var generatedExtraCustomizableParameter = parameters.stream().filter(p -> p.getName().equals(extraCustomizableParameterName)).findFirst();
+        assertThat(generatedExtraCustomizableParameter).isPresent();
+        assertThat(generatedExtraCustomizableParameter.get().getDefaultValue().get()).isEqualTo(extraCustomizableParameterValue);
+    }
+
     private UserActionEntity generateDefaultUserActionEntity() {
         var defaultParameter = UserActionEntityParameterMother.of();
         var defaultParameterNonCustomizable =  UserActionEntityParameterMother.of(PARAMETER_NON_CUSTOMIZABLE_NAME);
