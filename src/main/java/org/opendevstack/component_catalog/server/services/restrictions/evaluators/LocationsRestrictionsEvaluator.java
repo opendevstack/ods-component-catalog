@@ -82,7 +82,6 @@ public class LocationsRestrictionsEvaluator implements RestrictionsEvaluator {
         // We also put everything on lower case, to ensure String comparisons
         Set<String> restrictionSet = Optional.ofNullable(restrictionLocations)
                 .map(locations -> Arrays.stream(restrictionLocations)
-                        .map(String::toLowerCase)
                         .collect(Collectors.toSet()) )
                 .orElse(Collections.emptySet());
 
