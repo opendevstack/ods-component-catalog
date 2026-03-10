@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LocationsRestrictionsEvaluatorTest {
@@ -230,6 +232,31 @@ class LocationsRestrictionsEvaluatorTest {
         //then
         assertEquals(false, result.getLeft());
         assertEquals("This product is not provisionable in the project location.", result.getRight());
+    }
+
+    @Test
+    void GivenRestrictionExpectsLowercaseEu_whenParameterLocationsIsUppercaseEU_thenFails() {
+        // given
+        var projectKey = "projectKey";
+        var restrictions = UserActionEntityRestrictionsMother.of(new String[]{"us-test", "eu"});
+
+        var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
+
+        var params = RestrictionsParamsMother.of(
+                List.of(CatalogItemUserActionParameterMother.of(List.of("us-test", "EU", "US-DEV"))),           // no parameters → simplest path
+                null
+        );
+
+        // when
+        Pair<Boolean, String> result = evaluator.evaluate(evaluationRestrictions, params);
+
+        // then
+        assertThat(result.getLeft())
+                .as("Uppercase 'EU' should NOT match lowercase 'eu'")
+                .isFalse();
+
+        assertThat(result.getRight())
+                .isEqualTo("This product is not provisionable in the project location.");
     }
 
 }
