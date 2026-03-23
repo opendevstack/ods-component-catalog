@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.mother;
 
+import org.opendevstack.component_catalog.org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocationMother;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterValidation;
@@ -14,8 +15,16 @@ public class CatalogItemUserActionParameterMother {
         return of("CatalogItemUserActionParameter Name");
     }
 
+    public static CatalogItemUserActionParameter of(List<String> locations) {
+        return of("CatalogItemUserActionParameter Name", locations);
+    }
+
     public static CatalogItemUserActionParameter of(String name) {
         return of(name, "CatalogItemUserActionParameter Type", List.of(CatalogItemUserActionParameterValidationMother.of()));
+    }
+
+    public static CatalogItemUserActionParameter of(String name, List<String> locations) {
+        return of(name, "CatalogItemUserActionParameter Type", List.of(CatalogItemUserActionParameterValidationMother.of()), locations);
     }
 
     public static CatalogItemUserActionParameter of(String name, String type) {
@@ -25,11 +34,7 @@ public class CatalogItemUserActionParameterMother {
 
     public static CatalogItemUserActionParameter of(String name, String type, List<CatalogItemUserActionParameterValidation> validations, List<String> locations) {
         var locationObjects = locations.stream()
-                .map(loc -> {
-                    var l = new CatalogItemUserActionParameterLocation();
-                    l.setLocation(loc);
-                    return l;
-                }).toList();
+                .map(CatalogItemUserActionParameterLocationMother::of).toList();
         return CatalogItemUserActionParameter.builder()
                 .name(name)
                 .type(type)
@@ -58,4 +63,5 @@ public class CatalogItemUserActionParameterMother {
                 .validations(validations)
                 .build();
     }
+
 }
