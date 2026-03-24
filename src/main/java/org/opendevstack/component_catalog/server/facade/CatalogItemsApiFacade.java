@@ -103,7 +103,6 @@ public class CatalogItemsApiFacade {
                             )
                     )
                     .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
-                    .filter(item -> filterByContributingFileExists(item.getId()))
                     .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
                     .toList();
         else {
@@ -127,7 +126,6 @@ public class CatalogItemsApiFacade {
                         )
                 )
                 .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
-                .filter(item -> filterByContributingFileExists(catalogRequestParams.getCatalogItemId()))
                 .orElse(null);
     }
 
