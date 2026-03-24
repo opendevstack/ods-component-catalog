@@ -297,7 +297,7 @@ class CatalogItemsApiFacadeTest {
 
         verify(catalogItemsApiFacade, times(2)).asCatalogItem(any());
         verify(catalogItemsApiFacade, times(2)).filterByProject(any(), eq(projectKey));
-        verify(catalogItemsApiFacade, times(3)).filterByContributingFileExists(anyString());
+        verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
     }
 
 
@@ -365,8 +365,6 @@ class CatalogItemsApiFacadeTest {
             return "keep".equals(it.getId());
         }).when(catalogItemsApiFacade).filterByProject(any(CatalogItem.class), eq(projectKey));
 
-        doAnswer(inv -> true).when(catalogItemsApiFacade).filterByContributingFileExists("keep");
-
         var params = CatalogRequestParams.builder()
                 .catalogId(catalogId)
                 .projectKey(projectKey)
@@ -382,7 +380,7 @@ class CatalogItemsApiFacadeTest {
 
         verify(catalogItemsApiFacade, times(2)).asCatalogItem(any(CatalogRequestParams.class));
         verify(catalogItemsApiFacade, times(2)).filterByProject(any(CatalogItem.class), eq(projectKey));
-        verify(catalogItemsApiFacade, times(1)).filterByContributingFileExists("keep");
+        verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists("keep");
     }
 
     @Test
@@ -422,7 +420,6 @@ class CatalogItemsApiFacadeTest {
         doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
 
         doReturn(true).when(catalogItemsApiFacade).filterByProject(item, projectKey);
-        doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(catalogItemId);
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(catalogItemId)
@@ -439,7 +436,7 @@ class CatalogItemsApiFacadeTest {
         verify(catalogEntitiesService, times(1)).getCatalogItemEntity(catalogItemId);
         verify(catalogItemsApiFacade, times(1)).asCatalogItem(any(CatalogRequestParams.class));
         verify(catalogItemsApiFacade, times(1)).filterByProject(item, projectKey);
-        verify(catalogItemsApiFacade, times(1)).filterByContributingFileExists(catalogItemId);
+        verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists(catalogItemId);
     }
 
     @Test
@@ -492,34 +489,6 @@ class CatalogItemsApiFacadeTest {
         assertThat(response).isNull();
 
         verify(catalogItemsApiFacade, times(1)).filterByProject(item, projectKey);
-    }
-
-    @Test
-    void fetchCatalogItem_whenContributingCheckForIdIsFalse_returnsNotFound()
-            throws InvalidIdException, InvalidCatalogItemEntityException {
-        // given
-        var catalogItemId = "item-789";
-        var ctx = mock(CatalogItemEntityContext.class);
-        when(catalogEntitiesService.getCatalogItemEntity(catalogItemId)).thenReturn(Optional.of(ctx));
-        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
-        doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogItemId);
-
-        var item = new CatalogItem();
-        item.setId(catalogItemId);
-
-        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
-        doReturn(true).when(catalogItemsApiFacade).filterByProject(eq(item), any());
-        doReturn(false).when(catalogItemsApiFacade).filterByContributingFileExists(catalogItemId);
-
-        var params = CatalogRequestParams.builder().catalogItemId(catalogItemId).build();
-
-        // when
-        var response = catalogItemsApiFacade.fetchCatalogItem(params);
-
-        // then
-        assertThat(response).isNull();
-
-        verify(catalogItemsApiFacade, times(1)).filterByContributingFileExists(catalogItemId);
     }
 
     @Test
