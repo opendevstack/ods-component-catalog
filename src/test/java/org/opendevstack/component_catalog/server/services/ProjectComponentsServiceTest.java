@@ -132,6 +132,9 @@ class ProjectComponentsServiceTest {
         String encodedRepo = base64("repo/a");
         String encodedFull = base64("repo/a?at=refs/heads/dev");
 
+        var parameter = new Parameter("param1", "value1");
+        var parameters = List.of(parameter);
+
         ProjectComponent existing = ProjectComponent.builder()
                 .componentId("comp1")
                 .catalogItemId(encodedRepo)
@@ -146,7 +149,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null);
+                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, parameters);
 
         //then
         ProjectComponent result = updated.getComponents().get("comp1");
@@ -165,7 +168,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x"))
+                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 

@@ -103,7 +103,8 @@ public class ProjectComponentsService {
                                                               String componentId,
                                                               String catalogItemId,
                                                               Status status,
-                                                              String componentUrl) {
+                                                              String componentUrl,
+                                                              List<Parameter> parameters) {
         var projectComponent = projectComponents.getComponents().get(componentId);
 
         if (projectComponent != null) {
@@ -112,6 +113,7 @@ public class ProjectComponentsService {
             projectComponents.getComponents().forEach((key, value) -> {
                 var branchReference = StringUtils.isBlank(catalogItemId) ? value.getCatalogItemRef() : getBranchRefFromCatalogItemId(catalogItemId);
                 var nonEmptyComponentUrl = StringUtils.isBlank(componentUrl) ? value.getComponentUrl() : componentUrl;
+                var nonEmptyParameters = (parameters == null || parameters.isEmpty()) ? value.getParameters() : parameters;
 
                 if (key.equals(componentId)) {
                     ProjectComponent pc = ProjectComponent.builder()
@@ -120,6 +122,7 @@ public class ProjectComponentsService {
                             .status(status)
                             .catalogItemRef(branchReference)
                             .componentUrl(nonEmptyComponentUrl)
+                            .parameters(nonEmptyParameters)
                             .build();
                     componentsMap.put(key, pc);
                 } else {

@@ -1,6 +1,8 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
@@ -14,6 +16,8 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("${openapi.componentCatalogREST.base-path:/v1}")
@@ -33,9 +37,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
         var normalizedProjectKey = projectKey.toUpperCase();
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
-        var parameters = provisioningStatusUpdateRequest.getParameters().stream()
-                .map(parameter -> Pair.of(parameter.getName(), parameter.getValue()))
-                .toList();
+        var parameters = map(provisioningStatusUpdateRequest);
 
         provisionerActionsService.updateComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
                     provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
@@ -52,10 +54,11 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
         var normalizedProjectKey = projectKey.toUpperCase();
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
+        var parameters = map(provisioningStatusUpdateRequest);
 
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
                 provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                normalizedComponentUrl);
+                normalizedComponentUrl, parameters);
 
         return ResponseEntity.ok().build();
     }
@@ -73,4 +76,9 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         return ResponseEntity.ok().build();
     }
 
+    private static @NonNull List<Pair<@NotNull String, @NotNull String>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+        return provisioningStatusUpdateRequest.getParameters().stream()
+                .map(parameter -> Pair.of(parameter.getName(), parameter.getValue()))
+                .toList();
+    }
 }

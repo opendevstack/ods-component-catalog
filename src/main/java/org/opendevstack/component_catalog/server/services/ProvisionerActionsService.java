@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.services;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -46,9 +47,7 @@ public class ProvisionerActionsService {
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
         var pathAt = getBitbucketPathAt(projectKey);
-        List<Parameter> projectComponentParameters = parameters.stream()
-                .map(pair -> Parameter.builder().name(pair.getLeft()).value(pair.getRight()).build())
-                .toList();
+        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
@@ -77,11 +76,13 @@ public class ProvisionerActionsService {
                                                   Status status,
                                                   String componentId,
                                                   String catalogItemId,
-                                                  String componentUrl) throws JsonProcessingException { //componentUrl can be null
+                                                  String componentUrl,
+                                                  List<Pair<String, String>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
         var pathAt = getBitbucketPathAt(projectKey);
+        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
@@ -92,7 +93,8 @@ public class ProvisionerActionsService {
         }
 
         log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
-        var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(projectComponents, componentId, catalogItemId, status, componentUrl);
+        var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
+                projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
@@ -157,6 +159,12 @@ public class ProvisionerActionsService {
                 throw  httpClientErrorException;
             }
         }
+    }
+
+    private static @NonNull List<Parameter> map(List<Pair<String, String>> parameters) {
+        return parameters.stream()
+                .map(pair -> Parameter.builder().name(pair.getLeft()).value(pair.getRight()).build())
+                .toList();
     }
 
     private void validateComponentDoesNotExistsWhenCreating(ProjectComponents projectComponents, String componentId) {
