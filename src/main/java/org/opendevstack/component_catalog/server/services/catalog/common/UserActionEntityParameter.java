@@ -23,6 +23,7 @@ public class UserActionEntityParameter {
     private String placeholder;
     private String hint;
     private boolean customizable;
+    private boolean sendOnDeletion;
     private boolean visible;
     private UserActionEntityParameterValidation[] validations;
 }

@@ -450,6 +450,7 @@ class CatalogApiAdapterTest {
                 "workflow hint",
                 true,
                 false,
+                false,
                 List.of(UserActionEntityParameterValidationMother.of()));
         parametersWithExtraOneList.add(extraCustomizableParameter);
 

@@ -48,6 +48,7 @@ public class CatalogItemUserActionParameterMapper {
                 .label(catalogItemEntityUserActionParameter.getLabel())
                 .placeholder(catalogItemEntityUserActionParameter.getPlaceholder())
                 .hint(catalogItemEntityUserActionParameter.getHint())
+                .sendOnDeletion(catalogItemEntityUserActionParameter.isSendOnDeletion())
                 .visible(catalogItemEntityUserActionParameter.isVisible())
                 .validations(validations)
                 .build();
@@ -86,6 +87,7 @@ public class CatalogItemUserActionParameterMapper {
                 .label(itemEntityUserActionParameter.getLabel())
                 .placeholder(toJsonNullable(itemEntityUserActionParameter.getPlaceholder()))
                 .hint(toJsonNullable(itemEntityUserActionParameter.getHint()))
+                .sendOnDeletion(itemEntityUserActionParameter.isSendOnDeletion())
                 .visible(itemEntityUserActionParameter.isVisible())
                 .validations(validations)
                 .build();

@@ -43,6 +43,7 @@ public class CatalogItemUserActionParameterMother {
                 .label("CatalogItemUserActionParameter Label")
                 .placeholder("CatalogItemUserActionParameter Placeholder")
                 .hint("CatalogItemUserActionParameter Hint")
+                .sendOnDeletion(false)
                 .visible(true)
                 .validations(validations)
                 .locations(JsonNullable.of(locationObjects))
@@ -59,6 +60,7 @@ public class CatalogItemUserActionParameterMother {
                 .label("CatalogItemUserActionParameter Label")
                 .placeholder("CatalogItemUserActionParameter Placeholder")
                 .hint("CatalogItemUserActionParameter Hint")
+                .sendOnDeletion(false)
                 .visible(true)
                 .validations(validations)
                 .build();

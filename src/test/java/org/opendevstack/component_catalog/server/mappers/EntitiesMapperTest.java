@@ -146,6 +146,7 @@ class EntitiesMapperTest {
                 .label("src-label")
                 .placeholder(JsonNullable.undefined())
                 .hint(JsonNullable.of("src-hint"))
+                .sendOnDeletion(false)
                 .visible(false)
                 .build();
 
@@ -161,6 +162,7 @@ class EntitiesMapperTest {
                 .label(null)
                 .placeholder(JsonNullable.of("dest-placeholder"))
                 .hint(JsonNullable.undefined())
+                .sendOnDeletion(false)
                 .visible(true)
                 .build();
 
@@ -180,6 +182,8 @@ class EntitiesMapperTest {
 
         assertFalse(nullish(result.getHint()));
         assertEquals("src-hint", result.getHint().get());
+
+        assertFalse(nullish(result.getSendOnDeletion()));
 
         assertTrue(result.getVisible());
     }
@@ -225,6 +229,7 @@ class EntitiesMapperTest {
         assertThat(userActionEntityParameter.getPlaceholder()).isEqualTo("Simple placeholder");
         assertThat(userActionEntityParameter.getHint()).isEqualTo("Wait for the hint");
         assertThat(userActionEntityParameter.isCustomizable()).isFalse();
+        assertThat(userActionEntityParameter.isSendOnDeletion()).isFalse();
         assertThat(userActionEntityParameter.isVisible()).isFalse();
     }
 
@@ -360,6 +365,7 @@ class EntitiesMapperTest {
         assertToJsonNullable(from.getDefaultValue(), to.getDefaultValue());
         assertToJsonNullable(from.getPlaceholder(), to.getPlaceholder());
         assertToJsonNullable(from.getHint(), to.getHint());
+        assertToJsonNullable(from.isSendOnDeletion(), to.getSendOnDeletion());
 
         if (from.getValidations() != null && from.getValidations().length > 0) {
             assertThat(from.getValidations()).hasSize(1);

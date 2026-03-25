@@ -1013,6 +1013,10 @@ components:
           type: string
           nullable: true
           example: 'some hint for a workflow'
+        sendOnDeletion:
+          type: boolean
+          nullable: true
+          example: false
         visible:
           type: boolean
           example: 'true'
