@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -105,35 +106,31 @@ public class ProjectComponentsService {
                                                               Status status,
                                                               String componentUrl,
                                                               List<Parameter> parameters) {
-        var projectComponent = projectComponents.getComponents().get(componentId);
 
-        if (projectComponent != null) {
-            Map<String, ProjectComponent> componentsMap = new HashMap<>();
+        validateComponentExists(projectComponents, componentId);
 
-            projectComponents.getComponents().forEach((key, value) -> {
-                var branchReference = StringUtils.isBlank(catalogItemId) ? value.getCatalogItemRef() : getBranchRefFromCatalogItemId(catalogItemId);
-                var nonEmptyComponentUrl = StringUtils.isBlank(componentUrl) ? value.getComponentUrl() : componentUrl;
-                var nonEmptyParameters = (parameters == null || parameters.isEmpty()) ? value.getParameters() : parameters;
+        Map<String, ProjectComponent> updatedMap = projectComponents.getComponents()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> updateComponentIfMatch(
+                                entry.getKey(),
+                                entry.getValue(),
+                                componentId,
+                                catalogItemId,
+                                status,
+                                componentUrl,
+                                parameters)
+                ));
 
-                if (key.equals(componentId)) {
-                    ProjectComponent pc = ProjectComponent.builder()
-                            .componentId(value.getComponentId())
-                            .catalogItemId(value.getCatalogItemId())
-                            .status(status)
-                            .catalogItemRef(branchReference)
-                            .componentUrl(nonEmptyComponentUrl)
-                            .parameters(nonEmptyParameters)
-                            .build();
-                    componentsMap.put(key, pc);
-                } else {
-                    componentsMap.put(key, value);
-                }
-            });
+        return ProjectComponents.builder()
+                .components(updatedMap)
+                .build();
+    }
 
-            return ProjectComponents.builder()
-                    .components(componentsMap)
-                    .build();
-        } else {
+    private void validateComponentExists(ProjectComponents projectComponents, String componentId) {
+        if (!projectComponents.getComponents().containsKey(componentId)) {
             throw new InvalidComponentStateException("Component with id " + componentId + " does not exist");
         }
     }
@@ -168,6 +165,46 @@ public class ProjectComponentsService {
                 .map(ProjectComponentsService::encodeId)
                 .map(String::new)
                 .orElseThrow(() -> new InvalidEntityException("Invalid Base64 encoded catalogItemId: " + catalogItemId));
+    }
+
+    private ProjectComponent updateComponentIfMatch(String key,
+                                                    ProjectComponent value,
+                                                    String componentId,
+                                                    String catalogItemId,
+                                                    Status status,
+                                                    String componentUrl,
+                                                    List<Parameter> parameters) {
+
+        if (!key.equals(componentId)) {
+            return value; // leave unchanged
+        }
+
+        return ProjectComponent.builder()
+                .componentId(value.getComponentId())
+                .catalogItemId(value.getCatalogItemId())
+                .status(status)
+                .catalogItemRef(resolveCatalogItemRef(value, catalogItemId))
+                .componentUrl(resolveComponentUrl(value, componentUrl))
+                .parameters(resolveParameters(value, parameters))
+                .build();
+    }
+
+    private String resolveCatalogItemRef(ProjectComponent value, String catalogItemId) {
+        return StringUtils.isBlank(catalogItemId)
+                ? value.getCatalogItemRef()
+                : getBranchRefFromCatalogItemId(catalogItemId);
+    }
+
+    private String resolveComponentUrl(ProjectComponent value, String newUrl) {
+        return StringUtils.isBlank(newUrl)
+                ? value.getComponentUrl()
+                : newUrl;
+    }
+
+    private List<Parameter> resolveParameters(ProjectComponent value, List<Parameter> params) {
+        return (params == null || params.isEmpty())
+                ? value.getParameters()
+                : params;
     }
 
     private String getBranchRefFromCatalogItemId(String catalogItemId) throws InvalidEntityException {
