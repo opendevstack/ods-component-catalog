@@ -1135,15 +1135,36 @@ components:
           pattern: '^(?!\s*$).+'      # reject whitespace-only
           description: The componentId set by the user.
           example: "any-component-id-from-backend"
+
         catalogItemId:
           type: string
           description: The base64 encoded path for the catalogItem. It may include branch reference.
           example: "cHJvamVjdHMvQ0FURVNUL3JlcG9zL3VzZXItYWN0aW9ucy1pdGVtL3Jhdy9DYXRhbG9nSXRlbS55YW1sP2F0PXJlZnMvaGVhZHMvbWFzdGVy"
+
         componentUrl:
           type: string
           description: the repository url where the component was provisioned
           example: "https://bitbucket.com/projects/DEVSTACK/repos/devstack-component-catalog"
           nullable: true
+
+        parameters:
+          type: array
+          description: List of name/value string parameters.
+          items:
+            type: object
+            required:
+              - name
+              - value
+            properties:
+              name:
+                type: string
+                description: Parameter name
+                example: "environment"
+              value:
+                type: string
+                description: Parameter value
+                example: "production"
+
     ProvisioningDeleteRequest:
       type: object
       properties:
@@ -1153,3 +1174,21 @@ components:
           pattern: '^(?!\s*$).+'      # reject whitespace-only
           description: The componentId set by the user.
           example: "any-component-id-from-backend"
+
+        parameters:
+          type: array
+          description: List of name/value string parameters.
+          items:
+            type: object
+            required:
+              - name
+              - value
+            properties:
+              name:
+                type: string
+                description: Parameter name
+                example: "environment"
+              value:
+                type: string
+                description: Parameter value
+                example: "production"

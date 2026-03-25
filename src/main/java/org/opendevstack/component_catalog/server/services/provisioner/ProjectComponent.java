@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import net.minidev.json.annotate.JsonIgnore;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.List;
+
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,6 +21,7 @@ public class ProjectComponent {
     private String catalogItemRef;
     private Status status;
     private String componentUrl;
+    private List<Parameter> parameters;
 
     @Value("${catalog-item.reference.encoded}")
     @JsonIgnore

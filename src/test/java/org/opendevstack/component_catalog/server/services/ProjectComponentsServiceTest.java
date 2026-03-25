@@ -1,13 +1,16 @@
 package org.opendevstack.component_catalog.server.services;
 
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +43,7 @@ class ProjectComponentsServiceTest {
         String encoded = base64("repo/path?at=refs/heads/main");
 
         //when
-        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url");
+        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents()).containsKey("comp1");
@@ -58,6 +61,8 @@ class ProjectComponentsServiceTest {
         //given
         String encodedFull = base64("repo/z?at=refs/heads/main");
         String encodedRepo = base64("repo/z");
+        var parameter = new Parameter("param1", "value1");
+        var parameters = List.of(parameter);
 
         ProjectComponent existing = ProjectComponent.builder()
                 .componentId("comp1")
@@ -73,7 +78,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl");
+                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl", parameters);
 
         //then
         ProjectComponent updatedComp = updated.getComponents().get("comp1");
@@ -81,6 +86,7 @@ class ProjectComponentsServiceTest {
         assertThat(updatedComp.getStatus()).isEqualTo(Status.CREATED);
         assertThat(updatedComp.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/main"));
         assertThat(updatedComp.getComponentUrl()).isEqualTo("newUrl");
+        assertThat(updatedComp.getParameters()).containsExactly(parameter);
     }
 
     @Test
@@ -100,7 +106,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x");
+                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents().get("comp1").getCatalogItemId())
@@ -116,7 +122,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x"))
+                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 
@@ -125,6 +131,9 @@ class ProjectComponentsServiceTest {
         //given
         String encodedRepo = base64("repo/a");
         String encodedFull = base64("repo/a?at=refs/heads/dev");
+
+        var parameter = new Parameter("param1", "value1");
+        var parameters = List.of(parameter);
 
         ProjectComponent existing = ProjectComponent.builder()
                 .componentId("comp1")
@@ -140,7 +149,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null);
+                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, parameters);
 
         //then
         ProjectComponent result = updated.getComponents().get("comp1");
@@ -159,7 +168,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x"))
+                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 

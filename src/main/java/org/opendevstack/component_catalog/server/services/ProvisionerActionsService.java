@@ -1,5 +1,7 @@
 package org.opendevstack.component_catalog.server.services;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -7,6 +9,7 @@ import org.opendevstack.component_catalog.server.services.exceptions.ComponentAl
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
@@ -20,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -37,11 +41,13 @@ public class ProvisionerActionsService {
                                                   Status status,
                                                   String componentId,
                                                   String catalogItemId,
-                                                  String componentUrl) throws JsonProcessingException { //componentUrl can be null
+                                                  String componentUrl,
+                                                  List<Pair<String, String>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
         var pathAt = getBitbucketPathAt(projectKey);
+        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
@@ -53,10 +59,12 @@ public class ProvisionerActionsService {
 
         if (Status.CREATING == status) {
             log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
-            updatedProjectComponents = projectComponentsService.addNewComponent(projectComponents, componentId, catalogItemId, status, componentUrl);
+            updatedProjectComponents = projectComponentsService.addNewComponent(
+                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
         } else {
             log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
-            updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, componentId, catalogItemId, status, componentUrl);
+            updatedProjectComponents = projectComponentsService.updateExistingComponent(
+                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
         }
 
         // Update file with new status
@@ -68,11 +76,13 @@ public class ProvisionerActionsService {
                                                   Status status,
                                                   String componentId,
                                                   String catalogItemId,
-                                                  String componentUrl) throws JsonProcessingException { //componentUrl can be null
+                                                  String componentUrl,
+                                                  List<Pair<String, String>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
         var pathAt = getBitbucketPathAt(projectKey);
+        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
@@ -83,7 +93,8 @@ public class ProvisionerActionsService {
         }
 
         log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
-        var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(projectComponents, componentId, catalogItemId, status, componentUrl);
+        var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
+                projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
@@ -148,6 +159,12 @@ public class ProvisionerActionsService {
                 throw  httpClientErrorException;
             }
         }
+    }
+
+    private static @NonNull List<Parameter> map(List<Pair<String, String>> parameters) {
+        return parameters.stream()
+                .map(pair -> Parameter.builder().name(pair.getLeft()).value(pair.getRight()).build())
+                .toList();
     }
 
     private void validateComponentDoesNotExistsWhenCreating(ProjectComponents projectComponents, String componentId) {

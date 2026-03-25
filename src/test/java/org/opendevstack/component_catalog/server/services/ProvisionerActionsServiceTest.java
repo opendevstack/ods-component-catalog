@@ -6,8 +6,10 @@ import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.ProjectComponentsMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
+import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
@@ -27,7 +29,9 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,6 +120,11 @@ class ProvisionerActionsServiceTest {
         var projectComponents = new ProjectComponents();
         var updatedProjectComponents = ProjectComponentsMother.of();
 
+        var parameterParam = Pair.of("parameterName", "parameterValue");
+
+        var parameter = Parameter.builder().name(parameterParam.getLeft()).value(parameterParam.getValue()).build();
+        var parameters = List.of(parameter);
+
         prepareMocksForGetBitbucketPathAt(pathAt);
         when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of(sourceCommitId));
 
@@ -125,7 +134,8 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 status,
-                componentUrl
+                componentUrl,
+                parameters
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -136,7 +146,8 @@ class ProvisionerActionsServiceTest {
                 status,
                 componentId,
                 catalogItemId,
-                componentUrl
+                componentUrl,
+                List.of(parameterParam)
         );
 
         // then
@@ -173,7 +184,8 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 status,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -184,7 +196,8 @@ class ProvisionerActionsServiceTest {
                 status,
                 componentId,
                 catalogItemId,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         );
 
         // then
@@ -361,6 +374,147 @@ class ProvisionerActionsServiceTest {
 
         // then
         assertThat(exception).isEqualTo(httpClientErrorException);
+    }
+
+    @Test
+    void givenExistingProjectComponents_whenUpdatePartiallyComponentProvisioningStatus_thenBitbucketFileIsUpdated()
+            throws JsonProcessingException {
+
+        // given
+        var projectKey = "projectKey";
+        var status = Status.FAILED; // any status is allowed
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var componentUrl = "componentUrl";
+        var parameterPair = Pair.of("paramName", "paramValue");
+
+        var pathAt = BitbucketPathAtMother.of();
+        var sourceCommitId = "sourceCommitId";
+
+        var projectComponents = ProjectComponentsMother.of();
+        var updatedProjectComponents = ProjectComponentsMother.of();
+
+        // get path
+        prepareMocksForGetBitbucketPathAt(pathAt);
+
+        // last commit exists
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of(sourceCommitId));
+
+        // project components exist
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        // partial update call
+        when(projectComponentsService.updatePartiallyExistingComponent(
+                projectComponents,
+                componentId,
+                catalogItemId,
+                status,
+                componentUrl,
+                List.of(Parameter.builder().name("paramName").value("paramValue").build())
+        )).thenReturn(updatedProjectComponents);
+
+        var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
+
+        // when
+        provisionerActionsService.updatePartiallyComponentProvisioningStatus(
+                projectKey,
+                status,
+                componentId,
+                catalogItemId,
+                componentUrl,
+                List.of(parameterPair)
+        );
+
+        // then
+        verify(bitbucketService).pushFile(
+                pathAt,
+                sourceCommitId,
+                serializedUpdatedProjectComponents
+        );
+    }
+
+    @Test
+    void givenNoProjectComponents_whenUpdatePartiallyComponentProvisioningStatus_thenThrowException(){
+
+        // given
+        var projectKey = "projectKey";
+        var status = Status.FAILED;
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var componentUrl = "componentUrl";
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+
+        // Simulate null projectComponents
+        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.empty());
+        when(projectComponentsService.createNewComponent()).thenReturn(null);
+
+        // when
+        var exception = assertThrows(ElementNotFoundException.class, () ->
+                provisionerActionsService.updatePartiallyComponentProvisioningStatus(
+                        projectKey,
+                        status,
+                        componentId,
+                        catalogItemId,
+                        componentUrl,
+                        List.of()
+                )
+        );
+
+        // then
+        assertThat(exception.getMessage())
+                .isEqualTo("In a partial update, the projectComponent should exist.");
+    }
+
+    @Test
+    void givenNewFile_whenUpdatePartiallyComponentProvisioningStatus_thenPushFileIsCalledWithNullCommit()
+            throws JsonProcessingException {
+
+        // given
+        var projectKey = "projectKey";
+        var status = Status.UNKNOWN;
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var componentUrl = "url";
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        var projectComponents = ProjectComponentsMother.of();
+        var updatedProjectComponents = ProjectComponentsMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+
+        // no last commit
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.empty());
+
+        // components exist
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        when(projectComponentsService.updatePartiallyExistingComponent(
+                eq(projectComponents),
+                eq(componentId),
+                eq(catalogItemId),
+                eq(status),
+                eq(componentUrl),
+                any()
+        )).thenReturn(updatedProjectComponents);
+
+        var serialized = prepareMocksForSave(updatedProjectComponents);
+
+        // when
+        provisionerActionsService.updatePartiallyComponentProvisioningStatus(
+                projectKey,
+                status,
+                componentId,
+                catalogItemId,
+                componentUrl,
+                List.of()
+        );
+
+        // then
+        verify(bitbucketService).pushFile(pathAt, null, serialized);
     }
 
     private String prepareMocksForSave(ProjectComponents updatedProjectComponents) throws JsonProcessingException {
