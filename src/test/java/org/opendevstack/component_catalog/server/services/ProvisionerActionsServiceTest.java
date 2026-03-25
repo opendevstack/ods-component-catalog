@@ -27,6 +27,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -125,7 +126,8 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 status,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -136,7 +138,8 @@ class ProvisionerActionsServiceTest {
                 status,
                 componentId,
                 catalogItemId,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         );
 
         // then
@@ -173,7 +176,8 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 status,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -184,7 +188,8 @@ class ProvisionerActionsServiceTest {
                 status,
                 componentId,
                 catalogItemId,
-                componentUrl
+                componentUrl,
+                Collections.emptyList()
         );
 
         // then

@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
@@ -32,10 +33,13 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
         var normalizedProjectKey = projectKey.toUpperCase();
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
+        var parameters = provisioningStatusUpdateRequest.getParameters().stream()
+                .map(parameter -> Pair.of(parameter.getName(), parameter.getValue()))
+                .toList();
 
         provisionerActionsService.updateComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
                     provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                    normalizedComponentUrl);
+                    normalizedComponentUrl, parameters);
 
         return ResponseEntity.ok().build();
     }

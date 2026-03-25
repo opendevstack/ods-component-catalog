@@ -7,6 +7,7 @@ import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +41,7 @@ class ProjectComponentsServiceTest {
         String encoded = base64("repo/path?at=refs/heads/main");
 
         //when
-        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url");
+        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents()).containsKey("comp1");
@@ -73,7 +74,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl");
+                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl", Collections.emptyList());
 
         //then
         ProjectComponent updatedComp = updated.getComponents().get("comp1");
@@ -100,7 +101,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x");
+                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents().get("comp1").getCatalogItemId())
@@ -116,7 +117,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x"))
+                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 

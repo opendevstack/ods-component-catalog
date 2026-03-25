@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidCatalogItemIdStructureException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,7 +31,8 @@ public class ProjectComponentsService {
                                              String componentId,
                                              String catalogItemId,
                                              Status status,
-                                             String componentUrl) {
+                                             String componentUrl,
+                                             List<Parameter> parameters) {
         var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
         var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
 
@@ -43,6 +46,7 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(branchReference)
                 .componentUrl(componentUrl)
+                .parameters(parameters)
                 .build());
 
         var updatedProjectComponents = ProjectComponents.builder()
@@ -59,7 +63,8 @@ public class ProjectComponentsService {
                                                      String componentId,
                                                      String catalogItemId,
                                                      Status status,
-                                                     String componentUrl) {
+                                                     String componentUrl,
+                                                     List<Parameter> parameters) {
 
         Map<String, ProjectComponent> components = projectComponents.getComponents();
 
@@ -81,6 +86,7 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(branchReference)
                 .componentUrl(StringUtils.isBlank(componentUrl) ? existing.getComponentUrl() : componentUrl)
+                .parameters(parameters)
                 .build();
 
         Map<String, ProjectComponent> updatedMap = new HashMap<>(components);

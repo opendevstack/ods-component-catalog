@@ -11,6 +11,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.Collections;
+
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(SpringExtension.class)
@@ -41,7 +43,7 @@ class ProvisionerActionsApiControllerTest {
 
         // then
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, componentUrl);
+                status, componentId, catalogItemId, componentUrl, Collections.emptyList());
     }
 
     @Test
