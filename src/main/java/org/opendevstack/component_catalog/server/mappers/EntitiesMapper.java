@@ -160,6 +160,7 @@ public class EntitiesMapper {
                 .label(itemEntityUserActionParameter.getLabel())
                 .placeholder(toJsonNullable(itemEntityUserActionParameter.getPlaceholder()))
                 .hint(toJsonNullable(itemEntityUserActionParameter.getHint()))
+                .sendOnDeletion(itemEntityUserActionParameter.isSendOnDeletion())
                 .visible(itemEntityUserActionParameter.isVisible())
                 .validations(validations)
                 .build();
@@ -229,6 +230,7 @@ public class EntitiesMapper {
                 .label(catalogItemEntityUserActionParameter.getLabel())
                 .placeholder(catalogItemEntityUserActionParameter.getPlaceholder())
                 .hint(catalogItemEntityUserActionParameter.getHint())
+                .sendOnDeletion(catalogItemEntityUserActionParameter.isSendOnDeletion())
                 .visible(catalogItemEntityUserActionParameter.isVisible())
                 .build();
     }
@@ -303,6 +305,7 @@ public class EntitiesMapper {
                 .label(overrideNullFields(src.getLabel(), dest.getLabel()))
                 .placeholder(overrideNullFields(src.getPlaceholder(), dest.getPlaceholder()))
                 .hint(overrideNullFields(src.getHint(), dest.getHint()))
+                .sendOnDeletion(overrideNullFields(src.getSendOnDeletion(), dest.getSendOnDeletion()))
                 .visible(overrideNullFields(src.getVisible(), dest.getVisible()))
                 .validations(overrideNullFields(src.getValidations(), dest.getValidations()))
                 .build();

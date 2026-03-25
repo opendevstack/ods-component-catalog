@@ -29,19 +29,20 @@ public class UserActionEntityParameterMother {
                 "workflow hint",
                 false,
                 false,
+                false,
                 List.of(UserActionEntityParameterValidationMother.of())
         );
     }
 
     public static UserActionEntityParameter of(String name, String type, boolean required, String defaultValue, List<String> defaultValues,
                                                List<UserActionEntityParameterLocation> locations, List<String> options, String label, String placeholder, String hint,
-                                               boolean customizable, boolean visible) {
-        return of(name, type, required, defaultValue, defaultValues, locations, options, label, placeholder, hint, customizable, visible, Collections.emptyList());
+                                               boolean customizable, boolean sendOnDeletion, boolean visible) {
+        return of(name, type, required, defaultValue, defaultValues, locations, options, label, placeholder, hint, customizable, sendOnDeletion, visible, Collections.emptyList());
     }
 
     public static UserActionEntityParameter of(String name, String type, boolean required, String defaultValue, List<String> defaultValues,
                                                List<UserActionEntityParameterLocation> locations, List<String> options, String label, String placeholder, String hint,
-                                               boolean customizable, boolean visible, List<UserActionEntityParameterValidation> validations) {
+                                               boolean customizable, boolean sendOnDeletion, boolean visible, List<UserActionEntityParameterValidation> validations) {
         return UserActionEntityParameter.builder()
                 .name(name)
                 .type(type)
@@ -54,6 +55,7 @@ public class UserActionEntityParameterMother {
                 .placeholder(placeholder)
                 .hint(hint)
                 .customizable(customizable)
+                .sendOnDeletion(sendOnDeletion)
                 .visible(visible)
                 .validations(validations.toArray(new UserActionEntityParameterValidation[0]))
                 .build();
@@ -74,6 +76,7 @@ public class UserActionEntityParameterMother {
                         "project_key placeholder",
                         "project_key hint",
                         false,
+                        true,
                         true),
                 of(
                         "component_name",
@@ -86,6 +89,7 @@ public class UserActionEntityParameterMother {
                         "The name of the component.",
                         "component_name placeholder",
                         "component_name hint",
+                        false,
                         false,
                         true),
                 of(
@@ -100,6 +104,7 @@ public class UserActionEntityParameterMother {
                         null,
                         null,
                         false,
+                        false,
                         true),
                 of(
                         "new_parameter_multiple",
@@ -113,6 +118,7 @@ public class UserActionEntityParameterMother {
                         null,
                         null,
                         false,
+                        true,
                         true)
 
         };
