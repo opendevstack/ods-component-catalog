@@ -55,6 +55,40 @@ class ProvisionerActionsApiControllerTest {
     }
 
     @Test
+    void givenAProjectKey_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalled() throws JsonProcessingException {
+        // given
+        var projectKey = "projectKey";
+        var status = Status.CREATING; // any valid Status works, CREATING is an example
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var componentUrl = "componentUrl";
+        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .value("parameterValue")
+                .build();
+        var parameters = List.of(parameter);
+
+        var request = new ProvisioningStatusUpdateRequest()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .componentUrl(componentUrl)
+                .parameters(parameters);
+
+        // when
+        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
+
+        // then
+        verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
+                projectKey.toUpperCase(),
+                status,
+                componentId,
+                catalogItemId,
+                componentUrl,
+                List.of(Pair.of(parameter.getName(), parameter.getValue()))
+        );
+    }
+
+    @Test
     void givenAProjectKey_whenDeleteProvisioningStatus_thenServiceIsCalled() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
