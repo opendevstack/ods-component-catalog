@@ -8,6 +8,7 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
@@ -29,6 +30,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,6 +119,11 @@ class ProvisionerActionsServiceTest {
         var projectComponents = new ProjectComponents();
         var updatedProjectComponents = ProjectComponentsMother.of();
 
+        var parameterParam = Pair.of("parameterName", "parameterValue");
+
+        var parameter = Parameter.builder().name(parameterParam.getLeft()).value(parameterParam.getValue()).build();
+        var parameters = List.of(parameter);
+
         prepareMocksForGetBitbucketPathAt(pathAt);
         when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of(sourceCommitId));
 
@@ -127,7 +134,7 @@ class ProvisionerActionsServiceTest {
                 catalogItemId,
                 status,
                 componentUrl,
-                Collections.emptyList()
+                parameters
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -139,7 +146,7 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 componentUrl,
-                Collections.emptyList()
+                List.of(parameterParam)
         );
 
         // then
