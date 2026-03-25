@@ -3,7 +3,6 @@ package org.opendevstack.component_catalog.server.services;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidCatalogItemIdStructureException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
@@ -21,6 +20,8 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class ProjectComponentsService {
+
+    public static final String REFS_HEADS_MASTER = "refs/heads/master";
 
     public ProjectComponents createNewComponent() {
         return new ProjectComponents();
@@ -179,7 +180,9 @@ public class ProjectComponentsService {
                     if (indexOfRef > 0) {
                         branchReference = id.substring(indexOfRef);
                     } else {
-                        throw new InvalidCatalogItemIdStructureException("Invalid Base64 encoded catalogItemId: " + catalogItemId);
+                        log.debug("No branch reference found in catalogItemId: {}, returning master", id);
+
+                        return REFS_HEADS_MASTER;
                     }
 
                     log.debug("Branch reference: {}", branchReference);
