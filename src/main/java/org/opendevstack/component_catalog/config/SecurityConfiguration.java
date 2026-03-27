@@ -42,6 +42,7 @@ public class SecurityConfiguration {
                 "/v3/api-docs/**",
                 "/v1/catalog-items/*/user-actions/**",
                 "/v1/user-actions/**",
+                "/v1/provision/*/*",
                 "/v1/schema-validation/**",
                 "/actuator/health"
         );
@@ -80,12 +81,8 @@ public class SecurityConfiguration {
 
         http
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/v1/provision/*/*")
-                        .permitAll()
-
                         .requestMatchers("/v1/**", "/actuator/**")
                         .hasAuthority("ROLE_USER") // If required, change or add proper roles set by AAD
-                        //.authenticated()
                 )
                 .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
                 .cors(c -> c.configurationSource(request ->
