@@ -42,7 +42,7 @@ public class ProvisionerActionsService {
                                                   String componentId,
                                                   String catalogItemId,
                                                   String componentUrl,
-                                                  List<Pair<String, String>> parameters) throws JsonProcessingException { //componentUrl can be null
+                                                  List<Pair<String, List<String>>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
@@ -77,7 +77,7 @@ public class ProvisionerActionsService {
                                                   String componentId,
                                                   String catalogItemId,
                                                   String componentUrl,
-                                                  List<Pair<String, String>> parameters) throws JsonProcessingException { //componentUrl can be null
+                                                  List<Pair<String, List<String>>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
 
@@ -161,9 +161,9 @@ public class ProvisionerActionsService {
         }
     }
 
-    private static @NonNull List<Parameter> map(List<Pair<String, String>> parameters) {
+    private static @NonNull List<Parameter> map(List<Pair<String, List<String>>> parameters) {
         return parameters.stream()
-                .map(pair -> Parameter.builder().name(pair.getLeft()).value(pair.getRight()).build())
+                .map(pair -> Parameter.builder().name(pair.getLeft()).values(pair.getRight()).build())
                 .toList();
     }
 

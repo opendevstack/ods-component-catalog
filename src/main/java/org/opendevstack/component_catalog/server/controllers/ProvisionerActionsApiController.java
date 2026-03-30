@@ -76,9 +76,9 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         return ResponseEntity.ok().build();
     }
 
-    private static @NonNull List<Pair<@NotNull String, @NotNull String>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+    private static @NonNull List<Pair<@NotNull String, @NotNull List<String>>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         return provisioningStatusUpdateRequest.getParameters().stream()
-                .map(parameter -> Pair.of(parameter.getName(), parameter.getValue()))
+                .map(parameter -> Pair.of(parameter.getName(), parameter.getValues()))
                 .toList();
     }
 }
