@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,5 +15,5 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Parameter {
     private String name;
-    private String value;
+    private List<String> values;
 }

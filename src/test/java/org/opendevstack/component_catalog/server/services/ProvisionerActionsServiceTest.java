@@ -120,9 +120,9 @@ class ProvisionerActionsServiceTest {
         var projectComponents = new ProjectComponents();
         var updatedProjectComponents = ProjectComponentsMother.of();
 
-        var parameterParam = Pair.of("parameterName", "parameterValue");
+        var parameterParam = Pair.of("parameterName", List.of("parameterValue"));
 
-        var parameter = Parameter.builder().name(parameterParam.getLeft()).value(parameterParam.getValue()).build();
+        var parameter = Parameter.builder().name(parameterParam.getLeft()).values(parameterParam.getValue()).build();
         var parameters = List.of(parameter);
 
         prepareMocksForGetBitbucketPathAt(pathAt);
@@ -386,7 +386,7 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
-        var parameterPair = Pair.of("paramName", "paramValue");
+        var parameterPair = Pair.of("paramName", List.of("paramValue"));
 
         var pathAt = BitbucketPathAtMother.of();
         var sourceCommitId = "sourceCommitId";
@@ -410,7 +410,7 @@ class ProvisionerActionsServiceTest {
                 catalogItemId,
                 status,
                 componentUrl,
-                List.of(Parameter.builder().name("paramName").value("paramValue").build())
+                List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build())
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);

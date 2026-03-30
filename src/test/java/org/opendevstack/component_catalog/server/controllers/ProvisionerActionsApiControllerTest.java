@@ -36,7 +36,7 @@ class ProvisionerActionsApiControllerTest {
         var componentUrl = "componentUrl";
         var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
-                .value("parameterValue")
+                .values(List.of("parameterValue"))
                 .build();
         var parameters = List.of(parameter);
 
@@ -51,7 +51,7 @@ class ProvisionerActionsApiControllerTest {
 
         // then
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, componentUrl, List.of(Pair.of(parameter.getName(), parameter.getValue())));
+                status, componentId, catalogItemId, componentUrl, List.of(Pair.of(parameter.getName(), parameter.getValues())));
     }
 
     @Test
@@ -64,7 +64,7 @@ class ProvisionerActionsApiControllerTest {
         var componentUrl = "componentUrl";
         var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
-                .value("parameterValue")
+                .values(List.of("parameterValue"))
                 .build();
         var parameters = List.of(parameter);
 
@@ -84,7 +84,7 @@ class ProvisionerActionsApiControllerTest {
                 componentId,
                 catalogItemId,
                 componentUrl,
-                List.of(Pair.of(parameter.getName(), parameter.getValue()))
+                List.of(Pair.of(parameter.getName(), parameter.getValues()))
         );
     }
 

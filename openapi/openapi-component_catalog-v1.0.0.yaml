@@ -1164,10 +1164,14 @@ components:
                 type: string
                 description: Parameter name
                 example: "environment"
-              value:
-                type: string
-                description: Parameter value
-                example: "production"
+              values:
+                type: array
+                description: Parameter values
+                items:
+                  type: string
+                example:
+                  - "production"
+                  - "staging"
 
     ProvisioningDeleteRequest:
       type: object
@@ -1192,7 +1196,11 @@ components:
                 type: string
                 description: Parameter name
                 example: "environment"
-              value:
-                type: string
-                description: Parameter value
-                example: "production"
+              values:
+                type: array
+                description: Parameter values
+                items:
+                  type: string
+                example:
+                  - "production"
+                  - "staging"

@@ -61,7 +61,7 @@ class ProjectComponentsServiceTest {
         //given
         String encodedFull = base64("repo/z?at=refs/heads/main");
         String encodedRepo = base64("repo/z");
-        var parameter = new Parameter("param1", "value1");
+        var parameter = new Parameter("param1", List.of("value1"));
         var parameters = List.of(parameter);
 
         ProjectComponent existing = ProjectComponent.builder()
@@ -132,7 +132,7 @@ class ProjectComponentsServiceTest {
         String encodedRepo = base64("repo/a");
         String encodedFull = base64("repo/a?at=refs/heads/dev");
 
-        var parameter = new Parameter("param1", "value1");
+        var parameter = new Parameter("param1", List.of("value1"));
         var parameters = List.of(parameter);
 
         ProjectComponent existing = ProjectComponent.builder()
