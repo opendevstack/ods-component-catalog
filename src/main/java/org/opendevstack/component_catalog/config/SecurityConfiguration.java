@@ -9,6 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.web.PathPatternRequestMatcherBuilderFactoryBean;
@@ -32,6 +33,19 @@ public class SecurityConfiguration {
     @Primary
     PathPatternRequestMatcherBuilderFactoryBean pathPatternRequestMatcherBuilderFactoryBean() {
         return new PathPatternRequestMatcherBuilderFactoryBean();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring().requestMatchers(
+                "/swagger-ui/**",
+                "/v3/api-docs/**",
+                "/v1/catalog-items/*/user-actions/**",
+                "/v1/user-actions/**",
+                "/v1/provision/*/*",
+                "/v1/schema-validation/**",
+                "/actuator/health"
+        );
     }
 
     /**
@@ -67,19 +81,6 @@ public class SecurityConfiguration {
 
         http
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers(
-                                "/v1/catalog-items/*/user-actions/**",
-                                "/v1/user-actions/**",
-                                "/v1/schema-validation/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        )
-                        .permitAll()
-                        .requestMatchers("/v1/provision/*/*")
-                        .permitAll()
-                        .requestMatchers("/actuator/health")
-                        .permitAll()
-
                         .requestMatchers("/v1/**", "/actuator/**")
                         .hasAuthority("ROLE_USER") // If required, change or add proper roles set by AAD
                 )
