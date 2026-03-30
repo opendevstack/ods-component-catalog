@@ -135,7 +135,7 @@ class LocationsRestrictionsEvaluatorTest {
     }
 
     @Test
-    void evaluateRestrictions_convertsLocationsToLowerCase() {
+    void evaluateRestrictions_doNotConvertsLocationsToLowerCase() {
         //given
         var projectKey = "projectKey";
 
@@ -152,8 +152,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertEquals(false, result.getLeft());
+        assertEquals("This product is not provisionable in the project location.", result.getRight());
     }
 
     @Test
@@ -163,7 +163,7 @@ class LocationsRestrictionsEvaluatorTest {
 
         var parameters = new ArrayList<CatalogItemUserActionParameter>();
 
-        List<String> clusters = Collections.emptyList();
+        List<String> clusters = null;
 
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc);
         var params = RestrictionsParamsMother.of(parameters, clusters);

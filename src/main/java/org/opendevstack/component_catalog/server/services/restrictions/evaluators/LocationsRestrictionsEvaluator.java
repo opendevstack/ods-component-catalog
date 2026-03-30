@@ -73,7 +73,7 @@ public class LocationsRestrictionsEvaluator implements RestrictionsEvaluator {
                 .map(JsonNullable::get)
                 .map(list -> list.stream()
                         .map(CatalogItemUserActionParameterLocation::getLocation)
-                        .map(String::toLowerCase).toList())
+                        .toList())
                 .toList();
     }
 
