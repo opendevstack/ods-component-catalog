@@ -15,6 +15,9 @@ import java.io.IOException;
 @Slf4j
 public class ConditionalAadFilter extends OncePerRequestFilter {
 
+    // Ideally, we should create different filters and order them in the security configuration.
+    // The thing is, AadAppRoleStatelessAuthenticationFilter is not ordered, so if we try to do so, spring will complain.
+    // The solution would be, wrap it and add an @order annotation, or wrap it in the conditional filter itself, as we do here.
     private final AadAppRoleStatelessAuthenticationFilter delegate;
     private final RequestMatcher protectedEndpoints;
     private final RequestMatcher whitelistedEndpoints;

@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationEn
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -91,6 +92,11 @@ public class SecurityConfiguration {
                         .anyRequest().hasAuthority("ROLE_USER")
                 )
                 .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
+                .cors(c -> c.configurationSource(request ->
+                        new CorsConfiguration().applyPermitDefaultValues()))
+                .sessionManagement(configurer ->
+                        // Avoid session caching and validation e.g. via JSESSIONID cookie, as we are stateless
+                        configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(
                         new ConditionalAadFilter(aadAuthFilter, protectedEndpoints, whitelistedEndpoints),
                         UsernamePasswordAuthenticationFilter.class
