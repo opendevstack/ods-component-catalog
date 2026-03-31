@@ -5,12 +5,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 public class ConditionalAadFilter extends OncePerRequestFilter {
 
     private final AadAppRoleStatelessAuthenticationFilter delegate;
@@ -28,7 +30,15 @@ public class ConditionalAadFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        return whitelistedEndpoints.matches(request) || !protectedEndpoints.matches(request);
+        var shouldNotFilter = whitelistedEndpoints.matches(request) || !protectedEndpoints.matches(request);
+
+        log.debug("Validating url {}: protectedEndpoints matches? {}, whitelistedEndpoints matches? {}, shouldNotFilter? {}",
+                request.getRequestURI(),
+                protectedEndpoints.matches(request),
+                whitelistedEndpoints.matches(request),
+                shouldNotFilter);
+
+        return shouldNotFilter;
     }
 
     @Override
