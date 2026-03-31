@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.config;
 
 import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.AadAppRoleStatelessAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.opendevstack.component_catalog.config.azure.ConditionalAadFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,7 +17,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @RequiredArgsConstructor
@@ -65,33 +68,37 @@ public class SecurityConfiguration {
     @Order(2)
     public SecurityFilterChain aadForEverythingElse(HttpSecurity http) throws Exception {
 
-        http
-                .authorizeHttpRequests(request -> request
-                        .requestMatchers(
-                                "/v1/catalog-items/*/user-actions/**",
-                                "/v1/user-actions/**",
-                                "/v1/schema-validation/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        )
-                        .permitAll()
-                        .requestMatchers("/v1/provision/*/*")
-                        .permitAll()
-                        .requestMatchers("/actuator/health")
-                        .permitAll()
+        RequestMatcher protectedEndpoints = new OrRequestMatcher(
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/actuator/**")
+        );
 
-                        .requestMatchers("/v1/**", "/actuator/**")
-                        .hasAuthority("ROLE_USER") // If required, change or add proper roles set by AAD
+        RequestMatcher whitelistedEndpoints = new OrRequestMatcher(
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/catalog-items/*/user-actions/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/user-actions/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/schema-validation/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/user-actions/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v1/provision/*/*"),
+                PathPatternRequestMatcher.withDefaults().matcher("/actuator/health")
+        );
+
+        http
+                .authorizeHttpRequests(req -> req
+                        .requestMatchers(new RegexRequestMatcher(
+                                "^/v1/catalog-items/.+/user-actions/.*$", null
+                        )).permitAll()
+                        .requestMatchers(
+                                whitelistedEndpoints
+                        ).permitAll()
+                        .anyRequest().hasAuthority("ROLE_USER")
                 )
                 .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
-                .cors(c -> c.configurationSource(request ->
-                        new CorsConfiguration().applyPermitDefaultValues()))
-                .sessionManagement(configurer ->
-                        // Avoid session caching and validation e.g. via JSESSIONID cookie, as we are stateless
-                        configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 2) Azure AD (bearer/JWT) for the rest
-                .addFilterBefore(aadAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        new ConditionalAadFilter(aadAuthFilter, protectedEndpoints, whitelistedEndpoints),
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
