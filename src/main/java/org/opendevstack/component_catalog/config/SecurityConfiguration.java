@@ -18,7 +18,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
@@ -86,9 +85,6 @@ public class SecurityConfiguration {
 
         http
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers(new RegexRequestMatcher(
-                                "^/v1/catalog-items/.+/user-actions/.*$", null
-                        )).permitAll()
                         .requestMatchers(
                                 whitelistedEndpoints
                         ).permitAll()
