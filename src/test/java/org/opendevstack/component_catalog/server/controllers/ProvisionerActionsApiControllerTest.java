@@ -6,22 +6,40 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
+import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class ProvisionerActionsApiControllerTest {
 
     @Mock
     private ProvisionerActionsService provisionerActionsService;
+
+    @Mock
+    private GroupsRestrictionsEvaluator groupsRestrictionsEvaluator;
+
+    @Mock
+    private ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
+
+    @Mock
+    private AuthorizationInfo authorizationInfo;
 
     @InjectMocks
     private ProvisionerActionsApiController provisionerActionsApiController;
@@ -45,6 +63,9 @@ class ProvisionerActionsApiControllerTest {
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
                 .parameters(parameters);
+
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(true, ""));
 
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
@@ -74,6 +95,9 @@ class ProvisionerActionsApiControllerTest {
                 .componentUrl(componentUrl)
                 .parameters(parameters);
 
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(true, ""));
+
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
 
@@ -86,6 +110,64 @@ class ProvisionerActionsApiControllerTest {
                 componentUrl,
                 List.of(Pair.of(parameter.getName(), parameter.getValues()))
         );
+    }
+
+    @Test
+    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
+        // given
+        var projectKey = "projectKey";
+        var status = Status.CREATING;
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
+        var parameters = List.of(parameter);
+
+        var request = new ProvisioningStatusUpdateRequest()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .parameters(parameters);
+
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(true, ""));
+
+        // when
+        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
+
+        // then
+        verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
+                status, componentId, catalogItemId, "", List.of(Pair.of(parameter.getName(), parameter.getValues())));
+    }
+
+    @Test
+    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdate_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
+        // given
+        var projectKey = "projectKey";
+        var status = Status.CREATED;
+        var componentId = "componentId";
+        var catalogItemId = "catalogItemId";
+        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
+        var parameters = List.of(parameter);
+
+        var request = new ProvisioningStatusUpdateRequest()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .parameters(parameters);
+
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(true, ""));
+
+        // when
+        provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
+
+        // then
+        verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
+                status, componentId, catalogItemId, "", List.of(Pair.of(parameter.getName(), parameter.getValues())));
     }
 
     @Test
@@ -102,5 +184,58 @@ class ProvisionerActionsApiControllerTest {
 
         // then
         verify(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId);
+    }
+
+    @Test
+    void givenAProjectKey_whenDeleteProvisioningStatusThrowsException_thenUnprocessableEntityIsReturned() throws JsonProcessingException {
+        // given
+        var projectKey = "projectKey";
+        var componentId = "componentId";
+
+        var request = new ProvisioningDeleteRequest()
+                .componentId(componentId);
+
+        org.mockito.Mockito.doThrow(new JsonProcessingException("Error") {})
+                .when(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId);
+
+        // when
+        var response = provisionerActionsApiController.deleteProvisioningStatus(projectKey, request);
+
+        // then
+        org.junit.jupiter.api.Assertions.assertEquals(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+    }
+
+    @Test
+    void givenUserWithoutPermissions_whenNotifyProvisioningStatusUpdate_thenForbiddenExceptionIsThrown() {
+        // given
+        var projectKey = "projectKey";
+        var request = new ProvisioningStatusUpdateRequest()
+                .componentId("id")
+                .catalogItemId("catalogId")
+                .parameters(List.of());
+
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(false, "Forbidden"));
+
+        // when / then
+        assertThrows(ForbiddenException.class, () ->
+                provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, Status.CREATED.name(), request));
+    }
+
+    @Test
+    void givenUserWithoutPermissions_whenNotifyProvisioningStatusUpdatePartially_thenForbiddenExceptionIsThrown() {
+        // given
+        var projectKey = "projectKey";
+        var request = new ProvisioningStatusUpdateRequest()
+                .componentId("id")
+                .catalogItemId("catalogId")
+                .parameters(List.of());
+
+        when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                .thenReturn(Pair.of(false, "Forbidden"));
+
+        // when / then
+        assertThrows(ForbiddenException.class, () ->
+                provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, Status.CREATED.name(), request));
     }
 }
