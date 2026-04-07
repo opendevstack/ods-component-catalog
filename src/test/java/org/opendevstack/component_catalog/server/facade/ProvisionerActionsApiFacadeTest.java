@@ -2,7 +2,6 @@ package org.opendevstack.component_catalog.server.facade;
 
 import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,7 +11,6 @@ import org.opendevstack.component_catalog.config.ApplicationPropertiesConfigurat
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
-import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
@@ -38,15 +36,9 @@ class ProvisionerActionsApiFacadeTest {
     private GroupsRestrictionsEvaluator groupsRestrictionsEvaluator;
     @Mock
     private ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
-    @Mock
-    private AuthorizationInfo authorizationInfo;
-
     @InjectMocks
-    private ProvisionerActionsApiFacade provisionerActionsApiFacade;
 
-    @BeforeEach
-    void setUp() {
-    }
+    private ProvisionerActionsApiFacade provisionerActionsApiFacade;
 
     @Test
     void map_convertsParametersToPairs() {
