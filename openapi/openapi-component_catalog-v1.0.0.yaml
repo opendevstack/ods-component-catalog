@@ -1151,6 +1151,12 @@ components:
           example: "https://bitbucket.com/projects/DEVSTACK/repos/devstack-component-catalog"
           nullable: true
 
+        accessToken:
+          type: string
+          description: the access token to be used to get azure groups
+          example: "some-access-token"
+          nullable: false
+
         parameters:
           type: array
           description: List of name/value string parameters.

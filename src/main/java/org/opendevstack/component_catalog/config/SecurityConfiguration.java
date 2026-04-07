@@ -80,7 +80,6 @@ public class SecurityConfiguration {
                 PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v1/user-actions/**"),
-                PathPatternRequestMatcher.withDefaults().matcher("/v1/provision/*/*"),
                 PathPatternRequestMatcher.withDefaults().matcher("/actuator/health")
         );
 
