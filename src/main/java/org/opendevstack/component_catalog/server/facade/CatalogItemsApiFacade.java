@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
@@ -16,10 +17,6 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogService
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -52,16 +49,6 @@ public class CatalogItemsApiFacade {
         var userGroups = getProjectGroups(catalogRequestParams);
 
         return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups);
-    }
-
-    public String getIdToken() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        log.debug("Authenticated user '{}'", auth.getName());
-
-        var principal = (UserPrincipal) auth.getPrincipal();
-
-        return principal.getAadIssuedBearerToken();
     }
 
     private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {

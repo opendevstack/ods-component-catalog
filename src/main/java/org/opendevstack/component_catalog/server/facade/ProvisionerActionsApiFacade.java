@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +14,6 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,6 +25,7 @@ public class ProvisionerActionsApiFacade {
     private final ProjectsInfoService projectsInfoService;
     private final GroupsRestrictionsEvaluator groupsRestrictionsEvaluator;
     private final ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
+    private final AuthenticationFacade authenticationFacade;
 
     public static @NonNull List<Pair<@NotNull String, @NotNull List<String>>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         return provisioningStatusUpdateRequest.getParameters().stream()
@@ -46,7 +44,7 @@ public class ProvisionerActionsApiFacade {
                 .build();
 
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, userActionEntityRestrictions);
-        var userGroups = projectsInfoService.getProjectGroups(getIdToken(), provisioningStatusUpdateRequest.getAccessToken());
+        var userGroups = projectsInfoService.getProjectGroups(authenticationFacade.getIdToken(), provisioningStatusUpdateRequest.getAccessToken());
 
         var params = RestrictionsParams.builder()
                 .userGroups(userGroups)
@@ -57,20 +55,6 @@ public class ProvisionerActionsApiFacade {
             log.error("The user has no permissions to perform this action based on group restrictions for project {}", projectKey);
             throw new ForbiddenException("User not allowed to perform this action");
         }
-    }
-
-    public String getIdToken() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        log.debug("Authenticated user '{}'", auth.getName());
-
-        var principal = (UserPrincipal) auth.getPrincipal();
-
-        var idToken = principal.getAadIssuedBearerToken();
-
-        log.debug("Extracted idToken: {} from request.", idToken);
-
-        return idToken;
     }
 
 }

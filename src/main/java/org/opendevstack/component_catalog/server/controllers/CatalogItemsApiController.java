@@ -1,9 +1,12 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.CatalogItemsApi;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.SortOrder;
@@ -11,8 +14,6 @@ import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +28,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
 
     private final AuthorizationInfo authInfo;
     private final CatalogItemsApiFacade catalogItemsApiFacade;
+    private final AuthenticationFacade authenticationFacade;
 
     @Override
     public ResponseEntity<List<CatalogItem>> getCatalogItems(String catalogId, SortOrder sortByTitle) {
@@ -51,7 +53,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
         log.debug("User '{}' requested catalog items for catalog id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), catalogId, projectKey);
         try {
-            var idToken = catalogItemsApiFacade.getIdToken();
+            var idToken = authenticationFacade.getIdToken();
 
             var catalogItemRequestParams = CatalogRequestParams.builder()
                     .catalogId(catalogId)
@@ -93,7 +95,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
         log.debug("User '{}' requested catalog item with id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), id, projectKey);
         try {
-            var idToken = catalogItemsApiFacade.getIdToken();
+            var idToken = authenticationFacade.getIdToken();
 
             var catalogRequestParams = CatalogRequestParams.builder()
                     .catalogItemId(id)

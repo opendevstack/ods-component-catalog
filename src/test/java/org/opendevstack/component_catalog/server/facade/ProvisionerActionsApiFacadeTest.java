@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,16 +14,12 @@ import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,8 +31,9 @@ class ProvisionerActionsApiFacadeTest {
     private GroupsRestrictionsEvaluator groupsRestrictionsEvaluator;
     @Mock
     private ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
+    @Mock
+    private AuthenticationFacade authenticationFacade;
     @InjectMocks
-
     private ProvisionerActionsApiFacade provisionerActionsApiFacade;
 
     @Test
@@ -85,8 +81,7 @@ class ProvisionerActionsApiFacadeTest {
         var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        mockSecurityContext(idToken);
-
+        when(authenticationFacade.getIdToken()).thenReturn(idToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
         when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
@@ -106,8 +101,7 @@ class ProvisionerActionsApiFacadeTest {
         var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        mockSecurityContext(idToken);
-
+        when(authenticationFacade.getIdToken()).thenReturn(idToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
         when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
@@ -120,19 +114,6 @@ class ProvisionerActionsApiFacadeTest {
                 .hasMessage("User not allowed to perform this action");
     }
 
-    private void mockSecurityContext(String idToken) {
-        var authentication = mock(Authentication.class);
-        var securityContext = mock(SecurityContext.class);
-        var principal = mock(UserPrincipal.class);
-
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(principal);
-        when(principal.getAadIssuedBearerToken()).thenReturn(idToken);
-        when(authentication.getName()).thenReturn("userName");
-
-        SecurityContextHolder.setContext(securityContext);
-    }
-
     @Test
     void validateGroupRestrictions_whenEvaluatorReturnsNull_doesNotThrow() {
         // given
@@ -142,8 +123,7 @@ class ProvisionerActionsApiFacadeTest {
         var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        mockSecurityContext(idToken);
-
+        when(authenticationFacade.getIdToken()).thenReturn(idToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
         when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);

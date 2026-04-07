@@ -1,9 +1,17 @@
 
 package org.opendevstack.component_catalog.server.facade;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
@@ -17,13 +25,6 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,9 @@ class CatalogItemsApiFacadeTest {
 
     @Mock
     private UserActionsEntitiesService userActionsEntitiesService;
+
+    @Mock
+    private AuthenticationFacade authenticationFacade;
 
     @Spy
     @InjectMocks
@@ -508,6 +512,17 @@ class CatalogItemsApiFacadeTest {
         assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItem(params))
                 .isInstanceOf(InvalidCatalogItemEntityException.class)
                 .hasMessageContaining("invalid item");
+    }
+
+    @Test
+    void getIdToken_whenAuthIsNull_throwsForbiddenException() {
+        // given
+        when(authenticationFacade.getIdToken()).thenThrow(new ForbiddenException("User not authenticated"));
+
+        // when / then
+        assertThatThrownBy(() -> authenticationFacade.getIdToken())
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User not authenticated");
     }
 
 }

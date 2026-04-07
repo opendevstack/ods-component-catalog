@@ -1,5 +1,10 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
@@ -10,11 +15,6 @@ import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
