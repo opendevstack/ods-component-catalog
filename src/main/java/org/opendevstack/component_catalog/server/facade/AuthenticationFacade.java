@@ -1,0 +1,25 @@
+package org.opendevstack.component_catalog.server.facade;
+
+import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
+import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+
+@Component
+@Slf4j
+public class AuthenticationFacade {
+
+    public String getIdToken() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) {
+            throw new ForbiddenException("User not authenticated");
+        }
+
+        log.debug("Authenticated user '{}'", auth.getName());
+
+        return principal.getAadIssuedBearerToken();
+    }
+}
