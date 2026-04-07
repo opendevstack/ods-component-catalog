@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.SortOrder;
@@ -43,6 +44,9 @@ class CatalogItemsApiControllerTest {
     @Mock
     private CatalogItemsApiFacade catalogItemsApiFacade;
 
+    @Mock
+    private AuthenticationFacade authenticationFacade;
+
     @InjectMocks
     private CatalogItemsApiController catalogItemsApiController;
 
@@ -53,6 +57,7 @@ class CatalogItemsApiControllerTest {
         item.setId("item-1");
         item.setTitle("Item 1");
 
+        when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
@@ -95,6 +100,8 @@ class CatalogItemsApiControllerTest {
         item.setId("item-1");
         item.setTitle("Item 1");
 
+        when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
@@ -110,6 +117,7 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenInvalidProjectKey_WhenGetCatalogItemsForProjectKey_ThenThrowBadRequestException() throws InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
@@ -121,6 +129,7 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenEmptyResult_WhenGetCatalogItemsForProjectKey_ThenReturnEmptyList() throws InvalidCatalogEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
 
         // When
         var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, token, SortOrder.ASC, projectKey);
@@ -193,6 +202,7 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenValidCatalogId_WhenGetCatalogItemByIdForProjectKey_ThenReturnItem() throws InvalidIdException, InvalidCatalogItemEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         CatalogItem catalogItem = new CatalogItem();
         catalogItem.setId(catalogItemId);
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(catalogItem);
@@ -208,6 +218,7 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenInvalidCatalogId_WhenGetCatalogItemByIdForProjectKey_ThenThrowRestEntityNotFoundException() throws InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
@@ -220,6 +231,7 @@ class CatalogItemsApiControllerTest {
     void givenInvalidCatalogItemEntity_WhenGetCatalogItemByIdForProjectKey_ThenThrowInvalidRestEntityException()
             throws InvalidCatalogItemEntityException, InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenThrow(new InvalidCatalogItemEntityException("Invalid ID"));
 
 
@@ -232,6 +244,7 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenCatalogItemNotFound_WhenGetCatalogItemByIdForProjectKey_ThenReturnNotFound() throws InvalidIdException, InvalidCatalogItemEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(authenticationFacade.getIdToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
 
         // When
