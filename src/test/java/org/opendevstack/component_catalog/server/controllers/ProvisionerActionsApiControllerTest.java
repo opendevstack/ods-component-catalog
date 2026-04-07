@@ -16,9 +16,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(SpringExtension.class)
 class ProvisionerActionsApiControllerTest {
@@ -183,7 +182,8 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningDeleteRequest()
                 .componentId(componentId);
 
-        org.mockito.Mockito.doThrow(new JsonProcessingException("Error") {})
+        org.mockito.Mockito.doThrow(new JsonProcessingException("Error") {
+                })
                 .when(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId);
 
         // when
