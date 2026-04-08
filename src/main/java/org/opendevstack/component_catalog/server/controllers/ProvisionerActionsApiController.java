@@ -1,23 +1,21 @@
 package org.opendevstack.component_catalog.server.controllers;
 
-import jakarta.validation.constraints.NotNull;
-import org.apache.commons.lang3.tuple.Pair;
-import org.jspecify.annotations.NonNull;
-import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
-import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
-import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
-import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
+import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
+import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.util.List;
+import static org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade.map;
 
 @Controller
 @RequestMapping("${openapi.componentCatalogREST.base-path:/v1}")
@@ -25,7 +23,9 @@ import java.util.List;
 @Slf4j
 public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
+    private final ProvisionerActionsApiFacade provisionerActionsApiFacade;
     private final ProvisionerActionsService provisionerActionsService;
+
 
     @SneakyThrows
     @Override
@@ -36,12 +36,13 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 projectKey, provisioningStatusUpdateRequest.toString());
 
         var normalizedProjectKey = projectKey.toUpperCase();
+        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey, provisioningStatusUpdateRequest);
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
         provisionerActionsService.updateComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
-                    provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                    normalizedComponentUrl, parameters);
+                provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
+                normalizedComponentUrl, parameters);
 
         return ResponseEntity.ok().build();
     }
@@ -53,6 +54,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 projectKey, provisioningStatusUpdateRequest.toString());
 
         var normalizedProjectKey = projectKey.toUpperCase();
+        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey, provisioningStatusUpdateRequest);
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
@@ -74,11 +76,5 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         }
 
         return ResponseEntity.ok().build();
-    }
-
-    private static @NonNull List<Pair<@NotNull String, @NotNull List<String>>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
-        return provisioningStatusUpdateRequest.getParameters().stream()
-                .map(parameter -> Pair.of(parameter.getName(), parameter.getValues()))
-                .toList();
     }
 }

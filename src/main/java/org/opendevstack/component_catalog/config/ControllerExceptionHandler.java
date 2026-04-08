@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.config;
 
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadConfigurationException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.model.RestErrorMessage;
@@ -45,6 +46,13 @@ public class ControllerExceptionHandler {
         log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
         
         return defaultErrResponse(ex, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<RestErrorMessage> handleForbiddenException(ForbiddenException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        return defaultErrResponse(ex, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(RestEntityNotFoundException.class)

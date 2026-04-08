@@ -1,8 +1,14 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemMother;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
@@ -13,22 +19,12 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
@@ -47,6 +43,9 @@ class ProjectComponentsFacadeTest {
     @Mock
     private ProjectsInfoService projectsInfoService;
 
+    @Mock
+    private AuthenticationFacade authenticationFacade;
+
     @InjectMocks
     private ProjectComponentsFacade projectComponentsFacade;
 
@@ -54,16 +53,9 @@ class ProjectComponentsFacadeTest {
     void setUp() {
         ProjectComponentsInfoMapper projectComponentsInfoMapper = new ProjectComponentsInfoMapper(catalogItemsApiFacade,
                 catalogItemDefaultProps);
-        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService);
+        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService, authenticationFacade);
 
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                new UserPrincipal("idToken", null, null),                // principal (can be UserDetails)
-                "password",             // ignored
-                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-        );
-
-        // Put it into the SecurityContext
-        SecurityContextHolder.setContext(new SecurityContextImpl(auth));
+        lenient().when(authenticationFacade.getIdToken()).thenReturn("idToken");
     }
 
     @Test
@@ -245,6 +237,17 @@ class ProjectComponentsFacadeTest {
         // then
         assertThat(result).isEmpty();
         verify(catalogItemsApiFacade, times(0)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void getIdToken_whenAuthIsNull_throwsForbiddenException() {
+        // given
+        when(authenticationFacade.getIdToken()).thenThrow(new ForbiddenException("User not authenticated"));
+
+        // when / then
+        assertThatThrownBy(() -> authenticationFacade.getIdToken())
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User not authenticated");
     }
 }
 
