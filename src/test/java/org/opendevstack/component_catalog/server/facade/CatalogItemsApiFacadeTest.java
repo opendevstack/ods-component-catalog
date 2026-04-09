@@ -16,6 +16,8 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
@@ -49,6 +51,9 @@ class CatalogItemsApiFacadeTest {
 
     @Mock
     private UserActionsEntitiesService userActionsEntitiesService;
+
+    @Mock
+    private CatalogItemBySlugService catalogItemBySlugService;
 
     @Mock
     private AuthenticationFacade authenticationFacade;
@@ -523,6 +528,44 @@ class CatalogItemsApiFacadeTest {
         assertThatThrownBy(() -> authenticationFacade.getIdToken())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
+    }
+
+    @Test
+    void fetchCatalogItemBySlug_whenItemFound_returnsMappedCatalogItem()
+            throws Exception {
+        // given
+        var slug = CatalogItemSlug.parse("myproject_my-repo");
+        var itemCtx = mock(CatalogItemEntityContext.class);
+        when(itemCtx.getId()).thenReturn("item-id-1");
+        when(catalogItemBySlugService.findByCatalogItemSlug(slug)).thenReturn(Optional.of(itemCtx));
+        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
+        doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions("item-id-1");
+
+        var expected = new CatalogItem();
+        expected.setId("item-id-1");
+        doReturn(expected).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
+
+        // when
+        var result = catalogItemsApiFacade.fetchCatalogItemBySlug(slug);
+
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(catalogItemBySlugService).findByCatalogItemSlug(slug);
+    }
+
+    @Test
+    void fetchCatalogItemBySlug_whenItemNotFound_returnsNull()
+            throws Exception {
+        // given
+        var slug = CatalogItemSlug.parse("myproject_my-repo");
+        when(catalogItemBySlugService.findByCatalogItemSlug(slug)).thenReturn(Optional.empty());
+
+        // when
+        var result = catalogItemsApiFacade.fetchCatalogItemBySlug(slug);
+
+        // then
+        assertThat(result).isNull();
+        verify(userActionsEntitiesService, never()).getDefaultUserActionsEntity();
     }
 
 }
