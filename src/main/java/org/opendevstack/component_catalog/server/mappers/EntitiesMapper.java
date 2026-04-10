@@ -20,7 +20,8 @@ import java.util.stream.Stream;
 
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 
-import static org.opendevstack.component_catalog.server.mappers.MapperUtils.nullish;import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.nullableIdEncode;
+import static org.opendevstack.component_catalog.server.mappers.MapperUtils.nullish;
+import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.nullableIdEncode;
 
 @Component
 @Slf4j
