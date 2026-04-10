@@ -88,7 +88,7 @@ public class ProvisionerActionsService {
 
         var projectComponents = getProjectComponents(projectKey);
 
-        if (projectComponents == null) {
+        if (projectComponents == null || projectComponents.getComponents() == null) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
         }
 
