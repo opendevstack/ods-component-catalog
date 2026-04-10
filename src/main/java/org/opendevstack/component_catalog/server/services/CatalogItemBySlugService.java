@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.services;
 
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
@@ -30,13 +31,15 @@ public class CatalogItemBySlugService {
 
     private final CatalogsCollectionService catalogsCollectionService;
     private final CatalogEntitiesService catalogEntitiesService;
+    private final CatalogServiceAdapter catalogServiceAdapter;
+    private final BitbucketService bitbucketService;
 
     /**
      * Resolves a {@link CatalogItemSlug} to the matching {@link CatalogItemEntityContext}.
      *
      * @param slug the parsed composite slug
      * @return an {@link Optional} with the matching context, or empty if not found
-     * @throws InvalidIdException              if any catalog id is structurally invalid
+     * @throws InvalidIdException              if any catalog or item id is structurally invalid
      * @throws InvalidCatalogEntityException   if a catalog entity cannot be parsed
      */
     public Optional<CatalogItemEntityContext> findByCatalogItemSlug(CatalogItemSlug slug)
@@ -59,26 +62,39 @@ public class CatalogItemBySlugService {
 
         for (var target : targets) {
             var catalogId = idEncode(target.getUrl());
-            var itemContexts = catalogEntitiesService.getCatalogItemsEntities(catalogId);
-            var match = itemContexts.stream()
-                    .filter(ctx -> itemMatchesSlug(ctx, slug))
-                    .findFirst();
-            if (match.isPresent()) {
-                log.debug("Resolved slug '{}' to item in catalog target '{}'", slug, target.getUrl());
-                return match;
+
+            var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogId);
+
+            // Optimisation: skip catalogs whose Bitbucket project key does not match the slug's project key,
+            // avoiding unnecessary item loading. This relies on the assumption that catalog items live in the
+            // same Bitbucket project as their catalog definition.
+            if (CatalogItemSlug.normalise(catalogIdPathAt.getProjectKey()).equals(slug.getProjectKey())) {
+                log.debug("Catalog target '{}' matches slug project key '{}', checking items...",
+                        target.getUrl(), slug.getProjectKey());
+
+                var slugCatalogEntity = catalogEntitiesService.getCatalogEntity(catalogId);
+
+                if (slugCatalogEntity.isPresent()) {
+                    // A slug uniquely identifies one item. Multiple matches (e.g. the same repo referenced
+                    // in more than one catalog entry) are not expected; we return the first one found.
+                    for (var itemTarget : slugCatalogEntity.get().getMetadata().getSpec().getTargets()) {
+                        var itemPathAt = bitbucketService.pathAtBuilder()
+                                .rawUrl(itemTarget.getUrl())
+                                .build();
+                        if (CatalogItemSlug.normalise(itemPathAt.getProjectKey()).equals(slug.getProjectKey())
+                                && itemPathAt.getRepoSlug().equalsIgnoreCase(slug.getRepoName())) {
+                            var itemId = idEncode(itemPathAt.getPathAt());
+                            log.debug("Resolved slug '{}' to item id '{}' in catalog target '{}'", slug, itemId, target.getUrl());
+                            return catalogEntitiesService.getCatalogItemEntity(itemId);
+                        }
+                    }
+                }
+
             }
         }
 
         log.debug("No catalog item matched slug '{}'", slug);
         return Optional.empty();
-    }
-
-    // --- private helpers ---
-
-    private boolean itemMatchesSlug(CatalogItemEntityContext ctx, CatalogItemSlug slug) {
-        var normalisedProjectKey = CatalogItemSlug.normalise(ctx.getRepoCatalogItemPathAt().getProjectKey());
-        return normalisedProjectKey.equals(slug.getProjectKey())
-                && slug.getRepoName().equalsIgnoreCase(ctx.getRepoCatalogItemPathAt().getRepoSlug());
     }
 
 }

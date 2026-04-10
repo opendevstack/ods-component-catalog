@@ -1,19 +1,23 @@
 package org.opendevstack.component_catalog.server.services;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
+import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityMother;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityTarget;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntitySpec;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityTarget;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,14 +27,32 @@ import static org.opendevstack.component_catalog.server.services.common.IdEncode
 @ExtendWith(MockitoExtension.class)
 class CatalogItemBySlugServiceTest {
 
+    private static final String BASE_RAW_URL = "https://bitbucket.example.com";
+    private static final String BASE_REST_URL = "https://bitbucket.example.com/rest/api/latest";
+
     @Mock
     private CatalogsCollectionService catalogsCollectionService;
 
     @Mock
     private CatalogEntitiesService catalogEntitiesService;
 
+    @Mock
+    private CatalogServiceAdapter catalogServiceAdapter;
+
+    @Mock
+    private BitbucketService bitbucketService;
+
     @InjectMocks
     private CatalogItemBySlugService catalogItemBySlugService;
+
+    @BeforeEach
+    void setUpPathAtBuilder() {
+        lenient().when(bitbucketService.pathAtBuilder()).thenReturn(
+                BitbucketPathAt.builder()
+                        .baseRawUrl(BASE_RAW_URL)
+                        .baseRestUrl(BASE_REST_URL)
+        );
+    }
 
     @Test
     void findByCatalogItemSlug_whenNoCatalogsCollection_returnsEmpty() throws Exception {
@@ -78,144 +100,177 @@ class CatalogItemBySlugServiceTest {
 
     @Test
     void findByCatalogItemSlug_whenItemMatchesOnFirstCatalog_returnsIt() throws Exception {
-        // BitbucketPathAtMother.of() gives projectKey="MYPROJECT", repoSlug="repo-slug"
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of();
         var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
 
-        var target = targetWithUrl("https://catalog-url/catalog1");
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
         var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
+        mockCatalogPathAt(target, "MYPROJECT");
 
-        var catalogId = idEncode(target.getUrl());
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(List.of(itemCtx));
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "repo-slug"))));
+        when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
+                .thenReturn(Optional.of(itemCtx));
 
-        // MYPROJECT normalises to "myproject"; repo-slug matches case-insensitively
-        var slug = CatalogItemSlug.parse("myproject_repo-slug");
-        var result = catalogItemBySlugService.findByCatalogItemSlug(slug);
+        var result = catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"));
 
         assertThat(result).isPresent().contains(itemCtx);
     }
 
     @Test
     void findByCatalogItemSlug_whenProjectKeyMatchesCaseInsensitively_returnsItem() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of(); // projectKey=MYPROJECT
         var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
 
-        var target = targetWithUrl("https://catalog-url/catalog1");
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
         var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
+        mockCatalogPathAt(target, "MYPROJECT");
 
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target.getUrl()))).thenReturn(List.of(itemCtx));
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "repo-slug"))));
+        when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
+                .thenReturn(Optional.of(itemCtx));
 
-        // "MYPROJECT" normalises to "myproject" — slug uses lowercase which is what normalise produces
-        var slug = CatalogItemSlug.parse("myproject_repo-slug");
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(slug)).isPresent();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isPresent();
     }
 
     @Test
     void findByCatalogItemSlug_whenRepoNameMatchesCaseInsensitively_returnsItem() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of(); // repoSlug="repo-slug"
         var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
 
-        var target = targetWithUrl("https://catalog-url/catalog1");
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
         var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
+        mockCatalogPathAt(target, "MYPROJECT");
 
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target.getUrl()))).thenReturn(List.of(itemCtx));
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "repo-slug"))));
+        when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
+                .thenReturn(Optional.of(itemCtx));
 
-        var slug = CatalogItemSlug.parse("myproject_REPO-SLUG");
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(slug)).isPresent();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_REPO-SLUG"))).isPresent();
     }
 
     @Test
     void findByCatalogItemSlug_whenItemFoundInSecondCatalog_returnsIt() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of();
         var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
 
-        var target1 = targetWithUrl("https://catalog-url/catalog1");
-        var target2 = targetWithUrl("https://catalog-url/catalog2");
+        var target1 = catalogTargetWithUrl("https://catalog-url/catalog1");
+        var target2 = catalogTargetWithUrl("https://catalog-url/catalog2");
         var collection = collectionWithTargets(target1, target2);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
+        mockCatalogPathAt(target1, "MYPROJECT");
+        mockCatalogPathAt(target2, "MYPROJECT");
 
-        // First catalog has no matching items
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target1.getUrl()))).thenReturn(List.of());
+        // First catalog has a non-matching item
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target1.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "other-repo"))));
         // Second catalog has the matching item
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target2.getUrl()))).thenReturn(List.of(itemCtx));
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target2.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "repo-slug"))));
+        when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
+                .thenReturn(Optional.of(itemCtx));
 
-        var slug = CatalogItemSlug.parse("myproject_repo-slug");
-        var result = catalogItemBySlugService.findByCatalogItemSlug(slug);
+        var result = catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"));
 
         assertThat(result).isPresent().contains(itemCtx);
-        verify(catalogEntitiesService).getCatalogItemsEntities(idEncode(target1.getUrl()));
-        verify(catalogEntitiesService).getCatalogItemsEntities(idEncode(target2.getUrl()));
+        verify(catalogEntitiesService).getCatalogEntity(idEncode(target1.getUrl()));
+        verify(catalogEntitiesService).getCatalogEntity(idEncode(target2.getUrl()));
     }
 
     @Test
-    void findByCatalogItemSlug_whenNoItemMatchesProjectKey_returnsEmpty() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of(); // projectKey=MYPROJECT
-        var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
-
-        var target = targetWithUrl("https://catalog-url/catalog1");
+    void findByCatalogItemSlug_whenItemProjectKeyDoesNotMatchSlug_returnsEmpty() throws Exception {
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
         var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target.getUrl()))).thenReturn(List.of(itemCtx));
+        mockCatalogPathAt(target, "MYPROJECT");
 
-        var slug = CatalogItemSlug.parse("otherproject_repo-slug");
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(slug)).isEmpty();
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("DIFFERENTPROJECT", "repo-slug"))));
+
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isEmpty();
+        verify(catalogEntitiesService, never()).getCatalogItemEntity(any());
     }
 
     @Test
     void findByCatalogItemSlug_whenNoItemMatchesRepoName_returnsEmpty() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of(); // repoSlug="repo-slug"
-        var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
-
-        var target = targetWithUrl("https://catalog-url/catalog1");
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
         var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target.getUrl()))).thenReturn(List.of(itemCtx));
+        mockCatalogPathAt(target, "MYPROJECT");
 
-        var slug = CatalogItemSlug.parse("myproject_other-repo");
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(slug)).isEmpty();
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "other-repo"))));
+
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isEmpty();
+        verify(catalogEntitiesService, never()).getCatalogItemEntity(any());
     }
 
     @Test
-    void findByCatalogItemSlug_whenAllCatalogsEmpty_returnsEmpty() throws Exception {
-        var target1 = targetWithUrl("https://catalog-url/catalog1");
-        var target2 = targetWithUrl("https://catalog-url/catalog2");
-        var collection = collectionWithTargets(target1, target2);
+    void findByCatalogItemSlug_whenCatalogEntityAbsent_returnsEmpty() throws Exception {
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
+        var collection = collectionWithTargets(target);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
-        when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
+        mockCatalogPathAt(target, "MYPROJECT");
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl()))).thenReturn(Optional.empty());
 
-        var result = catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_my-repo"));
+        var result = catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"));
 
         assertThat(result).isEmpty();
+        verify(catalogEntitiesService, never()).getCatalogItemEntity(any());
+    }
+
+    @Test
+    void findByCatalogItemSlug_whenCatalogProjectKeyDoesNotMatchSlug_skipsItemsQuery() throws Exception {
+        var target = catalogTargetWithUrl("https://catalog-url/catalog1");
+        var collection = collectionWithTargets(target);
+        when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
+        mockCatalogPathAt(target, "DIFFERENTPROJECT");
+
+        var result = catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"));
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(catalogEntitiesService);
     }
 
     @Test
     void findByCatalogItemSlug_whenMatchFoundInFirstCatalog_doesNotQuerySecondCatalog() throws Exception {
-        var repoCatalogItemPathAt = BitbucketPathAtMother.of();
         var itemCtx = mock(CatalogItemEntityContext.class);
-        when(itemCtx.getRepoCatalogItemPathAt()).thenReturn(repoCatalogItemPathAt);
 
-        var target1 = targetWithUrl("https://catalog-url/catalog1");
-        var target2 = targetWithUrl("https://catalog-url/catalog2");
+        var target1 = catalogTargetWithUrl("https://catalog-url/catalog1");
+        var target2 = catalogTargetWithUrl("https://catalog-url/catalog2");
         var collection = collectionWithTargets(target1, target2);
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(collection));
-        when(catalogEntitiesService.getCatalogItemsEntities(idEncode(target1.getUrl()))).thenReturn(List.of(itemCtx));
+        mockCatalogPathAt(target1, "MYPROJECT");
 
-        var slug = CatalogItemSlug.parse("myproject_repo-slug");
-        catalogItemBySlugService.findByCatalogItemSlug(slug);
+        when(catalogEntitiesService.getCatalogEntity(idEncode(target1.getUrl())))
+                .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "repo-slug"))));
+        when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
+                .thenReturn(Optional.of(itemCtx));
 
-        verify(catalogEntitiesService, never()).getCatalogItemsEntities(idEncode(target2.getUrl()));
+        catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"));
+
+        verify(catalogEntitiesService, never()).getCatalogEntity(idEncode(target2.getUrl()));
     }
 
-    private static CatalogsCollectionsEntityTarget targetWithUrl(String url) {
+
+    /**
+     * Returns a real Bitbucket-format item URL that BitbucketPathAt will parse to the given
+     * projectKey and repoSlug. This is the URL that appears in CatalogEntityTarget.url.
+     */
+    private static String bitbucketItemUrl(String projectKey, String repoSlug) {
+        return BASE_RAW_URL + "/projects/" + projectKey + "/repos/" + repoSlug + "/raw/catalog.yaml?at=refs/heads/main";
+    }
+
+    /**
+     * Returns the encoded item ID the service derives from itemPathAt.getPathAt() after parsing
+     * bitbucketItemUrl(projectKey, repoSlug) through BitbucketPathAt.
+     */
+    private static String encodedItemId(String projectKey, String repoSlug) {
+        return idEncode("projects/" + projectKey + "/repos/" + repoSlug + "/raw/catalog.yaml?at=refs/heads/main");
+    }
+
+    private static CatalogsCollectionsEntityTarget catalogTargetWithUrl(String url) {
         var target = new CatalogsCollectionsEntityTarget();
         target.setUrl(url);
         target.setSlug("a-slug");
@@ -226,5 +281,19 @@ class CatalogItemBySlugServiceTest {
         var collection = CatalogsCollectionsEntityMother.of();
         collection.getMetadata().getSpec().setTargets(targets);
         return collection;
+    }
+
+    private static CatalogEntity catalogEntityWithItemUrl(String itemUrl) {
+        var entity = CatalogEntityMother.of();
+        var itemTarget = new CatalogEntityTarget();
+        itemTarget.setUrl(itemUrl);
+        entity.getMetadata().getSpec().setTargets(new CatalogEntityTarget[]{itemTarget});
+        return entity;
+    }
+
+    private void mockCatalogPathAt(CatalogsCollectionsEntityTarget target, String projectKey) throws Exception {
+        var catalogPathAt = mock(BitbucketPathAt.class);
+        when(catalogPathAt.getProjectKey()).thenReturn(projectKey);
+        when(catalogServiceAdapter.bitbucketPathAtFromId(idEncode(target.getUrl()))).thenReturn(catalogPathAt);
     }
 }
