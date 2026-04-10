@@ -74,27 +74,40 @@ public class CatalogItemBySlugService {
             log.debug("Catalog target '{}' matches slug project key '{}', checking items...",
                     target.getUrl(), slug.getProjectKey());
 
-            var slugCatalogEntity = catalogEntitiesService.getCatalogEntity(catalogId);
-            if (slugCatalogEntity.isEmpty()) {
-                continue;
-            }
-
-            // A slug uniquely identifies one item. Multiple matches (e.g. the same repo referenced
-            // in more than one catalog entry) are not expected; we return the first one found.
-            for (var itemTarget : slugCatalogEntity.get().getMetadata().getSpec().getTargets()) {
-                var itemPathAt = bitbucketService.pathAtBuilder()
-                        .rawUrl(itemTarget.getUrl())
-                        .build();
-                if (CatalogItemSlug.normalise(itemPathAt.getProjectKey()).equals(slug.getProjectKey())
-                        && itemPathAt.getRepoSlug().equalsIgnoreCase(slug.getRepoName())) {
-                    var itemId = idEncode(itemPathAt.getPathAt());
-                    log.debug("Resolved slug '{}' to item id '{}' in catalog target '{}'", slug, itemId, target.getUrl());
-                    return catalogEntitiesService.getCatalogItemEntity(itemId);
-                }
+            var match = findMatchingItemInCatalog(catalogId, slug, target.getUrl());
+            if (match.isPresent()) {
+                return match;
             }
         }
 
         log.debug("No catalog item matched slug '{}'", slug);
+        return Optional.empty();
+    }
+
+    /**
+     * Loads the catalog entity for {@code catalogId} and searches its targets for the item
+     * matching {@code slug}. Returns the first match, or empty if none is found.
+     */
+    private Optional<CatalogItemEntityContext> findMatchingItemInCatalog(String catalogId, CatalogItemSlug slug, String catalogUrl)
+            throws InvalidIdException, InvalidCatalogEntityException {
+        var slugCatalogEntity = catalogEntitiesService.getCatalogEntity(catalogId);
+        if (slugCatalogEntity.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // A slug uniquely identifies one item. Multiple matches (e.g. the same repo referenced
+        // in more than one catalog entry) are not expected; we return the first one found.
+        for (var itemTarget : slugCatalogEntity.get().getMetadata().getSpec().getTargets()) {
+            var itemPathAt = bitbucketService.pathAtBuilder()
+                    .rawUrl(itemTarget.getUrl())
+                    .build();
+            if (CatalogItemSlug.normalise(itemPathAt.getProjectKey()).equals(slug.getProjectKey())
+                    && itemPathAt.getRepoSlug().equalsIgnoreCase(slug.getRepoName())) {
+                var itemId = idEncode(itemPathAt.getPathAt());
+                log.debug("Resolved slug '{}' to item id '{}' in catalog target '{}'", slug, itemId, catalogUrl);
+                return catalogEntitiesService.getCatalogItemEntity(itemId);
+            }
+        }
         return Optional.empty();
     }
 
