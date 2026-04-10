@@ -62,34 +62,35 @@ public class CatalogItemBySlugService {
 
         for (var target : targets) {
             var catalogId = idEncode(target.getUrl());
-
             var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogId);
 
             // Optimisation: skip catalogs whose Bitbucket project key does not match the slug's project key,
             // avoiding unnecessary item loading. This relies on the assumption that catalog items live in the
             // same Bitbucket project as their catalog definition.
-            if (CatalogItemSlug.normalise(catalogIdPathAt.getProjectKey()).equals(slug.getProjectKey())) {
-                log.debug("Catalog target '{}' matches slug project key '{}', checking items...",
-                        target.getUrl(), slug.getProjectKey());
+            if (!CatalogItemSlug.normalise(catalogIdPathAt.getProjectKey()).equals(slug.getProjectKey())) {
+                continue;
+            }
 
-                var slugCatalogEntity = catalogEntitiesService.getCatalogEntity(catalogId);
+            log.debug("Catalog target '{}' matches slug project key '{}', checking items...",
+                    target.getUrl(), slug.getProjectKey());
 
-                if (slugCatalogEntity.isPresent()) {
-                    // A slug uniquely identifies one item. Multiple matches (e.g. the same repo referenced
-                    // in more than one catalog entry) are not expected; we return the first one found.
-                    for (var itemTarget : slugCatalogEntity.get().getMetadata().getSpec().getTargets()) {
-                        var itemPathAt = bitbucketService.pathAtBuilder()
-                                .rawUrl(itemTarget.getUrl())
-                                .build();
-                        if (CatalogItemSlug.normalise(itemPathAt.getProjectKey()).equals(slug.getProjectKey())
-                                && itemPathAt.getRepoSlug().equalsIgnoreCase(slug.getRepoName())) {
-                            var itemId = idEncode(itemPathAt.getPathAt());
-                            log.debug("Resolved slug '{}' to item id '{}' in catalog target '{}'", slug, itemId, target.getUrl());
-                            return catalogEntitiesService.getCatalogItemEntity(itemId);
-                        }
-                    }
+            var slugCatalogEntity = catalogEntitiesService.getCatalogEntity(catalogId);
+            if (slugCatalogEntity.isEmpty()) {
+                continue;
+            }
+
+            // A slug uniquely identifies one item. Multiple matches (e.g. the same repo referenced
+            // in more than one catalog entry) are not expected; we return the first one found.
+            for (var itemTarget : slugCatalogEntity.get().getMetadata().getSpec().getTargets()) {
+                var itemPathAt = bitbucketService.pathAtBuilder()
+                        .rawUrl(itemTarget.getUrl())
+                        .build();
+                if (CatalogItemSlug.normalise(itemPathAt.getProjectKey()).equals(slug.getProjectKey())
+                        && itemPathAt.getRepoSlug().equalsIgnoreCase(slug.getRepoName())) {
+                    var itemId = idEncode(itemPathAt.getPathAt());
+                    log.debug("Resolved slug '{}' to item id '{}' in catalog target '{}'", slug, itemId, target.getUrl());
+                    return catalogEntitiesService.getCatalogItemEntity(itemId);
                 }
-
             }
         }
 
