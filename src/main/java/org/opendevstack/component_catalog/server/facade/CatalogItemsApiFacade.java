@@ -10,6 +10,7 @@ import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
@@ -17,6 +18,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogService
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -36,6 +38,7 @@ public class CatalogItemsApiFacade {
     private final ProjectsInfoService projectsInfoService;
     private final CatalogEntitiesService catalogEntitiesService;
     private final UserActionsEntitiesService userActionsEntitiesService;
+    private final CatalogItemBySlugService catalogItemBySlugService;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
@@ -114,6 +117,28 @@ public class CatalogItemsApiFacade {
                 )
                 .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
                 .orElse(null);
+    }
+
+    public CatalogItem fetchCatalogItemBySlug(CatalogItemSlug slug)
+            throws InvalidIdException, InvalidCatalogEntityException {
+        var maybeItemEntityCtx = catalogItemBySlugService.findByCatalogItemSlug(slug);
+
+        if (maybeItemEntityCtx.isEmpty()) {
+            return null;
+        }
+
+        var itemEntityCtx = maybeItemEntityCtx.get();
+        var principalPermissions = currentPrincipalCatalogPermissions(itemEntityCtx.getId());
+        var userActionsEntity = userActionsEntitiesService.getDefaultUserActionsEntity();
+
+        return asCatalogItem(
+                CatalogRequestParams.builder()
+                        .catalogItemEntityContext(itemEntityCtx)
+                        .catalogItemId(itemEntityCtx.getId())
+                        .userActionsEntity(userActionsEntity)
+                        .permissions(principalPermissions)
+                        .build()
+        );
     }
 
     protected boolean filterByProject(CatalogItem item, String projectKey) {

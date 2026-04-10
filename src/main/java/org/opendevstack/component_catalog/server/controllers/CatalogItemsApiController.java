@@ -14,6 +14,8 @@ import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
+import org.opendevstack.component_catalog.server.services.slug.InvalidCatalogItemSlugException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -112,6 +114,23 @@ public class CatalogItemsApiController implements CatalogItemsApi {
             throw new RestEntityNotFoundException("Catalog item not found, item id: " + id);
         } catch (InvalidCatalogItemEntityException e) {
             throw new InvalidRestEntityException("Invalid catalog item, item id: " + id);
+        }
+    }
+
+    @Override
+    public ResponseEntity<CatalogItem> getCatalogItemBySlug(String slug) {
+        log.debug("User '{}' requested catalog item by slug: '{}'", authInfo.getCurrentPrincipalName(), slug);
+        try {
+            var catalogItemSlug = CatalogItemSlug.parse(slug);
+            var catItem = catalogItemsApiFacade.fetchCatalogItemBySlug(catalogItemSlug);
+            if (catItem == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(catItem);
+        } catch (InvalidCatalogItemSlugException e) {
+            throw new BadRequestException("Invalid slug format: " + e.getMessage());
+        } catch (InvalidIdException | InvalidCatalogEntityException e) {
+            throw new BadRequestException("Could not resolve catalog item for slug: " + slug);
         }
     }
 

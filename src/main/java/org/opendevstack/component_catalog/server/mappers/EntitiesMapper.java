@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Stream;
 
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
+
 import static org.opendevstack.component_catalog.server.mappers.MapperUtils.nullish;
 import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.nullableIdEncode;
 
@@ -76,8 +78,14 @@ public class EntitiesMapper {
                         .projects(Collections.unmodifiableSet(new LinkedHashSet<>()))
                         .build());
 
+        var catalogProject = catalogItemEntityCtx.getRepoCatalogItemPathAt().getProjectKey();
+        var itemSlug = (catalogProject != null && !catalogProject.isBlank())
+                ? CatalogItemSlug.normalise(catalogProject) + CatalogItemSlug.SEPARATOR + catalogItemEntityCtx.getRepoCatalogItemPathAt().getRepoSlug()
+                : null;
+
         var catalogItem = CatalogItem.builder()
                 .id(catalogItemEntityCtx.getId())
+                .slug(itemSlug)
                 .path(catalogItemEntityCtx.getPath())
                 .title(catalogItemEntity.getMetadata().getName())
                 .shortDescription(catalogItemEntity.getMetadata().getShortDescription())

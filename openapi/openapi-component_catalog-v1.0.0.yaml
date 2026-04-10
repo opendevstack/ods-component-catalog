@@ -162,6 +162,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
+  /catalog-items/slug/{slug}:
+    get:
+      tags:
+        - CatalogItems
+      summary: Returns the CatalogItem associated to the provided slug.
+      description: >
+        Returns the CatalogItem identified by a composite slug with format `{project-key}_{catalog-item-repository-name}`.<br/>
+        The separator is the first underscore (`_`); everything after it (the repo name) may itself contain underscores.<br/>
+        The project-key is the normalised (lowercase) Bitbucket project key that owns the item's repository.
+        The catalog-item-repository-name is matched against the Bitbucket repository slug of the item.<br/>
+        Returns 404 if no catalog item matches the provided slug.
+      operationId: getCatalogItemBySlug
+      parameters:
+        - name: slug
+          in: path
+          description: >
+            Composite slug with format `{project-key}_{catalog-item-repository-name}`.
+            The separator is the first underscore; the repo name may contain additional underscores.
+            Example: `myproject_my-component-repo`
+          required: true
+          schema:
+            type: string
+            example: 'myproject_my-component-repo'
+      responses:
+        "200":
+          description: The CatalogItem.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+        "400":
+          description: Invalid or malformed slug provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "404":
+          description: No CatalogItem associated to the provided slug.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "422":
+          description: Invalid CatalogItem associated to the provided slug.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
   /catalog-items:
     get:
       tags:
@@ -826,6 +892,12 @@ components:
         id:
           type: string
           example: 'aSdFam...yCg=='
+        slug:
+          type: string
+          description: >
+            Composite slug computed from the normalised Bitbucket project key and the repository slug of the item,
+            in the format `{project-key}_{repo-name}`. Calculated at mapping time; not retrieved from Bitbucket.
+          example: 'myproject_my-component-repo'
         path:
           type: string
           example: projects/SOMEPROJECT/repos/some-repo/raw/CatalogItem.yaml?at=refs/heads/master
@@ -875,6 +947,7 @@ components:
         - date
       example:
         id: aSdFam...yCg==
+        slug: myproject_some-repo
         path: projects/SOMEPROJECT/repos/some-repo/raw/CatalogItem.yaml?at=refs/heads/master
         title: An item title
         shortDescription: This is a short description for the item
