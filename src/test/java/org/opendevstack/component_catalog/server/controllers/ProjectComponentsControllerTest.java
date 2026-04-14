@@ -38,7 +38,7 @@ class ProjectComponentsControllerTest {
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenReturn(components);
 
         // when
-        var response = projectComponentsController.getProjectComponents(projectKey, accessToken);
+        var response = projectComponentsController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -56,7 +56,7 @@ class ProjectComponentsControllerTest {
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenReturn(List.of());
 
         // when
-        var response = projectComponentsController.getProjectComponents(projectKey, accessToken);
+        var response = projectComponentsController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -72,7 +72,7 @@ class ProjectComponentsControllerTest {
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenThrow(new RuntimeException("Unexpected error"));
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey, accessToken)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
+        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
 
         verify(projectComponentsFacade, times(1)).getProjectComponentsInfo(projectKey, accessToken);
     }

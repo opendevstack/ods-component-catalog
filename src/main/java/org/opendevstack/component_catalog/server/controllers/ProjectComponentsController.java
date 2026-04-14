@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.controllers;
 
 import org.opendevstack.component_catalog.server.api.ProjectComponentsApi;
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import lombok.AllArgsConstructor;
@@ -20,9 +21,12 @@ import java.util.Optional;
 @Validated
 public class ProjectComponentsController implements ProjectComponentsApi {
     private final ProjectComponentsFacade projectComponentsFacade;
+    private final AuthenticationFacade authenticationFacade;
 
     @Override
-    public ResponseEntity<List<ProjectComponentInfo>> getProjectComponents(String projectKey, String accessToken) {
+    public ResponseEntity<List<ProjectComponentInfo>> getProjectComponents(String projectKey) {
+        var accessToken = authenticationFacade.getAccessToken();
+
         var componentInfos = Optional
                 .ofNullable(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken))
                 .orElse(List.of());

@@ -24,7 +24,6 @@ public class ProjectComponentsFacade {
     private final ProvisionerActionsService provisionerActionsService;
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
     private final ProjectsInfoService projectsInfoService;
-    private final AuthenticationFacade authenticationFacade;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -33,8 +32,7 @@ public class ProjectComponentsFacade {
             return Collections.emptyList();
         }
 
-        String idToken = authenticationFacade.getIdToken();
-        List<String> userGroups = projectsInfoService.getProjectGroups(idToken, accessToken);
+        List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         return projectComponents.getComponents()
                 .values()

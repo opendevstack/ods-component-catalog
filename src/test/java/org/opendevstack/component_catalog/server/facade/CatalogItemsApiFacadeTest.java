@@ -69,7 +69,6 @@ class CatalogItemsApiFacadeTest {
         var userActionsEntity = mock(UserActionsEntity.class);
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
-        var idToken = "idToken";
         var accessToken = "accessToken";
 
         var clusters = List.of("cluster-1", "cluster-2");
@@ -84,20 +83,19 @@ class CatalogItemsApiFacadeTest {
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
-                .idToken(idToken)
                 .accessToken(accessToken)
                 .build();
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
-        when(projectsInfoService.getProjectClusters(projectKey, idToken, accessToken)).thenReturn(projectInfo);
-        when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
+        when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
 
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
-        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, idToken, accessToken);
+        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
         verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
     }
 
@@ -108,7 +106,6 @@ class CatalogItemsApiFacadeTest {
         var userActionsEntity = mock(UserActionsEntity.class);
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
-        var idToken = "idToken";
         var accessToken = "accessToken";
 
         var projectInfo = new ProjectInfo();
@@ -117,7 +114,7 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
-        when(projectsInfoService.getProjectClusters(projectKey, idToken, accessToken)).thenReturn(projectInfo);
+        when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
 
         CatalogItem expectedCatalogItem = mock(CatalogItem.class);
 
@@ -126,7 +123,6 @@ class CatalogItemsApiFacadeTest {
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
-                .idToken(idToken)
                 .accessToken(accessToken)
                 .build();
 
@@ -137,7 +133,7 @@ class CatalogItemsApiFacadeTest {
 
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
-        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, idToken, accessToken);
+        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
         verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
     }
 
@@ -148,7 +144,6 @@ class CatalogItemsApiFacadeTest {
         var userActionsEntity = mock(UserActionsEntity.class);
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
-        var idToken = "idToken";
         String accessToken = null;
 
         CatalogItem expectedCatalogItem = mock(CatalogItem.class);
@@ -158,7 +153,6 @@ class CatalogItemsApiFacadeTest {
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
-                .idToken(idToken)
                 .accessToken(accessToken)
                 .build();
 
@@ -172,7 +166,7 @@ class CatalogItemsApiFacadeTest {
 
         // Then
         assertThat(result).isSameAs(expectedCatalogItem);
-        verify(projectsInfoService, times(0)).getProjectClusters(projectKey, idToken, accessToken);
+        verify(projectsInfoService, times(0)).getProjectClusters(projectKey, accessToken);
     }
 
     @Test
@@ -183,7 +177,6 @@ class CatalogItemsApiFacadeTest {
         var userActionsEntity = mock(UserActionsEntity.class);
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
-        var idToken = "idToken";
         var accessToken = "accessToken";
 
         var clusters = List.of("cluster-A", "cluster-B");
@@ -197,12 +190,11 @@ class CatalogItemsApiFacadeTest {
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
-                .idToken(idToken)
                 .accessToken(accessToken)
                 .build();
 
-        when(projectsInfoService.getProjectClusters(projectKey, idToken, accessToken)).thenReturn(projectInfo);
-        when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
+        when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
@@ -213,7 +205,7 @@ class CatalogItemsApiFacadeTest {
 
         // then
         assertThat(result).isSameAs(expectedFilters);
-        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, idToken, accessToken);
+        verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
 
         verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
     }
@@ -247,8 +239,8 @@ class CatalogItemsApiFacadeTest {
 
         // then
         assertThat(result).isSameAs(expectedFilters);
-        verify(projectsInfoService, times(0)).getProjectClusters(any(), any(), any());
-        verify(projectsInfoService, times(0)).getProjectGroups(catalogItemRequestParams.getIdToken(), catalogItemRequestParams.getAccessToken());
+        verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
+        verify(projectsInfoService, times(0)).getProjectGroups(catalogItemRequestParams.getAccessToken());
 
         verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
     }
@@ -520,12 +512,12 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void getIdToken_whenAuthIsNull_throwsForbiddenException() {
+    void getAccessToken_whenAuthIsNull_throwsForbiddenException() {
         // given
-        when(authenticationFacade.getIdToken()).thenThrow(new ForbiddenException("User not authenticated"));
+        when(authenticationFacade.getAccessToken()).thenThrow(new ForbiddenException("User not authenticated"));
 
         // when / then
-        assertThatThrownBy(() -> authenticationFacade.getIdToken())
+        assertThatThrownBy(() -> authenticationFacade.getAccessToken())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
     }

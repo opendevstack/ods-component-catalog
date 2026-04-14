@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CatalogItemsApiControllerTest {
 
-    private final String token = "any-acess-token";
     private final String catalogId = "catalog123";
     private final String projectKey = "projectKey123";
     private final String principalName = "testUser";
@@ -101,11 +100,11 @@ class CatalogItemsApiControllerTest {
         item.setTitle("Item 1");
 
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, token, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -117,11 +116,11 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenInvalidProjectKey_WhenGetCatalogItemsForProjectKey_ThenThrowBadRequestException() throws InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, token, SortOrder.ASC, invalidProjectKey))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, invalidProjectKey))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid catalog id");
     }
@@ -129,10 +128,10 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenEmptyResult_WhenGetCatalogItemsForProjectKey_ThenReturnEmptyList() throws InvalidCatalogEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, token, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -202,13 +201,13 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenValidCatalogId_WhenGetCatalogItemByIdForProjectKey_ThenReturnItem() throws InvalidIdException, InvalidCatalogItemEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         CatalogItem catalogItem = new CatalogItem();
         catalogItem.setId(catalogItemId);
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(catalogItem);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, token);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -218,11 +217,11 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenInvalidCatalogId_WhenGetCatalogItemByIdForProjectKey_ThenThrowRestEntityNotFoundException() throws InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey, token))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey))
                 .isInstanceOf(RestEntityNotFoundException.class)
                 .hasMessageContaining("Catalog item not found");
     }
@@ -231,12 +230,12 @@ class CatalogItemsApiControllerTest {
     void givenInvalidCatalogItemEntity_WhenGetCatalogItemByIdForProjectKey_ThenThrowInvalidRestEntityException()
             throws InvalidCatalogItemEntityException, InvalidIdException {
         when(authInfo.getCurrentPrincipalName()).thenReturn("testUser");
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenThrow(new InvalidCatalogItemEntityException("Invalid ID"));
 
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, token))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey))
                 .isInstanceOf(InvalidRestEntityException.class)
                 .hasMessageContaining("Invalid catalog item");
     }
@@ -244,11 +243,11 @@ class CatalogItemsApiControllerTest {
     @Test
     void givenCatalogItemNotFound_WhenGetCatalogItemByIdForProjectKey_ThenReturnNotFound() throws InvalidIdException, InvalidCatalogItemEntityException {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
-        when(authenticationFacade.getIdToken()).thenReturn("id-token");
+        when(authenticationFacade.getAccessToken()).thenReturn("id-token");
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, token);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

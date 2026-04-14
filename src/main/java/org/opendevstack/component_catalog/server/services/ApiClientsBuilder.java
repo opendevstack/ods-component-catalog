@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class ApiClientsBuilder {
-    public ApiClient apiClient(String idToken, String baseRestUrl) {
+    public ApiClient apiClient(String accessToken, String baseRestUrl) {
         var apiClient = new ApiClient();
 
         apiClient.setBasePath(baseRestUrl);
 
         var auth = (HttpBearerAuth) apiClient.getAuthentication("bearerAuth");
-        auth.setBearerToken(idToken);
+        auth.setBearerToken(accessToken);
 
         return apiClient;
     }

@@ -44,7 +44,8 @@ public class ProvisionerActionsApiFacade {
                 .build();
 
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, userActionEntityRestrictions);
-        var userGroups = projectsInfoService.getProjectGroups(authenticationFacade.getIdToken(), provisioningStatusUpdateRequest.getAccessToken());
+        var accessToken = authenticationFacade.getAccessToken();
+        var userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         var params = RestrictionsParams.builder()
                 .userGroups(userGroups)

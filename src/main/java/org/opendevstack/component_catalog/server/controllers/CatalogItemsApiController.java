@@ -50,18 +50,17 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     }
 
     @Override
-    public ResponseEntity<List<CatalogItem>> getCatalogItemsForProjectKey(String catalogId, String accessToken, SortOrder sortByTitle,
+    public ResponseEntity<List<CatalogItem>> getCatalogItemsForProjectKey(String catalogId, SortOrder sortByTitle,
                                                                           String projectKey) {
         log.debug("User '{}' requested catalog items for catalog id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), catalogId, projectKey);
         try {
-            var idToken = authenticationFacade.getIdToken();
+            var accessToken = authenticationFacade.getAccessToken();
 
             var catalogItemRequestParams = CatalogRequestParams.builder()
                     .catalogId(catalogId)
                     .sortOrder(sortByTitle)
                     .projectKey(projectKey)
-                    .idToken(idToken)
                     .accessToken(accessToken)
                     .build();
 
@@ -93,16 +92,15 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     }
 
     @Override
-    public ResponseEntity<CatalogItem> getCatalogItemByIdForProjectKey(String id, String projectKey, String accessToken) {
+    public ResponseEntity<CatalogItem> getCatalogItemByIdForProjectKey(String id, String projectKey) {
         log.debug("User '{}' requested catalog item with id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), id, projectKey);
         try {
-            var idToken = authenticationFacade.getIdToken();
+            var accessToken = authenticationFacade.getAccessToken();
 
             var catalogRequestParams = CatalogRequestParams.builder()
                     .catalogItemId(id)
                     .projectKey(projectKey)
-                    .idToken(idToken)
                     .accessToken(accessToken)
                     .build();
             var catItem = catalogItemsApiFacade.fetchCatalogItem(catalogRequestParams);

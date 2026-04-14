@@ -42,44 +42,42 @@ class ProjectsInfoServiceTest {
     void givenValidParams_whenGetProjectClusters_thenReturnProjectInfo() {
         // given
         String projectKey = "PROJ";
-        String idToken = "id-token";
         String accessToken = "access-token";
 
         ApiClient apiClient = mock(ApiClient.class);
         ProjectInfo projectInfo = new ProjectInfo();
 
-        when(apiClientsBuilder.apiClient(idToken, "http://example.com")).thenReturn(apiClient);
+        when(apiClientsBuilder.apiClient(accessToken, "http://example.com")).thenReturn(apiClient);
         when(apiClientsBuilder.projectsApi(apiClient)).thenReturn(projectsApi);
         when(projectsApi.getProjectClusters(accessToken, projectKey)).thenReturn(projectInfo);
 
         // when
-        var result = service.getProjectClusters(projectKey, idToken, accessToken);
+        var result = service.getProjectClusters(projectKey, accessToken);
 
         // then
         assertThat(result).isSameAs(projectInfo);
-        verify(apiClientsBuilder).apiClient(idToken, "http://example.com");
+        verify(apiClientsBuilder).apiClient(accessToken, "http://example.com");
         verify(projectsApi).getProjectClusters(accessToken, projectKey);
     }
 
     @Test
     void givenValidParams_whenGetProjectGroups_thenReturnGroupList() {
         // given
-        String idToken = "id-token";
         String accessToken = "access-token";
 
         ApiClient apiClient = mock(ApiClient.class);
         List<String> groups = List.of("group1", "group2");
 
-        when(apiClientsBuilder.apiClient(idToken, "http://example.com")).thenReturn(apiClient);
+        when(apiClientsBuilder.apiClient(accessToken, "http://example.com")).thenReturn(apiClient);
         when(apiClientsBuilder.azureGroupsApi(apiClient)).thenReturn(azureGroupsApi);
         when(azureGroupsApi.getAzureGroups(accessToken)).thenReturn(groups);
 
         // when
-        var result = service.getProjectGroups(idToken, accessToken);
+        var result = service.getProjectGroups(accessToken);
 
         // then
         assertThat(result).containsExactly("group1", "group2");
-        verify(apiClientsBuilder).apiClient(idToken, "http://example.com");
+        verify(apiClientsBuilder).apiClient(accessToken, "http://example.com");
         verify(azureGroupsApi).getAzureGroups(accessToken);
     }
 }

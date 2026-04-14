@@ -25,8 +25,5 @@ public class CatalogRequestParams {
     String catalogItemId;
     @Builder.Default
     String projectKey = Strings.EMPTY;
-    String idToken;
     String accessToken;
-
-
 }

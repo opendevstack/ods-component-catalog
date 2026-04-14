@@ -13,20 +13,20 @@ class ApiClientsBuilderTest {
     private final ApiClientsBuilder builder = new ApiClientsBuilder();
 
     @Test
-    void givenIdTokenAndBaseUrl_whenApiClient_thenClientConfiguredCorrectly() {
+    void givenAccessTokenAndBaseUrl_whenApiClient_thenClientConfiguredCorrectly() {
         // given
-        String idToken = "test-token";
+        String accessToken = "test-token";
         String baseUrl = "http://example.com";
 
         // when
-        ApiClient client = builder.apiClient(idToken, baseUrl);
+        ApiClient client = builder.apiClient(accessToken, baseUrl);
 
         // then
         assertThat(client).isNotNull();
         assertThat(client.getBasePath()).isEqualTo(baseUrl);
 
         var auth = (HttpBearerAuth) client.getAuthentication("bearerAuth");
-        assertThat(auth.getBearerToken()).isEqualTo(idToken);
+        assertThat(auth.getBearerToken()).isEqualTo(accessToken);
     }
 
     @Test
