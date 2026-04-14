@@ -27,7 +27,7 @@ public class ProjectsInfoService {
         var apiClient = apiClientsBuilder.apiClient(accessToken, projectsInfoServiceProps.getBaseRestUrl().toString());
         var projectsApi = apiClientsBuilder.projectsApi(apiClient);
 
-        return projectsApi.getProjectClusters(accessToken, projectKey);
+        return projectsApi.getProjectClusters(projectKey);
     }
 
     @Cacheable
@@ -35,7 +35,7 @@ public class ProjectsInfoService {
         var apiClient = apiClientsBuilder.apiClient(accessToken, projectsInfoServiceProps.getBaseRestUrl().toString());
         var azureGroupsApi = apiClientsBuilder.azureGroupsApi(apiClient);
 
-        return azureGroupsApi.getAzureGroups(accessToken);
+        return azureGroupsApi.getAzureGroups();
     }
 
 }

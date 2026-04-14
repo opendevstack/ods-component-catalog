@@ -49,7 +49,7 @@ class ProjectsInfoServiceTest {
 
         when(apiClientsBuilder.apiClient(accessToken, "http://example.com")).thenReturn(apiClient);
         when(apiClientsBuilder.projectsApi(apiClient)).thenReturn(projectsApi);
-        when(projectsApi.getProjectClusters(accessToken, projectKey)).thenReturn(projectInfo);
+        when(projectsApi.getProjectClusters(projectKey)).thenReturn(projectInfo);
 
         // when
         var result = service.getProjectClusters(projectKey, accessToken);
@@ -57,7 +57,7 @@ class ProjectsInfoServiceTest {
         // then
         assertThat(result).isSameAs(projectInfo);
         verify(apiClientsBuilder).apiClient(accessToken, "http://example.com");
-        verify(projectsApi).getProjectClusters(accessToken, projectKey);
+        verify(projectsApi).getProjectClusters(projectKey);
     }
 
     @Test
@@ -70,7 +70,7 @@ class ProjectsInfoServiceTest {
 
         when(apiClientsBuilder.apiClient(accessToken, "http://example.com")).thenReturn(apiClient);
         when(apiClientsBuilder.azureGroupsApi(apiClient)).thenReturn(azureGroupsApi);
-        when(azureGroupsApi.getAzureGroups(accessToken)).thenReturn(groups);
+        when(azureGroupsApi.getAzureGroups()).thenReturn(groups);
 
         // when
         var result = service.getProjectGroups(accessToken);
@@ -78,6 +78,6 @@ class ProjectsInfoServiceTest {
         // then
         assertThat(result).containsExactly("group1", "group2");
         verify(apiClientsBuilder).apiClient(accessToken, "http://example.com");
-        verify(azureGroupsApi).getAzureGroups(accessToken);
+        verify(azureGroupsApi).getAzureGroups();
     }
 }
