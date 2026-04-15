@@ -57,7 +57,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
                 status, componentId, catalogItemId, componentUrl, mappedParameters);
     }
@@ -88,7 +88,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
                 status,
@@ -123,7 +123,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
                 status, componentId, catalogItemId, "", mappedParameters);
     }
@@ -152,7 +152,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
                 status, componentId, catalogItemId, "", mappedParameters);
     }

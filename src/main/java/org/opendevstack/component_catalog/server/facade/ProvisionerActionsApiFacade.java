@@ -33,7 +33,7 @@ public class ProvisionerActionsApiFacade {
                 .toList();
     }
 
-    public void validateGroupRestrictions(String projectKey, ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+    public void validateGroupRestrictions(String projectKey) {
         var groupRestriction = CatalogItemUserActionGroupsRestriction.builder()
                 .prefix(groupsRestrictionProps.getPrefix())
                 .suffix(groupsRestrictionProps.getSuffix())

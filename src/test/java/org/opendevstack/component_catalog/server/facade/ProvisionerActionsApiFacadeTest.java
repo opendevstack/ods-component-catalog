@@ -77,7 +77,6 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var request = new ProvisioningStatusUpdateRequest();
         var userGroups = List.of("group1");
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
@@ -88,7 +87,7 @@ class ProvisionerActionsApiFacadeTest {
                 .thenReturn(Pair.of(true, "Allowed"));
 
         // when / then
-        provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request);
+        provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
     }
 
     @Test
@@ -96,7 +95,6 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var request = new ProvisioningStatusUpdateRequest();
         var userGroups = List.of("group1");
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
@@ -107,7 +105,7 @@ class ProvisionerActionsApiFacadeTest {
                 .thenReturn(Pair.of(false, "Forbidden"));
 
         // when / then
-        assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request))
+        assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(projectKey))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not allowed to perform this action");
     }
@@ -117,7 +115,6 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var request = new ProvisioningStatusUpdateRequest();
         var userGroups = List.of("group1");
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
@@ -128,6 +125,6 @@ class ProvisionerActionsApiFacadeTest {
                 .thenReturn(Pair.of(null, "Unknown"));
 
         // when / then
-        provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request);
+        provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
     }
 }
