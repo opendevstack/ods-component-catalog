@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class AuthenticationFacade {
 
-    public String getIdToken() {
+    public String getAccessToken() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) {

@@ -77,19 +77,17 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var idToken = "idToken";
-        var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        when(authenticationFacade.getIdToken()).thenReturn(idToken);
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
-        when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
         when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                 .thenReturn(Pair.of(true, "Allowed"));
 
         // when / then
-        provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request);
+        provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
     }
 
     @Test
@@ -97,19 +95,17 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var idToken = "idToken";
-        var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        when(authenticationFacade.getIdToken()).thenReturn(idToken);
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
-        when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
         when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                 .thenReturn(Pair.of(false, "Forbidden"));
 
         // when / then
-        assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request))
+        assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(projectKey))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not allowed to perform this action");
     }
@@ -119,18 +115,16 @@ class ProvisionerActionsApiFacadeTest {
         // given
         var projectKey = "PROJECT";
         var accessToken = "accessToken";
-        var idToken = "idToken";
-        var request = new ProvisioningStatusUpdateRequest().accessToken(accessToken);
         var userGroups = List.of("group1");
 
-        when(authenticationFacade.getIdToken()).thenReturn(idToken);
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
-        when(projectsInfoService.getProjectGroups(idToken, accessToken)).thenReturn(userGroups);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
         when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                 .thenReturn(Pair.of(null, "Unknown"));
 
         // when / then
-        provisionerActionsApiFacade.validateGroupRestrictions(projectKey, request);
+        provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
     }
 }

@@ -53,9 +53,9 @@ class ProjectComponentsFacadeTest {
     void setUp() {
         ProjectComponentsInfoMapper projectComponentsInfoMapper = new ProjectComponentsInfoMapper(catalogItemsApiFacade,
                 catalogItemDefaultProps);
-        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService, authenticationFacade);
+        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService);
 
-        lenient().when(authenticationFacade.getIdToken()).thenReturn("idToken");
+        lenient().when(authenticationFacade.getAccessToken()).thenReturn("accessToken");
     }
 
     @Test
@@ -240,12 +240,12 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void getIdToken_whenAuthIsNull_throwsForbiddenException() {
+    void getAccessToken_whenAuthIsNull_throwsForbiddenException() {
         // given
-        when(authenticationFacade.getIdToken()).thenThrow(new ForbiddenException("User not authenticated"));
+        when(authenticationFacade.getAccessToken()).thenThrow(new ForbiddenException("User not authenticated"));
 
         // when / then
-        assertThatThrownBy(() -> authenticationFacade.getIdToken())
+        assertThatThrownBy(() -> authenticationFacade.getAccessToken())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
     }

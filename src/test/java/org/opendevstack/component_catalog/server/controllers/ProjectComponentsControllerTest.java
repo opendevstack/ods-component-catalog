@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,9 @@ class ProjectComponentsControllerTest {
     private final String accessToken = "token";
 
     @Mock
+    private AuthenticationFacade authenticationFacade;
+
+    @Mock
     private ProjectComponentsFacade projectComponentsFacade;
 
     @InjectMocks
@@ -35,10 +39,11 @@ class ProjectComponentsControllerTest {
 
         List<ProjectComponentInfo> components = List.of(pci1, pci2);
 
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenReturn(components);
 
         // when
-        var response = projectComponentsController.getProjectComponents(projectKey, accessToken);
+        var response = projectComponentsController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -56,7 +61,8 @@ class ProjectComponentsControllerTest {
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenReturn(List.of());
 
         // when
-        var response = projectComponentsController.getProjectComponents(projectKey, accessToken);
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        var response = projectComponentsController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -69,10 +75,11 @@ class ProjectComponentsControllerTest {
     @Test
     void givenFacadeThrowsRuntimeException_whenGetProjectComponents_thenPropagateException() {
         // given
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenThrow(new RuntimeException("Unexpected error"));
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey, accessToken)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
+        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
 
         verify(projectComponentsFacade, times(1)).getProjectComponentsInfo(projectKey, accessToken);
     }

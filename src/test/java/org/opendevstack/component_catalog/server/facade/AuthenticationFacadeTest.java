@@ -23,20 +23,20 @@ class AuthenticationFacadeTest {
     }
 
     @Test
-    void getIdToken_whenAuthIsNull_throwsForbiddenException() {
+    void getAccessToken_whenAuthIsNull_throwsForbiddenException() {
         // given
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(null);
         SecurityContextHolder.setContext(securityContext);
 
         // when / then
-        assertThatThrownBy(authenticationFacade::getIdToken)
+        assertThatThrownBy(authenticationFacade::getAccessToken)
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
     }
 
     @Test
-    void getIdToken_whenPrincipalIsNotUserPrincipal_throwsForbiddenException() {
+    void getAccessToken_whenPrincipalIsNotUserPrincipal_throwsForbiddenException() {
         // given
         var authentication = mock(Authentication.class);
         var securityContext = mock(SecurityContext.class);
@@ -45,30 +45,30 @@ class AuthenticationFacadeTest {
         SecurityContextHolder.setContext(securityContext);
 
         // when / then
-        assertThatThrownBy(authenticationFacade::getIdToken)
+        assertThatThrownBy(authenticationFacade::getAccessToken)
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
     }
 
     @Test
-    void getIdToken_whenAuthenticated_returnsToken() {
+    void getAccessToken_whenAuthenticated_returnsToken() {
         // given
-        var idToken = "token";
+        var accessToken = "token";
         var authentication = mock(Authentication.class);
         var securityContext = mock(SecurityContext.class);
         var principal = mock(UserPrincipal.class);
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(principal);
-        when(principal.getAadIssuedBearerToken()).thenReturn(idToken);
+        when(principal.getAadIssuedBearerToken()).thenReturn(accessToken);
         when(authentication.getName()).thenReturn("userName");
 
         SecurityContextHolder.setContext(securityContext);
 
         // when
-        var result = authenticationFacade.getIdToken();
+        var result = authenticationFacade.getAccessToken();
 
         // then
-        assertThat(result).isEqualTo(idToken);
+        assertThat(result).isEqualTo(accessToken);
     }
 }

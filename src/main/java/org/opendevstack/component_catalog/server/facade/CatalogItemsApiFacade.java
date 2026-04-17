@@ -58,7 +58,7 @@ public class CatalogItemsApiFacade {
         if (catalogRequestParams.getAccessToken() == null) {
             return Collections.emptyList();
         } else {
-            return projectsInfoService.getProjectGroups(catalogRequestParams.getIdToken(), catalogRequestParams.getAccessToken());
+            return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
         }
     }
 
@@ -66,7 +66,7 @@ public class CatalogItemsApiFacade {
         if (catalogRequestParams.getAccessToken() == null) {
             return Collections.emptyList();
         } else {
-            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getIdToken(), catalogRequestParams.getAccessToken());
+            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
             var clusters = Optional.ofNullable(projectInfo)
                     .map(ProjectInfo::getClusters)
                     .orElse(Collections.emptyList());

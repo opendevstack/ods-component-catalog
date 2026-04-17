@@ -33,7 +33,7 @@ public class ProvisionerActionsApiFacade {
                 .toList();
     }
 
-    public void validateGroupRestrictions(String projectKey, ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+    public void validateGroupRestrictions(String projectKey) {
         var groupRestriction = CatalogItemUserActionGroupsRestriction.builder()
                 .prefix(groupsRestrictionProps.getPrefix())
                 .suffix(groupsRestrictionProps.getSuffix())
@@ -44,7 +44,8 @@ public class ProvisionerActionsApiFacade {
                 .build();
 
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, userActionEntityRestrictions);
-        var userGroups = projectsInfoService.getProjectGroups(authenticationFacade.getIdToken(), provisioningStatusUpdateRequest.getAccessToken());
+        var accessToken = authenticationFacade.getAccessToken();
+        var userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         var params = RestrictionsParams.builder()
                 .userGroups(userGroups)

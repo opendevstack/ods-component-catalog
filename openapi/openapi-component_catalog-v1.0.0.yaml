@@ -48,12 +48,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: accessToken
-          in: query
-          description: access token for azure queries.
-          required: true
-          schema:
-            type: string
       responses:
         "200":
           description: A list of Project Component Information
@@ -357,12 +351,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: accessToken
-          in: query
-          description: access token for azure queries.
-          required: true
-          schema:
-            type: string
         - name: sortByTitle
           in: query
           description: Sort the returned CatalogItems by title, either in ascending or descending order.
@@ -433,12 +421,6 @@ paths:
         - name: projectKey
           in: path
           description: project key.
-          required: true
-          schema:
-            type: string
-        - name: accessToken
-          in: query
-          description: access token for azure queries.
           required: true
           schema:
             type: string
@@ -1223,12 +1205,6 @@ components:
           description: the repository url where the component was provisioned
           example: "https://bitbucket.com/projects/DEVSTACK/repos/devstack-component-catalog"
           nullable: true
-
-        accessToken:
-          type: string
-          description: the access token to be used to get azure groups
-          example: "some-access-token"
-          nullable: false
 
         parameters:
           type: array
