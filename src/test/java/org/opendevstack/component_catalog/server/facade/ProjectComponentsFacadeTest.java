@@ -8,10 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
-import org.opendevstack.component_catalog.server.mappers.CatalogItemMother;
-import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
-import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
+import org.opendevstack.component_catalog.server.mappers.*;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
@@ -22,6 +22,8 @@ import org.opendevstack.component_catalog.server.services.provisioner.Status;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,11 +51,14 @@ class ProjectComponentsFacadeTest {
     @InjectMocks
     private ProjectComponentsFacade projectComponentsFacade;
 
+    @Mock
+    private ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
+
     @BeforeEach
     void setUp() {
         ProjectComponentsInfoMapper projectComponentsInfoMapper = new ProjectComponentsInfoMapper(catalogItemsApiFacade,
                 catalogItemDefaultProps);
-        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService, null);
+        projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper, projectsInfoService, projectComponentExtendedInfoMapper);
 
         lenient().when(authenticationFacade.getAccessToken()).thenReturn("accessToken");
     }
@@ -248,6 +253,66 @@ class ProjectComponentsFacadeTest {
         assertThatThrownBy(() -> authenticationFacade.getAccessToken())
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("User not authenticated");
+    }
+
+    @Test
+    void givenExistingComponent_whenGetExtendedInfo_thenReturnMappedInfo() {
+        // given
+        var projectKey = "PRJ-1";
+        var componentId = "C1";
+        var accessToken = "token";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var comps = ProjectComponentsMother.of(Map.of("k1", comp));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+                .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
+
+        // when
+        var result = projectComponentsFacade
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+
+        // then
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void givenComponentDoesNotExist_whenGetExtendedInfo_thenThrowComponentNotFound() {
+        // given
+        var projectKey = "PRJ-404";
+        var accessToken = "token";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var comps = ProjectComponentsMother.of(Map.of("k1", comp));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C2", accessToken)
+        ).isInstanceOf(ComponentNotFoundException.class)
+                .hasMessageContaining("C2");
+    }
+
+    @Test
+    void givenMapperReturnsEmptyOptional_whenGetExtendedInfo_thenThrowComponentNotFound() {
+        // given
+        var projectKey = "PRJ-EMPTY";
+        var componentId = "C1";
+        var accessToken = "token";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var comps = ProjectComponentsMother.of(Map.of("k1", comp));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+                .thenReturn(Optional.empty());
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken)
+        ).isInstanceOf(ComponentNotFoundException.class);
     }
 }
 
