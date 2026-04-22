@@ -7,6 +7,7 @@ import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedI
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -17,7 +18,9 @@ public class ProjectComponentExtendedInfoMapper {
     private final ProjectComponentParameterMapper projectComponentParameterMapper;
 
     public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp) throws ComponentNotFoundException {
-        var pcps = comp.getParameters().stream()
+        var pcps = Optional.ofNullable(comp.getParameters())
+                .orElse(List.of())
+                .stream()
                 .map(p -> projectComponentParameterMapper.mapToProjectComponentParameter(p)
                         .orElseThrow(() -> new ComponentNotFoundException("Component with ID " + comp.getComponentId() + " not found.")))
                 .toList();
