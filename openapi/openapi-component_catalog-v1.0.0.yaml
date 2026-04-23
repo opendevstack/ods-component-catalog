@@ -913,13 +913,13 @@ components:
       properties:
         componentId:
           type: string
-          example: 'edpc-4132-v2'
+          example: 'nextjs-basic-app'
         catalogItemId:
           type: string
-          example: 'edpc-4132-v2'
+          example: 'some-encoded-info'
         catalogItemRef:
           type: string
-          example: 'edpc-4132-v2'
+          example: 'more-encoded-info'
         status:
           type: string
           example: 'CREATING'
