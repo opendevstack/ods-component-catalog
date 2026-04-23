@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -60,7 +61,8 @@ public class ProjectComponentsFacade {
             throw new IllegalArgumentException("Valid projectKey, componentId and accessToken are mandatory.");
         }
 
-        return projectComponents.getComponents()
+        return Optional.ofNullable(projectComponents.getComponents())
+                .orElse(Map.of())
                 .values()
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
