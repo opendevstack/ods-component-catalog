@@ -57,7 +57,7 @@ public class ProjectComponentsFacade {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
 
         if (notValid(projectComponents, projectKey, accessToken)) {
-            throw new IllegalArgumentException("projectKey, componentId and accessToken are mandatory.");
+            throw new IllegalArgumentException("Valid projectKey, componentId and accessToken are mandatory.");
         }
 
         return projectComponents.getComponents()
