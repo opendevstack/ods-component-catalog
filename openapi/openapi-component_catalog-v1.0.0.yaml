@@ -901,14 +901,14 @@ components:
       properties:
         name:
           type: string
-          example: 'a name'
+          example: 'environment'
         values:
           type: array
           items:
             type: string
           example:
-            - 'value 1'
-            - 'value 2'
+            - 'dev'
+            - 'test'
     ProjectComponentExtendedInfo:
       properties:
         componentId:
