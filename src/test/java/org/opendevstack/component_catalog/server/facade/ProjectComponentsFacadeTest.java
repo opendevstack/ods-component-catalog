@@ -260,7 +260,6 @@ class ProjectComponentsFacadeTest {
         // given
         var projectKey = "PRJ-1";
         var componentId = "C1";
-        var accessToken = "token";
 
         ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
@@ -281,7 +280,6 @@ class ProjectComponentsFacadeTest {
     void givenComponentDoesNotExist_whenGetExtendedInfo_thenThrowComponentNotFound() {
         // given
         var projectKey = "PRJ-404";
-        var accessToken = "token";
 
         ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
@@ -300,7 +298,6 @@ class ProjectComponentsFacadeTest {
         // given
         var projectKey = "PRJ-EMPTY";
         var componentId = "C1";
-        var accessToken = "token";
 
         ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
