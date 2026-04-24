@@ -41,8 +41,3 @@ springdoc:
     filter: true
     tags-sorter: alpha
     operations-sorter: alpha
-component-catalog:
-  caching:
-    bitbucket-service-cache:
-      eviction-interval: 5m
-

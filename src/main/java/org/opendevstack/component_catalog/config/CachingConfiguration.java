@@ -62,7 +62,7 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         return Map.of(BitbucketServiceCacheProps.CACHE_NAME, ehCacheConfig);
     }
 
-    @Scheduled(fixedRateString = "#{bitbucketServiceCacheConfig.getEvictionInterval().toString()}")
+    @Scheduled(fixedRateString = "#{bitbucketServiceCacheConfig.getEvictionInterval().toMillis()}")
     @CacheEvict(cacheNames = BitbucketServiceCacheProps.CACHE_NAME, allEntries = true)
     public void emptyBitbucketServiceCache() {
         log.debug("Emptying Bitbucket Service cache...");
