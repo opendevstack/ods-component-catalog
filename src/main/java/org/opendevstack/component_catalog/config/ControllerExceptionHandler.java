@@ -1,10 +1,6 @@
 package org.opendevstack.component_catalog.config;
 
-import org.opendevstack.component_catalog.server.controllers.exceptions.BadConfigurationException;
-import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
-import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
-import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
-import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.*;
 import org.opendevstack.component_catalog.server.model.RestErrorMessage;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidCatalogItemIdStructureException;
@@ -116,6 +112,20 @@ public class ControllerExceptionHandler {
         log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
 
         return defaultErrResponse(ex, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    @ExceptionHandler(ComponentNotFoundException.class)
+    public ResponseEntity<RestErrorMessage> handleComponentNotFoundException(ComponentNotFoundException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        return defaultErrResponse(ex, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<RestErrorMessage> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        return defaultErrResponse(ex, HttpStatus.BAD_REQUEST);
     }
 
     private static ResponseEntity<RestErrorMessage> defaultErrResponse(Exception ex, HttpStatus errStatus) {

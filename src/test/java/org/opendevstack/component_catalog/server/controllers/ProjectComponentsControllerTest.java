@@ -1,7 +1,9 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,5 +84,65 @@ class ProjectComponentsControllerTest {
         assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
 
         verify(projectComponentsFacade, times(1)).getProjectComponentsInfo(projectKey, accessToken);
+    }
+
+    @Test
+    void givenValidProjectAndComponentId_whenGetProjectComponentById_thenReturnOkWithBody() {
+        // given
+        var componentId = "C1";
+        var extendedInfo = ProjectComponentExtendedInfo.builder()
+                .componentId(componentId)
+                .build();
+
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+                .thenReturn(extendedInfo);
+
+        // when
+        var response = projectComponentsController.getProjectComponentById(projectKey, componentId);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getComponentId()).isEqualTo(componentId);
+
+        verify(authenticationFacade, times(1)).getAccessToken();
+        verify(projectComponentsFacade, times(1))
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+    }
+
+    @Test
+    void givenComponentDoesNotExist_whenGetProjectComponentById_thenPropagateComponentNotFound() {
+        // given
+        var componentId = "C404";
+
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+                .thenThrow(new ComponentNotFoundException("Not found"));
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsController.getProjectComponentById(projectKey, componentId)
+        ).isInstanceOf(ComponentNotFoundException.class)
+                .hasMessageContaining("Not found");
+
+        verify(projectComponentsFacade, times(1))
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+    }
+
+    @Test
+    void givenInvalidArguments_whenGetProjectComponentById_thenPropagateIllegalArgumentException() {
+        // given
+        var componentId = "C1";
+
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+                .thenThrow(new IllegalArgumentException("Invalid arguments"));
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsController.getProjectComponentById(projectKey, componentId)
+        ).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid arguments");
     }
 }
