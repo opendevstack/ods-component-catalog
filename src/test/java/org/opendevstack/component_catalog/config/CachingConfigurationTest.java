@@ -10,7 +10,6 @@ import org.opendevstack.component_catalog.config.ApplicationPropertiesConfigurat
 import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.time.Duration;
@@ -26,9 +25,7 @@ class CachingConfigurationTest {
     @BeforeEach
     void setUp() {
         cacheWarmupService = mock(CacheWarmupService.class);
-        config = new CachingConfiguration();
-        // Inject the @Lazy @Autowired field that Spring would wire at runtime
-        ReflectionTestUtils.setField(config, "cacheWarmupService", cacheWarmupService);
+        config = new CachingConfiguration(cacheWarmupService);
     }
 
     // -------------------------------------------------------------------------

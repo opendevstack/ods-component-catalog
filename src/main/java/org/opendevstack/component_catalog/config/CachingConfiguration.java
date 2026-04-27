@@ -15,7 +15,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.opendevstack.component_catalog.server.services.CacheWarmupService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -32,12 +31,14 @@ import static org.ehcache.event.EventType.*;
 public class CachingConfiguration implements CacheEventListener<Object, Object> {
 
     /**
-     * Injected lazily to avoid a circular dependency:
+     * Injected lazily via constructor to avoid a circular dependency:
      * CacheWarmupService → CatalogEntitiesService → BitbucketService → CacheManager → CachingConfiguration
      */
-    @Lazy
-    @Autowired
-    private CacheWarmupService cacheWarmupService;
+    private final CacheWarmupService cacheWarmupService;
+
+    public CachingConfiguration(@Lazy CacheWarmupService cacheWarmupService) {
+        this.cacheWarmupService = cacheWarmupService;
+    }
 
     @Bean
     public CacheManager cacheManager(BitbucketServiceCacheProps config) {

@@ -63,14 +63,9 @@ public class CacheWarmupService implements ApplicationRunner {
             int errors = 0;
 
             for (CatalogsCollectionsEntityTarget target : targets) {
-                try {
-                    var catalogId = target.getSlug();
-                    log.debug("Cache warmup: loading catalog '{}'", catalogId);
-                    var items = catalogEntitiesService.getCatalogItemsEntities(catalogId);
-                    log.debug("Cache warmup: catalog '{}' loaded {} item(s).", catalogId, items.size());
+                if (warmupCatalog(target)) {
                     loaded++;
-                } catch (InvalidIdException | RuntimeException e) {
-                    log.warn("Cache warmup: error loading catalog '{}': {}", target.getSlug(), e.getMessage());
+                } else {
                     errors++;
                 }
             }
@@ -80,6 +75,24 @@ public class CacheWarmupService implements ApplicationRunner {
         } catch (Exception e) {
             // Never let warmup failures crash the app or break the eviction scheduler
             log.error("Cache warmup: unexpected error during warmup, cache may be partially populated.", e);
+        }
+    }
+
+    /**
+     * Attempts to load all items of a single catalog into the cache.
+     *
+     * @return {@code true} if loaded successfully, {@code false} on error
+     */
+    private boolean warmupCatalog(CatalogsCollectionsEntityTarget target) {
+        try {
+            var catalogId = target.getSlug();
+            log.debug("Cache warmup: loading catalog '{}'", catalogId);
+            var items = catalogEntitiesService.getCatalogItemsEntities(catalogId);
+            log.debug("Cache warmup: catalog '{}' loaded {} item(s).", catalogId, items.size());
+            return true;
+        } catch (InvalidIdException | RuntimeException e) {
+            log.warn("Cache warmup: error loading catalog '{}': {}", target.getSlug(), e.getMessage());
+            return false;
         }
     }
 }
