@@ -34,7 +34,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAspectJAutoProxy
 @EnableCaching
 @EnableScheduling
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 public class ComponentCatalogApplication {
 
     public static void main(String[] args) {
