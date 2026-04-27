@@ -2,7 +2,6 @@ package org.opendevstack.component_catalog.server.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntitySpec;
@@ -19,27 +18,15 @@ import static org.mockito.Mockito.*;
 
 class CacheWarmupServiceTest {
 
-    private static final String BASE_RAW_URL = "https://my-bitbucket-server.com";
-    private static final String BASE_REST_URL = "https://my-bitbucket-server.com/rest/api/latest";
-
     private CatalogsCollectionService catalogsCollectionService;
     private CatalogEntitiesService catalogEntitiesService;
-    private BitbucketService bitbucketService;
     private CacheWarmupService service;
 
     @BeforeEach
     void setUp() {
         catalogsCollectionService = mock(CatalogsCollectionService.class);
         catalogEntitiesService = mock(CatalogEntitiesService.class);
-        bitbucketService = mock(BitbucketService.class);
-        service = new CacheWarmupService(catalogsCollectionService, catalogEntitiesService, bitbucketService);
-
-        // Default: pathAtBuilder() returns a real builder backed by our test base URLs
-        when(bitbucketService.pathAtBuilder()).thenReturn(
-                BitbucketPathAt.builder()
-                        .baseRawUrl(BASE_RAW_URL)
-                        .baseRestUrl(BASE_REST_URL)
-        );
+        service = new CacheWarmupService(catalogsCollectionService, catalogEntitiesService);
     }
 
     // -------------------------------------------------------------------------
@@ -75,7 +62,7 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenTwoCatalogs_whenWarmup_thenBothCatalogsLoaded() throws Exception {
-        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-a"), bitbucketTarget("catalog-b"));
+        var entity = catalogsCollectionsEntityWith(targetWithUrl("catalog-a"), targetWithUrl("catalog-b"));
         var items = List.of(CatalogItemEntityContextMother.of());
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
@@ -92,14 +79,13 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenOneCatalogFails_whenWarmup_thenOtherCatalogsStillLoaded() throws Exception {
-        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-ok"), bitbucketTarget("catalog-bad"));
+        var entity = catalogsCollectionsEntityWith(targetWithUrl("catalog-ok"), targetWithUrl("catalog-bad"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any()))
                 .thenReturn(List.of(CatalogItemEntityContextMother.of()))
                 .thenThrow(new InvalidIdException("catalog-bad"));
 
-        // Must not throw — errors are swallowed and logged as WARN
         service.warmup();
 
         verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
@@ -111,7 +97,7 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenCatalogThrowsRuntimeException_whenWarmup_thenContinuesWithOtherCatalogs() throws Exception {
-        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-err"), bitbucketTarget("catalog-fine"));
+        var entity = catalogsCollectionsEntityWith(targetWithUrl("catalog-err"), targetWithUrl("catalog-fine"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any()))
@@ -124,6 +110,27 @@ class CacheWarmupServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // warmup() — target with null URL is skipped gracefully
+    // -------------------------------------------------------------------------
+
+    @Test
+    void givenTargetWithNullUrl_whenWarmup_thenSkippedGracefully() throws Exception {
+        var nullUrlTarget = new CatalogsCollectionsEntityTarget();
+        nullUrlTarget.setSlug("bad-target");
+        nullUrlTarget.setUrl(null);
+
+        var entity = catalogsCollectionsEntityWith(nullUrlTarget, targetWithUrl("valid-catalog"));
+
+        when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
+        when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
+
+        service.warmup();
+
+        // Only the valid target should reach getCatalogItemsEntities
+        verify(catalogEntitiesService, times(1)).getCatalogItemsEntities(any());
+    }
+
+    // -------------------------------------------------------------------------
     // warmup() — getCatalogsCollection throws unexpectedly
     // -------------------------------------------------------------------------
 
@@ -132,7 +139,6 @@ class CacheWarmupServiceTest {
         when(catalogsCollectionService.getCatalogsCollection())
                 .thenThrow(new RuntimeException("Connection refused"));
 
-        // Must not propagate — warmup failures must never crash the app or the scheduler
         service.warmup();
 
         verifyNoInteractions(catalogEntitiesService);
@@ -144,7 +150,7 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenCatalogWithNoItems_whenWarmup_thenCompletesNormally() throws Exception {
-        var entity = catalogsCollectionsEntityWith(bitbucketTarget("empty-catalog"));
+        var entity = catalogsCollectionsEntityWith(targetWithUrl("empty-catalog"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
@@ -159,13 +165,13 @@ class CacheWarmupServiceTest {
     // -------------------------------------------------------------------------
 
     /**
-     * Creates a target whose URL is a valid full Bitbucket raw URL (same format the real data uses),
-     * so that BitbucketService.pathAtBuilder() can parse it correctly in the warmup logic.
+     * Creates a target with a real Bitbucket-like URL — same format used in production YAML files.
+     * The ID sent to getCatalogItemsEntities will be idEncode(url), exactly as EntitiesMapper does.
      */
-    private CatalogsCollectionsEntityTarget bitbucketTarget(String slug) {
+    private CatalogsCollectionsEntityTarget targetWithUrl(String slug) {
         var target = new CatalogsCollectionsEntityTarget();
         target.setSlug(slug);
-        target.setUrl(BASE_RAW_URL + "/projects/MYPROJECT/repos/" + slug + "/raw/Catalog.yaml?at=refs%2Fheads%2Fmaster");
+        target.setUrl("https://bitbucket.example.com/projects/MYPRJ/repos/" + slug + "/raw/Catalog.yaml?at=refs%2Fheads%2Fmaster");
         return target;
     }
 

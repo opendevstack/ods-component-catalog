@@ -33,7 +33,6 @@ public class CacheWarmupService implements ApplicationRunner {
 
     private final CatalogsCollectionService catalogsCollectionService;
     private final CatalogEntitiesService catalogEntitiesService;
-    private final BitbucketService bitbucketService;
 
     /** Called by Spring Boot after the application context is fully started. */
     @Override
@@ -83,20 +82,24 @@ public class CacheWarmupService implements ApplicationRunner {
 
     /**
      * Attempts to load all items of a single catalog into the cache.
+     * <p>
+     * The catalog ID is derived exactly as the REST layer does it:
+     * {@code idEncode(target.getUrl())} — see {@code EntitiesMapper.asCatalogDescriptor}.
+     * </p>
      *
      * @return {@code true} if loaded successfully, {@code false} on error
      */
     private boolean warmupCatalog(CatalogsCollectionsEntityTarget target) {
         try {
-            // The catalog URL is a full Bitbucket raw URL. We derive the pathAt from it
-            // and encode it as base64 — exactly the same format getCatalogItemsEntities expects.
-            var pathAt = bitbucketService.pathAtBuilder()
-                    .rawUrl(target.getUrl())
-                    .build()
-                    .getPathAt();
-            var catalogId = idEncode(pathAt);
+            if (target.getUrl() == null) {
+                log.warn("Cache warmup: skipping catalog '{}' — url is null, cannot derive catalog ID.", target.getSlug());
+                return false;
+            }
 
-            log.debug("Cache warmup: loading catalog '{}' (slug: '{}')", catalogId, target.getSlug());
+            // Same ID derivation as EntitiesMapper.asCatalogDescriptor: idEncode(target.getUrl())
+            var catalogId = idEncode(target.getUrl());
+
+            log.debug("Cache warmup: loading catalog '{}' (id: '{}')", target.getSlug(), catalogId);
             var items = catalogEntitiesService.getCatalogItemsEntities(catalogId);
             log.debug("Cache warmup: catalog '{}' loaded {} item(s).", target.getSlug(), items.size());
             return true;
