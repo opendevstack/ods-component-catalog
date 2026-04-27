@@ -13,11 +13,8 @@ import org.ehcache.jsr107.EhcacheCachingProvider;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
-import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.cache.Caching;
 import java.util.Map;
@@ -29,28 +26,9 @@ import static org.ehcache.event.EventType.*;
 @Slf4j
 public class CachingConfiguration implements CacheEventListener<Object, Object> {
 
-    /**
-     * Injected lazily via constructor to avoid a circular dependency:
-     * CacheWarmupService → CatalogEntitiesService → BitbucketService → CacheManager → CachingConfiguration
-     */
-    private final CacheWarmupService cacheWarmupService;
-
-    /**
-     * Injected lazily to avoid a circular dependency (CachingConfiguration creates the CacheManager bean).
-     * Used to programmatically evict the cache before warming it up, because calling a
-     * {@code @CacheEvict}-annotated method from within the same class bypasses the Spring AOP proxy
-     * and the eviction would never be applied.
-     */
-    private final CacheManager cacheManager;
-
-    public CachingConfiguration(@Lazy CacheWarmupService cacheWarmupService, @Lazy CacheManager cacheManager) {
-        this.cacheWarmupService = cacheWarmupService;
-        this.cacheManager = cacheManager;
-    }
-
     @Bean
     public CacheManager cacheManager(BitbucketServiceCacheProps config) {
-        if(!config.isEnabled()) {
+        if (!config.isEnabled()) {
             log.info("Bitbucket Service cache is disabled");
             return new NoOpCacheManager();
         }
@@ -86,28 +64,6 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         return Map.of(BitbucketServiceCacheProps.CACHE_NAME, ehCacheConfig);
     }
 
-    /**
-     * Evicts all entries from the Bitbucket service cache and then immediately re-populates it.
-     * <p>
-     * The eviction is done programmatically via {@link CacheManager} instead of relying on
-     * {@code @CacheEvict}, because calling a {@code @CacheEvict}-annotated method from within
-     * the same bean bypasses the Spring AOP proxy (self-invocation problem), so the eviction
-     * would never fire. Additionally, {@code @CacheEvict} applied to the scheduled method itself
-     * runs the eviction AFTER the method body returns, which would wipe the freshly warmed cache.
-     * </p>
-     */
-    @Scheduled(fixedRateString = "#{bitbucketServiceCacheConfig.getEvictionInterval().toMillis()}")
-    public void scheduledCacheEvictionAndWarmup() {
-        // 1. Evict programmatically so it happens before the warmup.
-        var cache = cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME);
-        if (cache != null) {
-            cache.clear();
-            log.debug("Bitbucket Service cache evicted.");
-        }
-        // 2. Re-populate immediately so the cache always appears warm to users.
-        // Exceptions are swallowed inside warmup() itself.
-        cacheWarmupService.warmup();
-    }
 
     @Override
     public void onEvent(CacheEvent<?, ?> cacheEvent) {

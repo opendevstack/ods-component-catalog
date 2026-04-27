@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
-import org.opendevstack.component_catalog.server.services.CacheWarmupService;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.util.unit.DataSize;
@@ -20,15 +18,11 @@ import static org.mockito.Mockito.*;
 
 class CachingConfigurationTest {
 
-    private CacheWarmupService cacheWarmupService;
-    private CacheManager cacheManager;
     private CachingConfiguration config;
 
     @BeforeEach
     void setUp() {
-        cacheWarmupService = mock(CacheWarmupService.class);
-        cacheManager = mock(CacheManager.class);
-        config = new CachingConfiguration(cacheWarmupService, cacheManager);
+        config = new CachingConfiguration();
     }
 
     // -------------------------------------------------------------------------
@@ -80,29 +74,6 @@ class CachingConfigurationTest {
         assertThat(cm.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
     }
 
-    // -------------------------------------------------------------------------
-    // scheduledCacheEvictionAndWarmup
-    // -------------------------------------------------------------------------
-
-    @Test
-    void whenScheduledCacheEvictionAndWarmup_thenCacheClearedAndWarmupCalled() {
-        var cache = mock(org.springframework.cache.Cache.class);
-        when(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).thenReturn(cache);
-
-        config.scheduledCacheEvictionAndWarmup();
-
-        verify(cache).clear();
-        verify(cacheWarmupService).warmup();
-    }
-
-    @Test
-    void whenScheduledCacheEvictionAndWarmup_andCacheNotFound_thenWarmupStillCalled() {
-        when(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).thenReturn(null);
-
-        config.scheduledCacheEvictionAndWarmup();
-
-        verify(cacheWarmupService).warmup();
-    }
 
     // -------------------------------------------------------------------------
     // onEvent — all relevant EventTypes

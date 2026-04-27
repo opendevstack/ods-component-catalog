@@ -6,6 +6,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollec
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -34,10 +35,15 @@ public class CacheWarmupService implements ApplicationRunner {
     private final CatalogsCollectionService catalogsCollectionService;
     private final CatalogEntitiesService catalogEntitiesService;
 
-    /** Called by Spring Boot after the application context is fully started. */
+    /**
+     * Called by Spring Boot after the application context is fully started.
+     * Runs asynchronously so the app is ready to serve HTTP traffic immediately
+     * while the cache is populated in the background.
+     */
     @Override
+    @Async
     public void run(ApplicationArguments args) {
-        log.info("Cache warmup: starting at application startup...");
+        log.info("Cache warmup: starting asynchronously after application startup...");
         warmup();
     }
 

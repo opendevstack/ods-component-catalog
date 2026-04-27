@@ -35,6 +35,7 @@ class CacheWarmupServiceTest {
 
     @Test
     void whenRun_thenWarmupIsCalled() throws Exception {
+        // @Async is ignored in unit tests (no Spring proxy); run() delegates to warmup() synchronously here.
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.empty());
 
         service.run(new DefaultApplicationArguments());
