@@ -1,9 +1,10 @@
 package org.opendevstack.component_catalog.config;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
 import org.opendevstack.component_catalog.server.services.CacheWarmupService;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,14 +20,30 @@ import org.springframework.scheduling.annotation.Scheduled;
  * arise if {@link CachingConfiguration} — which defines the {@link CacheManager} bean — also
  * depended on services that consume it.
  * </p>
+ * <p>
+ * This bean is only registered when the cache is enabled
+ * ({@code component-catalog.caching.bitbucket-service-cache.enabled=true}).
+ * When disabled (e.g. in tests), no scheduling is needed.
+ * </p>
  */
 @Configuration
-@AllArgsConstructor
+@ConditionalOnProperty(
+        prefix = "component-catalog.caching.bitbucket-service-cache",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 @Slf4j
 public class CacheScheduling {
 
     private final CacheManager cacheManager;
     private final CacheWarmupService cacheWarmupService;
+
+    public CacheScheduling(@Qualifier("cacheManager") CacheManager cacheManager,
+                           CacheWarmupService cacheWarmupService) {
+        this.cacheManager = cacheManager;
+        this.cacheWarmupService = cacheWarmupService;
+    }
 
     /**
      * Evicts all entries from the Bitbucket service cache and immediately re-populates it so the
