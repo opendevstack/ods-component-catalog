@@ -194,7 +194,7 @@ public class BitbucketService {
         return Pair.of(contentType, respBytes);
     }
 
-    @Cacheable
+    @Cacheable(key = "#root.methodName + #projectKey + #repoSlug + #at")
     public Optional<RestCommit> getLastCommit(String projectKey, String repoSlug, String at) throws BitbucketIOException {
         try {
             var response = this.repositoryApi.getCommitsWithHttpInfo(
@@ -213,7 +213,7 @@ public class BitbucketService {
         }
     }
 
-    @Cacheable
+    @Cacheable(key = "#root.methodName + #repoPathAt + #username")
     public Set<PermissionEnum> searchRepoUserPermissions(BitbucketPathAt repoPathAt, String username) {
         try {
             // This is a workaround in order to get the returned JSON string.
