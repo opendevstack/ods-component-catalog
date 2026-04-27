@@ -55,15 +55,16 @@ public class ProvisionerActionsService {
 
         validate(projectComponents, componentId, status);
 
+        var existsComponent = componentExistsInProjectComponents(projectComponents, componentId);
         ProjectComponents updatedProjectComponents;
 
-        if (Status.CREATING == status) {
-            log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
-            updatedProjectComponents = projectComponentsService.addNewComponent(
-                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
-        } else {
+        if (existsComponent) {
             log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
+                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
+        } else {
+            log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
+            updatedProjectComponents = projectComponentsService.addNewComponent(
                     projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
         }
 
@@ -135,8 +136,6 @@ public class ProvisionerActionsService {
     protected void validate(ProjectComponents projectComponents, String componentId, Status status) {
         if (status == Status.CREATING) {
             validateComponentDoesNotExistsWhenCreating(projectComponents, componentId);
-        } else if (status == Status.CREATED) {
-            validateStatusCreatingWhenCreated(projectComponents, componentId);
         } else {
             log.debug("No creating status, skipping validation.");
         }
@@ -168,22 +167,15 @@ public class ProvisionerActionsService {
     }
 
     private void validateComponentDoesNotExistsWhenCreating(ProjectComponents projectComponents, String componentId) {
-        Optional.ofNullable(projectComponents.getComponents())
-                .filter(components -> components.containsKey(componentId))
-                .ifPresent(components -> {
-                    throw new ComponentAlreadyExistsException("Component with id '" + componentId + "' already exists in the project components.");
-                });
+        if (componentExistsInProjectComponents(projectComponents, componentId)) {
+            throw new ComponentAlreadyExistsException("Component with id '" + componentId + "' already exists in the project components.");
+        }
     }
 
-    private void validateStatusCreatingWhenCreated(ProjectComponents projectComponents, String componentId) {
-        var componentInCreatingState = Optional.ofNullable(projectComponents.getComponents())
+    private boolean componentExistsInProjectComponents(ProjectComponents projectComponents, String componentId) {
+        return Optional.ofNullable(projectComponents.getComponents())
                 .filter(components -> components.containsKey(componentId))
-                .map(components -> components.get(componentId))
-                .filter(component -> Status.CREATING == component.getStatus());
-
-        if (componentInCreatingState.isEmpty()) {
-            throw new InvalidComponentStateException("Component with id '" + componentId + "' is not in Creating state.");
-        }
+                .isPresent();
     }
 
     @SneakyThrows
