@@ -7,6 +7,7 @@ logging:
     org.opendevstack.component_catalog.server.api: INFO
     org.opendevstack.component_catalog.server.mappers: INFO
     org.opendevstack.component_catalog.server.services.org.opendevstack.component_catalog.server.services.BitbucketService: DEBUG
+    org.opendevstack.component_catalog.services.CachewarmupService:  DEBUG
     org.opendevstack.component_catalog.util: DEBUG
 spring:
   http:
