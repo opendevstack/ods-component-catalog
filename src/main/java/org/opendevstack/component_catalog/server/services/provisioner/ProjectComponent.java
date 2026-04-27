@@ -21,6 +21,7 @@ public class ProjectComponent {
     private String catalogItemRef;
     private Status status;
     private String componentUrl;
+    private String workflowJobId;
     private List<Parameter> parameters;
 
     @Value("${catalog-item.reference.encoded}")

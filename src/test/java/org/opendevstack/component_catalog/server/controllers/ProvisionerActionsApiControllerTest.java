@@ -74,12 +74,14 @@ class ProvisionerActionsApiControllerTest {
                 .name("parameterName")
                 .values(List.of("parameterValue"))
                 .build();
+        var workflowJobId = "workflowJobId";
         var parameters = List.of(parameter);
 
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
+                .workflowJobId(workflowJobId)
                 .parameters(parameters);
 
         var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
@@ -95,6 +97,7 @@ class ProvisionerActionsApiControllerTest {
                 componentId,
                 catalogItemId,
                 componentUrl,
+                workflowJobId,
                 mappedParameters
         );
     }
@@ -106,6 +109,7 @@ class ProvisionerActionsApiControllerTest {
         var status = Status.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
+        var workflowJobId = "workflowJobId";
         var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -115,6 +119,7 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
+                .workflowJobId(workflowJobId)
                 .parameters(parameters);
 
         var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
@@ -125,7 +130,7 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, "", mappedParameters);
+                status, componentId, catalogItemId, "", workflowJobId, mappedParameters);
     }
 
     @Test

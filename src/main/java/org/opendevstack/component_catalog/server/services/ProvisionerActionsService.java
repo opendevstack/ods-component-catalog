@@ -1,5 +1,11 @@
 package org.opendevstack.component_catalog.server.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.Synchronized;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
@@ -7,18 +13,11 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.RestEnti
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.Synchronized;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -78,6 +77,7 @@ public class ProvisionerActionsService {
                                                   String componentId,
                                                   String catalogItemId,
                                                   String componentUrl,
+                                                  String workflowJobId,
                                                   List<Pair<String, List<String>>> parameters) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
                 projectKey, status, componentId, catalogItemId, componentUrl);
@@ -95,7 +95,7 @@ public class ProvisionerActionsService {
 
         log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
         var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
-                projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
+                projectComponents, componentId, catalogItemId, status, componentUrl, workflowJobId, projectComponentParameters);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);

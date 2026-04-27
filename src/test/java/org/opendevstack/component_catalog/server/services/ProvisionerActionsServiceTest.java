@@ -1,18 +1,5 @@
 package org.opendevstack.component_catalog.server.services;
 
-import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
-import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
-import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
-import org.opendevstack.component_catalog.server.mother.ProjectComponentsMother;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
-import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -24,6 +11,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
+import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
+import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
+import org.opendevstack.component_catalog.server.mother.ProjectComponentsMother;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
+import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
@@ -369,6 +368,7 @@ class ProvisionerActionsServiceTest {
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
         var parameterPair = Pair.of("paramName", List.of("paramValue"));
+        var workflowJobId = "workflowJobId";
 
         var pathAt = BitbucketPathAtMother.of();
         var sourceCommitId = "sourceCommitId";
@@ -392,6 +392,7 @@ class ProvisionerActionsServiceTest {
                 catalogItemId,
                 status,
                 componentUrl,
+                workflowJobId,
                 List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build())
         )).thenReturn(updatedProjectComponents);
 
@@ -404,6 +405,7 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 componentUrl,
+                workflowJobId,
                 List.of(parameterPair)
         );
 
@@ -424,6 +426,7 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
+        var workflowJobId = "workflowJobId";
 
         var pathAt = BitbucketPathAtMother.of();
 
@@ -441,6 +444,7 @@ class ProvisionerActionsServiceTest {
                         componentId,
                         catalogItemId,
                         componentUrl,
+                        workflowJobId,
                         List.of()
                 )
         );
@@ -460,6 +464,7 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "url";
+        var workflowJobId = "workflowJobId";
 
         var pathAt = BitbucketPathAtMother.of();
 
@@ -480,6 +485,7 @@ class ProvisionerActionsServiceTest {
                 eq(catalogItemId),
                 eq(status),
                 eq(componentUrl),
+                eq(workflowJobId),
                 any()
         )).thenReturn(updatedProjectComponents);
 
@@ -492,6 +498,7 @@ class ProvisionerActionsServiceTest {
                 componentId,
                 catalogItemId,
                 componentUrl,
+                workflowJobId,
                 List.of()
         );
 
