@@ -116,8 +116,7 @@ public class ProjectComponentsService {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         entry -> updateComponentIfMatch(
-                                entry.getKey(),
-                                entry.getValue(),
+                                entry,
                                 componentId,
                                 catalogItemId,
                                 status,
@@ -169,8 +168,7 @@ public class ProjectComponentsService {
                 .orElseThrow(() -> new InvalidEntityException("Invalid Base64 encoded catalogItemId: " + catalogItemId));
     }
 
-    private ProjectComponent updateComponentIfMatch(String key,
-                                                    ProjectComponent value,
+    private ProjectComponent updateComponentIfMatch(Map.Entry<String, ProjectComponent> entry,
                                                     String componentId,
                                                     String catalogItemId,
                                                     Status status,
@@ -178,18 +176,18 @@ public class ProjectComponentsService {
                                                     String workflowJobId,
                                                     List<Parameter> parameters) {
 
-        if (!key.equals(componentId)) {
-            return value; // leave unchanged
+        if (!entry.getKey().equals(componentId)) {
+            return entry.getValue(); // leave unchanged
         }
 
         return ProjectComponent.builder()
-                .componentId(value.getComponentId())
-                .catalogItemId(value.getCatalogItemId())
+                .componentId(entry.getValue().getComponentId())
+                .catalogItemId(entry.getValue().getCatalogItemId())
                 .status(status)
-                .catalogItemRef(resolveCatalogItemRef(value, catalogItemId))
-                .componentUrl(resolveComponentUrl(value, componentUrl))
+                .catalogItemRef(resolveCatalogItemRef(entry.getValue(), catalogItemId))
+                .componentUrl(resolveComponentUrl(entry.getValue(), componentUrl))
                 .workflowJobId(workflowJobId)
-                .parameters(resolveParameters(value, parameters))
+                .parameters(resolveParameters(entry.getValue(), parameters))
                 .build();
     }
 
