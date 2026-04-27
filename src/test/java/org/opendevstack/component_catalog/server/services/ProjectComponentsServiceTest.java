@@ -149,7 +149,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, parameters);
+                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, null, parameters);
 
         //then
         ProjectComponent result = updated.getComponents().get("comp1");
@@ -168,7 +168,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", Collections.emptyList()))
+                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", null, Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 

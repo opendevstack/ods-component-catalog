@@ -60,7 +60,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
                 provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                normalizedComponentUrl, parameters);
+                normalizedComponentUrl, provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""), parameters);
 
         return ResponseEntity.ok().build();
     }

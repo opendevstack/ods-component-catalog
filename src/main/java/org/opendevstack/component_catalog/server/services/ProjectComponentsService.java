@@ -105,6 +105,7 @@ public class ProjectComponentsService {
                                                               String catalogItemId,
                                                               Status status,
                                                               String componentUrl,
+                                                              String workflowJobId,
                                                               List<Parameter> parameters) {
 
         validateComponentExists(projectComponents, componentId);
@@ -121,6 +122,7 @@ public class ProjectComponentsService {
                                 catalogItemId,
                                 status,
                                 componentUrl,
+                                workflowJobId,
                                 parameters)
                 ));
 
@@ -173,6 +175,7 @@ public class ProjectComponentsService {
                                                     String catalogItemId,
                                                     Status status,
                                                     String componentUrl,
+                                                    String workflowJobId,
                                                     List<Parameter> parameters) {
 
         if (!key.equals(componentId)) {
@@ -185,6 +188,7 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(resolveCatalogItemRef(value, catalogItemId))
                 .componentUrl(resolveComponentUrl(value, componentUrl))
+                .workflowJobId(workflowJobId)
                 .parameters(resolveParameters(value, parameters))
                 .build();
     }
