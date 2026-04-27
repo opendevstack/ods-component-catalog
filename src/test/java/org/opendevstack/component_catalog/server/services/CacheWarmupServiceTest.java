@@ -2,7 +2,7 @@ package org.opendevstack.component_catalog.server.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityTargetMother;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntitySpec;
@@ -14,19 +14,32 @@ import org.springframework.boot.DefaultApplicationArguments;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CacheWarmupServiceTest {
 
+    private static final String BASE_RAW_URL = "https://my-bitbucket-server.com";
+    private static final String BASE_REST_URL = "https://my-bitbucket-server.com/rest/api/latest";
+
     private CatalogsCollectionService catalogsCollectionService;
     private CatalogEntitiesService catalogEntitiesService;
+    private BitbucketService bitbucketService;
     private CacheWarmupService service;
 
     @BeforeEach
     void setUp() {
         catalogsCollectionService = mock(CatalogsCollectionService.class);
         catalogEntitiesService = mock(CatalogEntitiesService.class);
-        service = new CacheWarmupService(catalogsCollectionService, catalogEntitiesService);
+        bitbucketService = mock(BitbucketService.class);
+        service = new CacheWarmupService(catalogsCollectionService, catalogEntitiesService, bitbucketService);
+
+        // Default: pathAtBuilder() returns a real builder backed by our test base URLs
+        when(bitbucketService.pathAtBuilder()).thenReturn(
+                BitbucketPathAt.builder()
+                        .baseRawUrl(BASE_RAW_URL)
+                        .baseRestUrl(BASE_REST_URL)
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -62,20 +75,15 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenTwoCatalogs_whenWarmup_thenBothCatalogsLoaded() throws Exception {
-        var target1 = CatalogsCollectionsEntityTargetMother.of("catalog-a");
-        var target2 = CatalogsCollectionsEntityTargetMother.of("catalog-b");
-        var entity = catalogsCollectionsEntityWith(target1, target2);
-
+        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-a"), bitbucketTarget("catalog-b"));
         var items = List.of(CatalogItemEntityContextMother.of());
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-a")).thenReturn(items);
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-b")).thenReturn(items);
+        when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(items);
 
         service.warmup();
 
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-a");
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-b");
+        verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
 
     // -------------------------------------------------------------------------
@@ -84,21 +92,17 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenOneCatalogFails_whenWarmup_thenOtherCatalogsStillLoaded() throws Exception {
-        var target1 = CatalogsCollectionsEntityTargetMother.of("catalog-ok");
-        var target2 = CatalogsCollectionsEntityTargetMother.of("catalog-bad");
-        var entity = catalogsCollectionsEntityWith(target1, target2);
+        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-ok"), bitbucketTarget("catalog-bad"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-ok"))
-                .thenReturn(List.of(CatalogItemEntityContextMother.of()));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-bad"))
+        when(catalogEntitiesService.getCatalogItemsEntities(any()))
+                .thenReturn(List.of(CatalogItemEntityContextMother.of()))
                 .thenThrow(new InvalidIdException("catalog-bad"));
 
         // Must not throw — errors are swallowed and logged as WARN
         service.warmup();
 
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-ok");
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-bad");
+        verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
 
     // -------------------------------------------------------------------------
@@ -107,20 +111,16 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenCatalogThrowsRuntimeException_whenWarmup_thenContinuesWithOtherCatalogs() throws Exception {
-        var target1 = CatalogsCollectionsEntityTargetMother.of("catalog-runtime-error");
-        var target2 = CatalogsCollectionsEntityTargetMother.of("catalog-fine");
-        var entity = catalogsCollectionsEntityWith(target1, target2);
+        var entity = catalogsCollectionsEntityWith(bitbucketTarget("catalog-err"), bitbucketTarget("catalog-fine"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-runtime-error"))
-                .thenThrow(new RuntimeException("Unexpected error"));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-fine"))
+        when(catalogEntitiesService.getCatalogItemsEntities(any()))
+                .thenThrow(new RuntimeException("Unexpected error"))
                 .thenReturn(List.of());
 
         service.warmup();
 
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-runtime-error");
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-fine");
+        verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
 
     // -------------------------------------------------------------------------
@@ -144,20 +144,30 @@ class CacheWarmupServiceTest {
 
     @Test
     void givenCatalogWithNoItems_whenWarmup_thenCompletesNormally() throws Exception {
-        var target = CatalogsCollectionsEntityTargetMother.of("empty-catalog");
-        var entity = catalogsCollectionsEntityWith(target);
+        var entity = catalogsCollectionsEntityWith(bitbucketTarget("empty-catalog"));
 
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
-        when(catalogEntitiesService.getCatalogItemsEntities("empty-catalog")).thenReturn(List.of());
+        when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
 
         service.warmup();
 
-        verify(catalogEntitiesService).getCatalogItemsEntities("empty-catalog");
+        verify(catalogEntitiesService, times(1)).getCatalogItemsEntities(any());
     }
 
     // -------------------------------------------------------------------------
     // helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Creates a target whose URL is a valid full Bitbucket raw URL (same format the real data uses),
+     * so that BitbucketService.pathAtBuilder() can parse it correctly in the warmup logic.
+     */
+    private CatalogsCollectionsEntityTarget bitbucketTarget(String slug) {
+        var target = new CatalogsCollectionsEntityTarget();
+        target.setSlug(slug);
+        target.setUrl(BASE_RAW_URL + "/projects/MYPROJECT/repos/" + slug + "/raw/Catalog.yaml?at=refs%2Fheads%2Fmaster");
+        return target;
+    }
 
     private static CatalogsCollectionsEntity catalogsCollectionsEntityWith(CatalogsCollectionsEntityTarget... targets) {
         var spec = new CatalogsCollectionsEntitySpec();
@@ -172,6 +182,3 @@ class CacheWarmupServiceTest {
         return entity;
     }
 }
-
-
-

@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.idEncode;
+
 /**
  * Warms up the Bitbucket cache on application startup and after each scheduled eviction.
  * <p>
@@ -31,6 +33,7 @@ public class CacheWarmupService implements ApplicationRunner {
 
     private final CatalogsCollectionService catalogsCollectionService;
     private final CatalogEntitiesService catalogEntitiesService;
+    private final BitbucketService bitbucketService;
 
     /** Called by Spring Boot after the application context is fully started. */
     @Override
@@ -85,10 +88,17 @@ public class CacheWarmupService implements ApplicationRunner {
      */
     private boolean warmupCatalog(CatalogsCollectionsEntityTarget target) {
         try {
-            var catalogId = target.getSlug();
-            log.debug("Cache warmup: loading catalog '{}'", catalogId);
+            // The catalog URL is a full Bitbucket raw URL. We derive the pathAt from it
+            // and encode it as base64 — exactly the same format getCatalogItemsEntities expects.
+            var pathAt = bitbucketService.pathAtBuilder()
+                    .rawUrl(target.getUrl())
+                    .build()
+                    .getPathAt();
+            var catalogId = idEncode(pathAt);
+
+            log.debug("Cache warmup: loading catalog '{}' (slug: '{}')", catalogId, target.getSlug());
             var items = catalogEntitiesService.getCatalogItemsEntities(catalogId);
-            log.debug("Cache warmup: catalog '{}' loaded {} item(s).", catalogId, items.size());
+            log.debug("Cache warmup: catalog '{}' loaded {} item(s).", target.getSlug(), items.size());
             return true;
         } catch (InvalidIdException | RuntimeException e) {
             log.warn("Cache warmup: error loading catalog '{}': {}", target.getSlug(), e.getMessage());
