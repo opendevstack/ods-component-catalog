@@ -14,8 +14,11 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
+import org.opendevstack.component_catalog.server.services.CacheWarmupService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.cache.Caching;
@@ -27,6 +30,14 @@ import static org.ehcache.event.EventType.*;
 @Configuration
 @Slf4j
 public class CachingConfiguration implements CacheEventListener<Object, Object> {
+
+    /**
+     * Injected lazily to avoid a circular dependency:
+     * CacheWarmupService → CatalogEntitiesService → BitbucketService → CacheManager → CachingConfiguration
+     */
+    @Lazy
+    @Autowired
+    private CacheWarmupService cacheWarmupService;
 
     @Bean
     public CacheManager cacheManager(BitbucketServiceCacheProps config) {
@@ -70,6 +81,9 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
     @CacheEvict(cacheNames = BitbucketServiceCacheProps.CACHE_NAME, allEntries = true)
     public void emptyBitbucketServiceCache() {
         log.debug("Emptying Bitbucket Service cache...");
+        // Immediately re-populate the cache so it always appears warm to users.
+        // Exceptions are swallowed inside warmup() itself – the eviction still applies.
+        cacheWarmupService.warmup();
     }
 
     @Override

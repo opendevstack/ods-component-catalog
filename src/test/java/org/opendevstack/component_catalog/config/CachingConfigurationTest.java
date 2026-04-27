@@ -2,23 +2,34 @@ package org.opendevstack.component_catalog.config;
 
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.EventType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.unit.DataSize;
 
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CachingConfigurationTest {
 
-    private final CachingConfiguration config = new CachingConfiguration();
+    private CacheWarmupService cacheWarmupService;
+    private CachingConfiguration config;
+
+    @BeforeEach
+    void setUp() {
+        cacheWarmupService = mock(CacheWarmupService.class);
+        config = new CachingConfiguration();
+        // Inject the @Lazy @Autowired field that Spring would wire at runtime
+        ReflectionTestUtils.setField(config, "cacheWarmupService", cacheWarmupService);
+    }
 
     // -------------------------------------------------------------------------
     // cacheManager — disabled branch
@@ -74,9 +85,11 @@ class CachingConfigurationTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void whenEmptyBitbucketServiceCache_thenNoException() {
-        // Covers the @Scheduled + @CacheEvict annotated method body
+    void whenEmptyBitbucketServiceCache_thenWarmupIsCalled() {
+        // After eviction the cache must be re-populated immediately via CacheWarmupService
         config.emptyBitbucketServiceCache();
+
+        verify(cacheWarmupService).warmup();
     }
 
     // -------------------------------------------------------------------------
