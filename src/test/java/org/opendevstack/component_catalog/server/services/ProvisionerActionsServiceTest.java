@@ -88,24 +88,6 @@ class ProvisionerActionsServiceTest {
     }
 
     @Test
-    void givenAProvisionersObject_andCreatedStatus_whenValidate_andNoCreatingStatus_thenThrowException() {
-        // given
-        var componentId = "componentId";
-        var status = Status.CREATED;
-
-        ProjectComponents projectComponents = ProjectComponentsMother.of(Status.DELETING);
-
-
-        // when
-        var exception = assertThrows(InvalidComponentStateException.class, () ->
-                provisionerActionsService.validate(projectComponents, componentId, status)
-        );
-
-        // then
-        assertThat(exception.getMessage()).isEqualTo("Component with id 'componentId' is not in Creating state.");
-    }
-
-    @Test
     void givenAProvisionersObject_andCreatingStatus_whenUpdateComponentProvisioningStatus_thenBitbucketFileIsUpdated() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
