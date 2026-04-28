@@ -7,8 +7,6 @@ import com.networknt.schema.serialization.JsonNodeReader;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -108,9 +106,12 @@ public class YamlSchemaValidator {
 
     @SneakyThrows
     private static String loadFileFromClasspath(String fileName) {
-        var filePath = Paths.get(ClassLoader.getSystemResource(fileName).toURI());
-
-        return Files.readString(filePath);
+        try (var inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Resource not found in classpath: " + fileName);
+            }
+            return new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
     }
 
 }
