@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.config;
 
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.EventType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -13,12 +14,16 @@ import org.springframework.util.unit.DataSize;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CachingConfigurationTest {
 
-    private final CachingConfiguration config = new CachingConfiguration();
+    private CachingConfiguration config;
+
+    @BeforeEach
+    void setUp() {
+        config = new CachingConfiguration();
+    }
 
     // -------------------------------------------------------------------------
     // cacheManager — disabled branch
@@ -69,15 +74,6 @@ class CachingConfigurationTest {
         assertThat(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
     }
 
-    // -------------------------------------------------------------------------
-    // emptyBitbucketServiceCache
-    // -------------------------------------------------------------------------
-
-    @Test
-    void whenEmptyBitbucketServiceCache_thenNoException() {
-        // Covers the @Scheduled + @CacheEvict annotated method body
-        config.emptyBitbucketServiceCache();
-    }
 
     // -------------------------------------------------------------------------
     // onEvent — all relevant EventTypes

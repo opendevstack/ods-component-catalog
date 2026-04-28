@@ -11,12 +11,10 @@ import org.ehcache.event.CacheEvent;
 import org.ehcache.event.CacheEventListener;
 import org.ehcache.jsr107.EhcacheCachingProvider;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.cache.Caching;
 import java.util.Map;
@@ -30,7 +28,7 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
 
     @Bean
     public CacheManager cacheManager(BitbucketServiceCacheProps config) {
-        if(!config.isEnabled()) {
+        if (!config.isEnabled()) {
             log.info("Bitbucket Service cache is disabled");
             return new NoOpCacheManager();
         }
@@ -66,11 +64,6 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         return Map.of(BitbucketServiceCacheProps.CACHE_NAME, ehCacheConfig);
     }
 
-    @Scheduled(fixedRateString = "#{bitbucketServiceCacheConfig.getEvictionInterval().toMillis()}")
-    @CacheEvict(cacheNames = BitbucketServiceCacheProps.CACHE_NAME, allEntries = true)
-    public void emptyBitbucketServiceCache() {
-        log.debug("Emptying Bitbucket Service cache...");
-    }
 
     @Override
     public void onEvent(CacheEvent<?, ?> cacheEvent) {
