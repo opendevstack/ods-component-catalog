@@ -35,9 +35,9 @@ class CachingConfigurationTest {
                 .enabled(false)
                 .build();
 
-        var cm = config.cacheManager(props);
+        var cacheManager = config.cacheManager(props);
 
-        assertThat(cm).isInstanceOf(NoOpCacheManager.class);
+        assertThat(cacheManager).isInstanceOf(NoOpCacheManager.class);
     }
 
     // -------------------------------------------------------------------------
@@ -53,10 +53,10 @@ class CachingConfigurationTest {
                 .evictionInterval(Duration.ofMinutes(120))
                 .build();
 
-        var cm = config.cacheManager(props);
+        var cacheManager = config.cacheManager(props);
 
-        assertThat(cm).isInstanceOf(JCacheCacheManager.class);
-        assertThat(cm.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
+        assertThat(cacheManager).isInstanceOf(JCacheCacheManager.class);
+        assertThat(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
     }
 
     @Test
@@ -68,10 +68,10 @@ class CachingConfigurationTest {
                 .evictionInterval(Duration.ofMinutes(5))
                 .build();
 
-        var cm = config.cacheManager(props);
+        var cacheManager = config.cacheManager(props);
 
-        assertThat(cm).isInstanceOf(JCacheCacheManager.class);
-        assertThat(cm.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
+        assertThat(cacheManager).isInstanceOf(JCacheCacheManager.class);
+        assertThat(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).isNotNull();
     }
 
 

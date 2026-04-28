@@ -37,9 +37,9 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         var ehCachingProvider = (EhcacheCachingProvider) Caching.getCachingProvider(EhcacheCachingProvider.class.getName());
         var ehDefaultConfig = new DefaultConfiguration(ehCaches, ehCachingProvider.getDefaultClassLoader());
 
-        var cm = ehCachingProvider.getCacheManager(ehCachingProvider.getDefaultURI(), ehDefaultConfig);
+        var cacheManager = ehCachingProvider.getCacheManager(ehCachingProvider.getDefaultURI(), ehDefaultConfig);
 
-        return new JCacheCacheManager(cm);
+        return new JCacheCacheManager(cacheManager);
     }
 
     private Map<String, CacheConfiguration<?, ?>> ehCachesConfig(long cacheSize) {
