@@ -926,6 +926,9 @@ components:
         componentUrl:
           type: string
           example: 'https://bitbucket.com/projects/CATALOGS/repos/project-components/browse/projects'
+        workflowJobId:
+          type: string
+          example: '123456'
         parameters:
           type: array
           items:

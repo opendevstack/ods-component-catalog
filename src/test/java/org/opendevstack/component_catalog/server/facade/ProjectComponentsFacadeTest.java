@@ -97,7 +97,7 @@ class ProjectComponentsFacadeTest {
         assertThat(result).hasSize(2);
 
         assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
-        assertThat(result.getFirst().getComponentUrl()).isNull();
+        assertThat(result.getFirst().getComponentUrl()).isEqualTo("http://component.url");
         assertThat(result.get(0).getStatus()).isEqualTo("CREATED");
         assertThat(result.get(0).getLogoUrl()).isEqualTo("logo-1.png");
 
@@ -222,7 +222,7 @@ class ProjectComponentsFacadeTest {
         // then
         assertThat(result).hasSize(2);
         assertThat(result.getFirst().getComponentId()).isEqualTo("CB");
-        assertThat(result.getFirst().getLogoUrl()).isEqualTo("");
+        assertThat(result.getFirst().getLogoUrl()).isEmpty();
 
         assertThat(result).element(1).extracting(ProjectComponentInfo::getComponentId).isEqualTo("CN");
         assertThat(result).element(1).extracting(ProjectComponentInfo::getLogoUrl).isEqualTo("");

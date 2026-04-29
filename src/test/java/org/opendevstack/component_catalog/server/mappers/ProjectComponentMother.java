@@ -4,26 +4,23 @@ import org.opendevstack.component_catalog.server.services.provisioner.ProjectCom
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 
 public class ProjectComponentMother {
-    public static ProjectComponent of(String componentId, String catalogItemId, String catalogItemRef, Status status, String componentUrl) {
-        ProjectComponent c = new ProjectComponent();
-        c.setComponentId(componentId);
-        c.setCatalogItemId(catalogItemId);
-        c.setStatus(status);
-        c.setCatalogItemRef(catalogItemRef);
-        c.setComponentUrl(componentUrl);
-        return c;
-    }
-
-    public static ProjectComponent of(String componentId, String catalogItemId, String catalogItemRef, Status status) {
-        ProjectComponent c = new ProjectComponent();
-        c.setComponentId(componentId);
-        c.setCatalogItemId(catalogItemId);
-        c.setStatus(status);
-        c.setCatalogItemRef(catalogItemRef);
-        return c;
-    }
 
     public static ProjectComponent of() {
         return of("componentId1", "catalogItemId1", "catalogItemRef1", Status.CREATED);
+    }
+
+    public static ProjectComponent of(String componentId, String catalogItemId, String catalogItemRef, Status status) {
+        return of(componentId, catalogItemId, catalogItemRef, status, "http://component.url");
+    }
+
+    public static ProjectComponent of(String componentId, String catalogItemId, String catalogItemRef, Status status, String componentUrl) {
+        return ProjectComponent.builder()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .status(status)
+                .catalogItemRef(catalogItemRef)
+                .componentUrl(componentUrl)
+                .workflowJobId("12345")
+                .build();
     }
 }
