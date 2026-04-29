@@ -18,23 +18,26 @@ public class ProjectComponentExtendedInfoMapper {
     private final ProjectComponentParameterMapper projectComponentParameterMapper;
 
     public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp) throws ComponentNotFoundException {
-        var pcps = Optional.ofNullable(comp.getParameters())
+        var projectComponentParameters = Optional.ofNullable(comp.getParameters())
                 .orElse(List.of())
                 .stream()
                 .map(p -> projectComponentParameterMapper.mapToProjectComponentParameter(p)
                         .orElseThrow(() -> new ComponentNotFoundException("Component with ID " + comp.getComponentId() + " not found.")))
                 .toList();
 
-        var pcei = ProjectComponentExtendedInfo.builder()
+        var projectComponentExtendedInfo = ProjectComponentExtendedInfo.builder()
                 .componentId(comp.getComponentId())
                 .componentUrl(comp.getComponentUrl())
                 .status(comp.getStatus().toString())
                 .catalogItemId(comp.getCatalogItemId())
                 .catalogItemRef(comp.getCatalogItemRef())
-                .parameters(pcps)
+                .parameters(projectComponentParameters)
+                .workflowJobId(comp.getWorkflowJobId())
                 .build();
 
-        return Optional.of(pcei);
+        log.debug("Mapped project component extended info: {}", projectComponentExtendedInfo);
+
+        return Optional.of(projectComponentExtendedInfo);
     }
 
 }
