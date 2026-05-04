@@ -12,6 +12,8 @@ logging:
     org.opendevstack.component_catalog.server.services.org.opendevstack.component_catalog.server.services.BitbucketService: INFO
     org.opendevstack.component_catalog.util: INFO
     org.opendevstack.component_catalog.server.services.restrictions.evaluators: DEBUG
+    org.opendevstack.component_catalog.config.CacheScheduling: OFF
+    org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter: OFF
 management:
   endpoints:
     web:
