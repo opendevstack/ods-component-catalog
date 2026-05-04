@@ -186,7 +186,7 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(resolveCatalogItemRef(entry.getValue(), catalogItemId))
                 .componentUrl(resolveComponentUrl(entry.getValue(), componentUrl))
-                .workflowJobId(workflowJobId)
+                .workflowJobId(resolveWorkflowJobId(entry.getValue(), workflowJobId))
                 .parameters(resolveParameters(entry.getValue(), parameters))
                 .build();
     }
@@ -207,6 +207,12 @@ public class ProjectComponentsService {
         return (params == null || params.isEmpty())
                 ? value.getParameters()
                 : params;
+    }
+
+    private String resolveWorkflowJobId(ProjectComponent value, String newJobId) {
+        return StringUtils.isBlank(newJobId)
+                ? value.getWorkflowJobId()
+                : newJobId;
     }
 
     private String getBranchRefFromCatalogItemId(String catalogItemId) throws InvalidEntityException {
