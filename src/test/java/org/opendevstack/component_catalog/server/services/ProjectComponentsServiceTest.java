@@ -188,6 +188,52 @@ class ProjectComponentsServiceTest {
     }
 
     @Test
+    void givenBlankWorkflowJobId_whenUpdatePartially_thenKeepsExistingWorkflowJobId() {
+        //given
+        String encodedRepo = base64("repo/a");
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .workflowJobId("existing-job-id")
+                .status(Status.CREATING)
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        //when
+        ProjectComponents updated =
+                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "", Collections.emptyList());
+
+        //then
+        assertThat(updated.getComponents().get("comp1").getWorkflowJobId()).isEqualTo("existing-job-id");
+    }
+
+    @Test
+    void givenNewWorkflowJobId_whenUpdatePartially_thenUsesNewWorkflowJobId() {
+        //given
+        String encodedRepo = base64("repo/a");
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .workflowJobId("old-job-id")
+                .status(Status.CREATING)
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        //when
+        ProjectComponents updated =
+                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "new-job-id", Collections.emptyList());
+
+        //then
+        assertThat(updated.getComponents().get("comp1").getWorkflowJobId()).isEqualTo("new-job-id");
+    }
+
+    @Test
     void givenValidCatalogItemId_whenGetRepoPath_thenReturnsPathWithoutBranch() {
         //given
         String encoded = base64("repo/x?at=refs/heads/main");
