@@ -39,15 +39,26 @@ public class ProjectComponentsInfoMapper {
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(encodeMultipartId(catalogItemIdWithRef))
+                .projectKey(projectKey)
                 .build();
 
         CatalogItem catalogItem = catalogItemsApiFacade.fetchCatalogItem(params);
+
+        if (catalogItem == null) {
+            log.warn("Catalog item not found for component {} with catalogItemId {} and catalogItemRef {}",
+                    comp.getComponentId(), comp.getCatalogItemId(), comp.getCatalogItemRef());
+        }
+
+        var logoUrl = Optional.ofNullable(catalogItem)
+                .map(CatalogItem::getImageFileId)
+                .filter(StringUtils::isNotBlank)
+                .orElse("");
 
         var pci = ProjectComponentInfo.builder()
                 .componentId(comp.getComponentId())
                 .componentUrl(comp.getComponentUrl())
                 .status(comp.getStatus().toString())
-                .logoUrl(StringUtils.isBlank(catalogItem.getImageFileId()) ? "" : catalogItem.getImageFileId())
+                .logoUrl(logoUrl)
                 .canBeDeleted(containsManagerOrTeam(userGroups, projectKey))
                 .build();
 
