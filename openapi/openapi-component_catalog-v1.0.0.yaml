@@ -891,6 +891,9 @@ components:
         canBeDeleted:
           type: boolean
           example: true
+        hasAutomatedDeletionWorkflow:
+          type: boolean
+          example: true
         logoUrl:
           type: string
           example: https://somepic.jpg
