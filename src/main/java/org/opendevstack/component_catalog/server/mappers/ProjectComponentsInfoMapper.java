@@ -107,6 +107,7 @@ public class ProjectComponentsInfoMapper {
                 .findAny()
                 .map(CatalogItemUserActionParameter::getDefaultValue)
                 .map(JsonNullable::get))
+                .filter(StringUtils::isNotBlank)
                 .orElse(null);
 
         log.debug("Extracted deletion workflow '{}' for catalog item '{}'", deletionWorkflow, catalogItem.getId());

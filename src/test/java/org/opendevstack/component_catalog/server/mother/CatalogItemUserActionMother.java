@@ -14,8 +14,12 @@ public class CatalogItemUserActionMother {
     }
 
     public static CatalogItemUserAction of(List<CatalogItemUserActionParameter> parameters) {
+        return of("TEST_PROVISION", parameters);
+    }
+
+    public static CatalogItemUserAction of(String id, List<CatalogItemUserActionParameter> parameters) {
         return CatalogItemUserAction.builder()
-                .id("TEST_PROVISION")
+                .id(id)
                 .displayName("TEST Provision")
                 .url("http://example.com/action1")
                 .triggerMessage("Trigger Action 1")
