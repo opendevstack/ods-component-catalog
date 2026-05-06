@@ -1,17 +1,18 @@
 package org.opendevstack.component_catalog.server.mappers;
 
-import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.api.AzureGroupsApi;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
-import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
-import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
-import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +20,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectComponentsInfoMapperTest {
@@ -62,6 +66,7 @@ class ProjectComponentsInfoMapperTest {
         assertThat(info.getComponentUrl()).isEqualTo("https://www.google.com");
         assertThat(info.getStatus()).isEqualTo("CREATED");
         assertThat(info.getLogoUrl()).isEqualTo("logo-100.png");
+        assertThat(info.getHasAutomatedDeletionWorkflow()).isFalse();
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(argThat(p ->
                 p != null && ("ce-_vX7vv71N77-977-977-977-9TQ==").equals(p.getCatalogItemId())
         ));
@@ -82,6 +87,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
         assertThat(maybeInfo.get().getLogoUrl()).isEqualTo("");
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -101,6 +107,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
         assertThat(maybeInfo.get().getLogoUrl()).isEqualTo("");
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -143,5 +150,112 @@ class ProjectComponentsInfoMapperTest {
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo("UNKNOWN");
 
         verify(catalogItemsApiFacade, times(4)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithProvisionActionAndDeletionWorkflow_whenMap_thenHasAutomatedDeletionWorkflowIsTrue() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-300", "cat-300", "ref-300", Status.CREATED);
+        var deletionWorkflowParam = CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
+                .defaultValue("some-workflow-id");
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isTrue();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithProvisionActionButNoDeletionWorkflow_whenMap_thenHasAutomatedDeletionWorkflowIsFalse() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-301", "cat-301", "ref-301", Status.CREATED);
+        var otherParam = CatalogItemUserActionParameterMother.of("other_param", "string");
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(otherParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithNoProvisionAction_whenMap_thenHasAutomatedDeletionWorkflowIsFalse() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-302", "cat-302", "ref-302", Status.CREATED);
+        var otherAction = CatalogItemUserActionMother.of("OTHER", List.of());
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(otherAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithProvisionActionAndNullDeletionWorkflow_whenMap_thenHasAutomatedDeletionWorkflowIsFalse() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-303", "cat-303", "ref-303", Status.CREATED);
+        var deletionWorkflowParam = CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
+                .defaultValue(null);
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithProvisionAction_andEmptyDeletionWorkflow_whenMap_thenHasAutomatedDeletionWorkflowIsFalse() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-304", "cat-304", "ref-304", Status.CREATED);
+        var deletionWorkflowParam = CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
+                .defaultValue("");
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
 }
