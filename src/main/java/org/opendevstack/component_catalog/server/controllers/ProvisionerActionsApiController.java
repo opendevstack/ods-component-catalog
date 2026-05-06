@@ -75,6 +75,6 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
             return ResponseEntity.unprocessableEntity().build();
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }
