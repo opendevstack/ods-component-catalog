@@ -1,7 +1,6 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jspecify.annotations.NonNull;
@@ -14,18 +13,34 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
+import org.opendevstack.component_catalog.util.JwtUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
-@AllArgsConstructor
 @Slf4j
 public class ProvisionerActionsApiFacade {
     private final ProjectsInfoService projectsInfoService;
     private final GroupsRestrictionsEvaluator groupsRestrictionsEvaluator;
     private final ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
     private final AuthenticationFacade authenticationFacade;
+
+    private final List<String> permittedOids;
+
+    public ProvisionerActionsApiFacade(ProjectsInfoService projectsInfoService,
+                                       GroupsRestrictionsEvaluator groupsRestrictionsEvaluator,
+                                       ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps,
+                                       AuthenticationFacade authenticationFacade,
+                                       @Value("${devstack.marketplace-api.permitted-oids}") List<String> permittedOids) {
+        this.projectsInfoService = projectsInfoService;
+        this.groupsRestrictionsEvaluator = groupsRestrictionsEvaluator;
+        this.groupsRestrictionProps = groupsRestrictionProps;
+        this.authenticationFacade = authenticationFacade;
+        this.permittedOids = permittedOids;
+    }
+
 
     public static @NonNull List<Pair<@NotNull String, @NotNull List<String>>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         return provisioningStatusUpdateRequest.getParameters().stream()
@@ -34,6 +49,20 @@ public class ProvisionerActionsApiFacade {
     }
 
     public void validateGroupRestrictions(String projectKey) {
+        var accessToken = authenticationFacade.getAccessToken();
+
+        var oid = JwtUtils.extractClaim(accessToken, "oid");
+
+        boolean isAValidApplicationToken = oid.map(permittedOids::contains).orElse(false);
+
+        if (isAValidApplicationToken) {
+            log.debug("Token with oid '{}' is allowed to bypass group restrictions for project {}", oid.orElse("unknown"), projectKey);
+        } else {
+            validateGroupRestrictions(projectKey, accessToken);
+        }
+    }
+
+    private void validateGroupRestrictions(String projectKey, String accessToken) {
         var groupRestriction = CatalogItemUserActionGroupsRestriction.builder()
                 .prefix(groupsRestrictionProps.getPrefix())
                 .suffix(groupsRestrictionProps.getSuffix())
@@ -44,7 +73,6 @@ public class ProvisionerActionsApiFacade {
                 .build();
 
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, userActionEntityRestrictions);
-        var accessToken = authenticationFacade.getAccessToken();
         var userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         var params = RestrictionsParams.builder()

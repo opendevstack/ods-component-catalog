@@ -70,3 +70,8 @@ provisioner:
     sub-path: ${PROVISIONER_BITBUCKET_SUB_PATH}
     sub-path-token: ${PROVISIONER_BITBUCKET_SUB_PATH_TOKEN}
     branch-name: ${PROVISIONER_BITBUCKET_BRANCH_NAME}
+
+
+devstack:
+  marketplace-api:
+    permitted-oids: ${DEVSTACK_MARKETPLACE-API_PERMITTED_OIDS}
