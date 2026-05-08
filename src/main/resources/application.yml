@@ -74,4 +74,4 @@ provisioner:
 
 devstack:
   marketplace-api:
-    permitted-oids: ${DEVSTACK_MARKETPLACE-API_PERMITTED_OIDS}
+    permitted-oids: ${DEVSTACK_MARKETPLACE_API_PERMITTED_OIDS}
