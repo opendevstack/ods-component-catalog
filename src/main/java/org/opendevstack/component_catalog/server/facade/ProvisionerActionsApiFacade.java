@@ -58,6 +58,8 @@ public class ProvisionerActionsApiFacade {
         if (isAValidApplicationToken) {
             log.debug("Token with oid '{}' is allowed to bypass group restrictions for project {}", oid.orElse("unknown"), projectKey);
         } else {
+            log.debug("Token with oid '{}' is NOT allowed to bypass group restrictions for project {}. Validating group restrictions", oid.orElse("unknown"), projectKey);
+
             validateGroupRestrictions(projectKey, accessToken);
         }
     }
