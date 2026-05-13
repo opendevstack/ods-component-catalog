@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum UserActionEntityMessageType {
     SUCCESS("success"),
-    ERROR("error");
+    ERROR("error"),
+    DELETION_SUCCESS("deletion_success"),
+    DELETION_ERROR("deletion_error");
 
     private String value;
 
