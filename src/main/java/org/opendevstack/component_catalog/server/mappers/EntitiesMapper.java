@@ -281,12 +281,14 @@ public class EntitiesMapper {
                 .build();
     }
 
-    public  CatalogItemUserActionMessageType asCatalogItemUserActionMessageType(UserActionEntityMessageType userActionEntityMessageType) {
+    public CatalogItemUserActionMessageType asCatalogItemUserActionMessageType(UserActionEntityMessageType userActionEntityMessageType) {
         log.debug("Mapping UserActionEntityMessageType: {}", userActionEntityMessageType);
 
         return switch (userActionEntityMessageType) {
             case SUCCESS -> CatalogItemUserActionMessageType.SUCCESS;
             case ERROR -> CatalogItemUserActionMessageType.ERROR;
+            case DELETION_SUCCESS ->  CatalogItemUserActionMessageType.DELETION_SUCCESS;
+            case DELETION_ERROR ->  CatalogItemUserActionMessageType.DELETION_ERROR;
         };
 
     }
