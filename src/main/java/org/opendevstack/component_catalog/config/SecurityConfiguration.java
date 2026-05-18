@@ -77,7 +77,7 @@ public class SecurityConfiguration {
                 PathPatternRequestMatcher.withDefaults().matcher("/v1/catalog-items/*/user-actions/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v1/user-actions/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v1/schema-validation/**"),
-                PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/api-docs/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/v1/user-actions/**"),
                 PathPatternRequestMatcher.withDefaults().matcher("/actuator/health")
