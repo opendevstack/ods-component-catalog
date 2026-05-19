@@ -103,7 +103,7 @@ public class ProjectComponentsInfoMapper {
                 .findAny();
 
         var deletionWorkflow = provisionAction.flatMap(action -> action.getParameters().stream()
-                .filter(param -> "deletion_workflow".equals(param.getName()))
+                .filter(param -> "deletion_workflow".equals(param.getName()) || "deletion_workflow_name".equals(param.getName()))
                 .findAny()
                 .map(CatalogItemUserActionParameter::getDefaultValue)
                 .map(JsonNullable::get))

@@ -258,4 +258,50 @@ class ProjectComponentsInfoMapperTest {
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
+
+    @Test
+    void givenCatalogItemWithProvisionAction_andEmptyDeletionWorkflowAndEmptyDeletionWorkflowName_whenMap_thenHasAutomatedDeletionWorkflowIsFalse() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-304", "cat-304", "ref-304", Status.CREATED);
+        var deletionWorkflowParam = CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
+                .defaultValue("");
+        var deletionWorkflowNameParam = CatalogItemUserActionParameterMother.of("deletion_workflow_name", "string")
+                .defaultValue("");
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam, deletionWorkflowNameParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
+
+    @Test
+    void givenCatalogItemWithProvisionAction_andNonEmptyDeletionWorkflowName_whenMap_thenHasAutomatedDeletionWorkflowIsTrue() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-304", "cat-304", "ref-304", Status.CREATED);
+        var deletionWorkflowNameParam = CatalogItemUserActionParameterMother.of("deletion_workflow_name", "string")
+                .defaultValue("some-workflow-name");
+        var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowNameParam));
+        var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
+
+        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+                .thenReturn(catalogItem);
+
+        // when
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+
+        // then
+        assertThat(maybeInfo).isPresent();
+        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isTrue();
+
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+    }
 }
