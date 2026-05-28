@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
@@ -27,6 +28,7 @@ public class ProjectComponentsFacade {
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
     private final ProjectsInfoService projectsInfoService;
     private final ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
+    private ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps  catalogProjectComponentsGroupsRestrictionProps;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -90,6 +92,7 @@ public class ProjectComponentsFacade {
         if (groups == null) return false;
         return groups.stream()
                 .filter(Objects::nonNull)
-                .anyMatch(g -> g.toUpperCase().contains("BI-AS-ATLASSIAN-P-" + projectKey.toUpperCase()));
+                .anyMatch(g -> catalogProjectComponentsGroupsRestrictionProps.getPrefix().stream().anyMatch(g.toUpperCase()::startsWith) &&
+                        g.toUpperCase().contains(projectKey.toUpperCase()));
     }
 }
