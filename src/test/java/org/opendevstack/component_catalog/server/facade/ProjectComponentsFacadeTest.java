@@ -79,6 +79,7 @@ class ProjectComponentsFacadeTest {
         var pc = ProjectComponentsMother.of(comps);
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(catalogItemsApiFacade.fetchCatalogItem(any()))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
@@ -128,6 +129,7 @@ class ProjectComponentsFacadeTest {
 
         var pc = ProjectComponentsMother.of(comps);
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(catalogItemsApiFacade.fetchCatalogItem(any()))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
@@ -168,6 +170,7 @@ class ProjectComponentsFacadeTest {
 
         var pc = ProjectComponentsMother.of(comps);
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(catalogItemsApiFacade.fetchCatalogItem(any()))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
@@ -205,6 +208,7 @@ class ProjectComponentsFacadeTest {
         var pc = ProjectComponentsMother.of(comps);
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(catalogItemsApiFacade.fetchCatalogItem(any()))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
@@ -265,6 +269,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
@@ -285,6 +290,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
 
         // when / then
         assertThatThrownBy(() ->
@@ -303,6 +309,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
         when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
                 .thenReturn(Optional.empty());
 
@@ -310,6 +317,83 @@ class ProjectComponentsFacadeTest {
         assertThatThrownBy(() ->
                 projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken)
         ).isInstanceOf(ComponentNotFoundException.class);
+    }
+
+    @Test
+    void givenUserGroupsDoNotContainProjectGroup_whenGetProjectComponentsInfo_thenThrowForbiddenException() {
+        // given
+        var projectKey = "PRJ-123";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "Y2F0LTE", "cmVmLTE", Status.CREATED);
+        var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("some-unrelated-group"));
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)
+        ).isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("User must belong to the project to get its components");
+    }
+
+    @Test
+    void givenUserGroupsContainProjectGroup_whenGetProjectComponentsInfo_thenDoNotThrowForbiddenException() {
+        // given
+        var projectKey = "PRJ-123";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "Y2F0LTE", "cmVmLTE", Status.CREATED);
+        var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-PRJ-123"));
+
+        // when
+        List<ProjectComponentInfo> result = projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken);
+
+        // then
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void givenUserGroupsDoNotContainProjectGroup_whenGetProjectComponentExtendedInfo_thenThrowForbiddenException() {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "C1";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "Y2F0LTE", "cmVmLTE", Status.CREATED);
+        var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("some-unrelated-group"));
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken)
+        ).isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("User must belong to the project to get its components");
+    }
+
+    @Test
+    void givenUserGroupsContainProjectGroup_whenGetProjectComponentExtendedInfo_thenDoNotThrowForbiddenException() {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "C1";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "Y2F0LTE", "cmVmLTE", Status.CREATED);
+        var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-PRJ-123"));
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+                .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
+
+        // when
+        ProjectComponentExtendedInfo result = projectComponentsFacade
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+
+        // then
+        assertThat(result).isNotNull();
     }
 }
 
