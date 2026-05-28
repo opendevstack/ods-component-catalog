@@ -34,6 +34,12 @@ public class ApplicationPropertiesConfiguration {
         return ExternalServiceProps.builder().build();
     }
 
+    @Bean("catalogProjectComponentsGroupsRestrictionConfig")
+    @ConfigurationProperties(prefix = "catalog.project-components.groups-restriction")
+    public CatalogProjectComponentsGroupsRestrictionProps catalogProjectComponentsGroupsRestrictionConfig() {
+        return CatalogProjectComponentsGroupsRestrictionProps.builder().build();
+    }
+
     @Bean("catalogItemGroupsRestrictionConfig")
     @ConfigurationProperties(prefix = "catalog.user-action.groups-restriction")
     public CatalogItemUserActionGroupsRestrictionProps catalogItemGroupsRestrictionConfig() {
@@ -70,6 +76,12 @@ public class ApplicationPropertiesConfiguration {
         private DataSize maxSize;
         @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
         private Duration evictionInterval;
+    }
+
+    @Builder
+    @Data
+    public static class CatalogProjectComponentsGroupsRestrictionProps {
+        private List<String> prefix;
     }
 
     @Builder

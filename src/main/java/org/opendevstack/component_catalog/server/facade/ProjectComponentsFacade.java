@@ -3,7 +3,9 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
@@ -15,10 +17,7 @@ import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdEx
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 @AllArgsConstructor
@@ -29,6 +28,7 @@ public class ProjectComponentsFacade {
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
     private final ProjectsInfoService projectsInfoService;
     private final ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
+    private ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps  catalogProjectComponentsGroupsRestrictionProps;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -38,6 +38,10 @@ public class ProjectComponentsFacade {
         }
 
         List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
+
+        if (!userBelongsToProjectGroups(userGroups, projectKey)) {
+            throw new ForbiddenException("User must belong to the project to get its components");
+        }
 
         return projectComponents.getComponents()
                 .values()
@@ -61,6 +65,11 @@ public class ProjectComponentsFacade {
             throw new IllegalArgumentException("Valid projectKey, componentId and accessToken are mandatory.");
         }
 
+        List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
+        if (!userBelongsToProjectGroups(userGroups, projectKey)) {
+            throw new ForbiddenException("User must belong to the project to get its components");
+        }
+
         return Optional.ofNullable(projectComponents.getComponents())
                 .orElse(Map.of())
                 .values()
@@ -77,5 +86,13 @@ public class ProjectComponentsFacade {
         return (projectComponents == null || projectComponents.getComponents() == null ||
                 projectComponents.getComponents().isEmpty() || StringUtils.isBlank(accessToken) ||
                 StringUtils.isBlank(projectKey));
+    }
+
+    private boolean userBelongsToProjectGroups(List<String> groups, String projectKey) {
+        if (groups == null) return false;
+        return groups.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(g -> catalogProjectComponentsGroupsRestrictionProps.getPrefix().stream().anyMatch(g.toUpperCase()::startsWith) &&
+                        g.toUpperCase().contains(projectKey.toUpperCase()));
     }
 }

@@ -53,6 +53,10 @@ component-catalog:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
 
 catalog:
+  project-components:
+    groups-restriction:
+      prefix:
+        - BI-AS-ATLASSIAN
   user-action:
     groups-restriction:
       prefix:
