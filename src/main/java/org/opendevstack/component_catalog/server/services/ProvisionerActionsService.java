@@ -58,20 +58,19 @@ public class ProvisionerActionsService {
         ProjectComponents updatedProjectComponents;
 
         var currentTimestamp = System.currentTimeMillis();
-        var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
-        var updatedAt = String.valueOf(currentTimestamp);
 
-        projectComponents.getComponents().get(componentId).setUpdatedAt(updatedAt);
         if (existsComponent) {
             log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
 
+            var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
+            var updatedAt = String.valueOf(currentTimestamp);
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
                     projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
         } else {
             log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
 
-            createdAt = String.valueOf(currentTimestamp);
-            projectComponents.getComponents().get(componentId).setCreatedAt(createdAt);
+            var createdAt = String.valueOf(currentTimestamp);
+            var updatedAt = String.valueOf(currentTimestamp);
             updatedProjectComponents = projectComponentsService.addNewComponent(
                     projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
         }
