@@ -34,53 +34,36 @@ public class ProvisionerActionsService {
 
     @Synchronized
     public void updateComponentProvisioningStatus(String projectKey,
-                                                  Status status,
-                                                  String componentId,
-                                                  String catalogItemId,
-                                                  String componentUrl,
-                                                  List<Pair<String, List<String>>> parameters) throws JsonProcessingException { //componentUrl can be null
+                                                  ProjectComponentRequest request) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
-                projectKey, status, componentId, catalogItemId, componentUrl);
+                projectKey, request.getStatus(), request.getComponentId(), request.getCatalogItemId(), request.getComponentUrl());
 
         var pathAt = getBitbucketPathAt(projectKey);
-        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
         var projectComponents = getProjectComponents(projectKey);
 
-        validate(projectComponents, componentId, status);
+        validate(projectComponents, request.getComponentId(), request.getStatus());
 
-        var existsComponent = componentExistsInProjectComponents(projectComponents, componentId);
+        var existsComponent = componentExistsInProjectComponents(projectComponents, request.getComponentId());
         ProjectComponents updatedProjectComponents;
 
-        var currentTimestamp = System.currentTimeMillis();
-        var request = ProjectComponentUpdateRequest.builder()
-                .componentId(componentId)
-                .catalogItemId(catalogItemId)
-                .status(status)
-                .componentUrl(componentUrl)
-                .createdAt("")
-                .updatedAt("")
-                .parameters(projectComponentParameters)
-                .build();
+        var currentTimestamp = String.valueOf(System.currentTimeMillis());
+
+        request.setCreatedAt(currentTimestamp);
+        request.setUpdatedAt(currentTimestamp);
 
         if (existsComponent) {
-            log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
+            log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
 
-            var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
-            var updatedAt = String.valueOf(currentTimestamp);
+            var createdAt = projectComponents.getComponents().get(request.getComponentId()).getCreatedAt();
             request.setCreatedAt(createdAt);
-            request.setUpdatedAt(updatedAt);
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
                     projectComponents, request);
         } else {
-            log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
+            log.trace("Adding new componentKey: {} to projectComponents: {}", request.getComponentId(), projectComponents);
 
-            var createdAt = String.valueOf(currentTimestamp);
-            var updatedAt = String.valueOf(currentTimestamp);
-            request.setCreatedAt(createdAt);
-            request.setUpdatedAt(updatedAt);
             updatedProjectComponents = projectComponentsService.addNewComponent(
                     projectComponents, request);
         }
@@ -92,43 +75,25 @@ public class ProvisionerActionsService {
 
     @Synchronized
     public void updatePartiallyComponentProvisioningStatus(String projectKey,
-                                                  Status status,
-                                                  String componentId,
-                                                  String catalogItemId,
-                                                  String componentUrl,
-                                                  String workflowJobId,
-                                                  List<Pair<String, List<String>>> parameters) throws JsonProcessingException { //componentUrl can be null
+                                                  ProjectComponentRequest request) throws JsonProcessingException { //componentUrl can be null
         log.debug("Processing provisioning status for projectKey: {}, status: {}, componentId: {}, catalogItemId: {}, componentUrl: {}",
-                projectKey, status, componentId, catalogItemId, componentUrl);
+                projectKey, request.getStatus(), request.getComponentId(), request.getCatalogItemId(), request.getComponentUrl());
 
         var pathAt = getBitbucketPathAt(projectKey);
-        List<Parameter> projectComponentParameters = map(parameters);
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
         var projectComponents = getProjectComponents(projectKey);
 
-        if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(componentId)) {
+        if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(request.getComponentId())) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
         }
 
         var currentTimestamp = System.currentTimeMillis();
-        projectComponents.getComponents().get(componentId).setUpdatedAt(String.valueOf(currentTimestamp));
+        request.setUpdatedAt(projectComponents.getComponents().get(request.getComponentId()).getUpdatedAt());
+        projectComponents.getComponents().get(request.getComponentId()).setUpdatedAt(String.valueOf(currentTimestamp));
 
-        var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
-        var updatedAt = projectComponents.getComponents().get(componentId).getUpdatedAt();
-        log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
-
-        var request = ProjectComponentUpdateRequest.builder()
-                .componentId(componentId)
-                .catalogItemId(catalogItemId)
-                .status(status)
-                .componentUrl(componentUrl)
-                .workflowJobId(workflowJobId)
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .parameters(projectComponentParameters)
-                .build();
+        log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
 
         var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
                 projectComponents, request);
@@ -195,12 +160,6 @@ public class ProvisionerActionsService {
                 throw  httpClientErrorException;
             }
         }
-    }
-
-    private static @NonNull List<Parameter> map(List<Pair<String, List<String>>> parameters) {
-        return parameters.stream()
-                .map(pair -> Parameter.builder().name(pair.getLeft()).values(pair.getRight()).build())
-                .toList();
     }
 
     private void validateComponentDoesNotExistsWhenCreating(ProjectComponents projectComponents, String componentId) {

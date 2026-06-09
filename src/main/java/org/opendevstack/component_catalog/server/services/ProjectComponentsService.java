@@ -27,7 +27,7 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents addNewComponent(ProjectComponents projectComponents,
-                                             ProjectComponentUpdateRequest request) {
+                                             ProjectComponentRequest request) {
         var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(request.getCatalogItemId());
         var branchReference = getBranchRefFromCatalogItemId(request.getCatalogItemId());
 
@@ -57,7 +57,7 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents updateExistingComponent(ProjectComponents projectComponents,
-                                                     ProjectComponentUpdateRequest request) {
+                                                     ProjectComponentRequest request) {
 
         Map<String, ProjectComponent> components = projectComponents.getComponents();
 
@@ -94,7 +94,7 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents updatePartiallyExistingComponent(ProjectComponents projectComponents,
-                                                              ProjectComponentUpdateRequest request) {
+                                                              ProjectComponentRequest request) {
 
         validateComponentExists(projectComponents, request.getComponentId());
 
@@ -150,7 +150,7 @@ public class ProjectComponentsService {
     }
 
     private ProjectComponent updateComponentIfMatch(Map.Entry<String, ProjectComponent> entry,
-                                                    ProjectComponentUpdateRequest request) {
+                                                    ProjectComponentRequest request) {
 
         if (!entry.getKey().equals(request.getComponentId())) {
             return entry.getValue(); // leave unchanged

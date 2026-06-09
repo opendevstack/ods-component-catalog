@@ -10,6 +10,7 @@ import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFac
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -40,9 +41,15 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
-        provisionerActionsService.updateComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
-                provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                normalizedComponentUrl, parameters);
+        var request = ProjectComponentRequest.builder()
+                .componentId(provisioningStatusUpdateRequest.getComponentId())
+                .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
+                .status(Status.valueOf(status))
+                .componentUrl(normalizedComponentUrl)
+                .parameters(parameters)
+                .build();
+
+        provisionerActionsService.updateComponentProvisioningStatus(normalizedProjectKey, request);
 
         return ResponseEntity.ok().build();
     }
@@ -58,9 +65,15 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
-        provisionerActionsService.updatePartiallyComponentProvisioningStatus(normalizedProjectKey, Status.valueOf(status),
-                provisioningStatusUpdateRequest.getComponentId(), provisioningStatusUpdateRequest.getCatalogItemId(),
-                normalizedComponentUrl, provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""), parameters);
+        var request = ProjectComponentRequest.builder()
+                .componentId(provisioningStatusUpdateRequest.getComponentId())
+                .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
+                .status(Status.valueOf(status))
+                .componentUrl(normalizedComponentUrl)
+                .parameters(parameters)
+                .build();
+
+        provisionerActionsService.updatePartiallyComponentProvisioningStatus(normalizedProjectKey, request);
 
         return ResponseEntity.ok().build();
     }

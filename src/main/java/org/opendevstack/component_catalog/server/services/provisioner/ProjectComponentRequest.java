@@ -7,7 +7,7 @@ import java.util.List;
 
 @Builder
 @Data
-public class ProjectComponentUpdateRequest {
+public class ProjectComponentRequest {
     private String componentId;
     private String catalogItemId;
     private Status status;

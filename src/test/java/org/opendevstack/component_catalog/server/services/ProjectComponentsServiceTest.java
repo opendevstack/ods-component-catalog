@@ -19,15 +19,15 @@ class ProjectComponentsServiceTest {
     }
 
     // helper
-    private ProjectComponentUpdateRequest request(String componentId,
-                                                  String catalogItemId,
-                                                  Status status,
-                                                  String url,
-                                                  String workflowJobId,
-                                                  String createdAt,
-                                                  String updatedAt,
-                                                  List<Parameter> params) {
-        return ProjectComponentUpdateRequest.builder()
+    private ProjectComponentRequest request(String componentId,
+                                            String catalogItemId,
+                                            Status status,
+                                            String url,
+                                            String workflowJobId,
+                                            String createdAt,
+                                            String updatedAt,
+                                            List<Parameter> params) {
+        return ProjectComponentRequest.builder()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .status(status)

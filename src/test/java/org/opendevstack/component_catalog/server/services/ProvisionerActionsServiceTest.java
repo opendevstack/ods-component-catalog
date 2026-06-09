@@ -24,7 +24,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,6 +55,27 @@ class ProvisionerActionsServiceTest {
     private ProvisionerActionsConfiguration provisionerActionsConfiguration;
 
     private ProvisionerActionsService provisionerActionsService;
+
+    // helper
+    private ProjectComponentRequest request(String componentId,
+                                            String catalogItemId,
+                                            Status status,
+                                            String url,
+                                            String workflowJobId,
+                                            String createdAt,
+                                            String updatedAt,
+                                            List<Parameter> params) {
+        return ProjectComponentRequest.builder()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .status(status)
+                .componentUrl(url)
+                .workflowJobId(workflowJobId)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .parameters(params)
+                .build();
+    }
 
     @BeforeEach
     void setUp() {
@@ -87,6 +111,8 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "catalogUrl";
+        var createdAt = "created";
+        var updatedAt = "updated";
 
         var pathAt = BitbucketPathAtMother.of();
         var sourceCommitId = "sourceCommitId";
@@ -94,7 +120,7 @@ class ProvisionerActionsServiceTest {
         var projectComponents = new ProjectComponents();
         var updatedProjectComponents = ProjectComponentsMother.of();
 
-        var parameterParam = Pair.of("parameterName", List.of("parameterValue"));
+        var parameters = List.of(Parameter.builder().name("parameterName").values(List.of("parameterValue")).build());
 
         prepareMocksForGetBitbucketPathAt(pathAt);
         when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of(sourceCommitId));
@@ -102,19 +128,15 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetNonExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.addNewComponent(
                 eq(projectComponents),
-                any(ProjectComponentUpdateRequest.class)
+                any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
+        var serializedUpdatedProjectComponents = prepareMocksForSave();
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 projectKey,
-                status,
-                componentId,
-                catalogItemId,
-                componentUrl,
-                List.of(parameterParam)
+                request(componentId, catalogItemId, status, componentUrl, null, createdAt, updatedAt, parameters)
         );
 
         // then
@@ -135,6 +157,8 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "catalogUrl";
+        var createdAt = "created";
+        var updatedAt = "updated";
 
         var pathAt = BitbucketPathAtMother.of();
         var sourceCommitId = "sourceCommitId";
@@ -148,19 +172,15 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.updateExistingComponent(
                 eq(projectComponents),
-                any(ProjectComponentUpdateRequest.class)
+                any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
+        var serializedUpdatedProjectComponents = prepareMocksForSave();
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 projectKey,
-                status,
-                componentId,
-                catalogItemId,
-                componentUrl,
-                Collections.emptyList()
+                request(componentId, catalogItemId, status, componentUrl, null, createdAt, updatedAt, List.of())
         );
 
         // then
@@ -258,7 +278,7 @@ class ProvisionerActionsServiceTest {
         when(projectComponentsService.deleteComponent(projectComponents, componentId)).thenReturn(projectComponentsWithoutComponentId);
 
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
-        var serializedProjectComponentsWithoutComponentId = prepareMocksForSave(projectComponentsWithoutComponentId);
+        var serializedProjectComponentsWithoutComponentId = prepareMocksForSave();
 
         // when
         provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId);
@@ -310,7 +330,7 @@ class ProvisionerActionsServiceTest {
                 ",\"exceptionName\":\"com.atlassian.bitbucket.content.FileContentUnmodifiedException\"}]}\"");
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
-        prepareMocksForSave(updatedProjectComponents);
+        prepareMocksForSave();
 
         // when
         provisionerActionsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
@@ -328,7 +348,7 @@ class ProvisionerActionsServiceTest {
         var httpClientErrorException = new HttpClientErrorException(HttpStatus.CONFLICT, "Client Error");
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
-        prepareMocksForSave(updatedProjectComponents);
+        prepareMocksForSave();
 
         // when
         var exception = assertThrows(HttpClientErrorException.class, () ->
@@ -349,8 +369,10 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
-        var parameterPair = Pair.of("paramName", List.of("paramValue"));
+        var parameterList = List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build());
         var workflowJobId = "workflowJobId";
+        var createdAt = "created";
+        var updatedAt = "updated";
 
         var pathAt = BitbucketPathAtMother.of();
         var sourceCommitId = "sourceCommitId";
@@ -370,20 +392,15 @@ class ProvisionerActionsServiceTest {
         // partial update call
         when(projectComponentsService.updatePartiallyExistingComponent(
                 eq(projectComponents),
-                any(ProjectComponentUpdateRequest.class)
+                any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
+        var serializedUpdatedProjectComponents = prepareMocksForSave();
 
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 projectKey,
-                status,
-                componentId,
-                catalogItemId,
-                componentUrl,
-                workflowJobId,
-                List.of(parameterPair)
+                request(componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, parameterList)
         );
 
         // then
@@ -404,6 +421,8 @@ class ProvisionerActionsServiceTest {
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
         var workflowJobId = "workflowJobId";
+        var createdAt = "created";
+        var updatedAt = "updated";
 
         var pathAt = BitbucketPathAtMother.of();
 
@@ -417,12 +436,7 @@ class ProvisionerActionsServiceTest {
         var exception = assertThrows(ElementNotFoundException.class, () ->
                 provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                         projectKey,
-                        status,
-                        componentId,
-                        catalogItemId,
-                        componentUrl,
-                        workflowJobId,
-                        List.of()
+                        request(componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, List.of())
                 )
         );
 
@@ -442,6 +456,8 @@ class ProvisionerActionsServiceTest {
         var catalogItemId = "catalogItemId";
         var componentUrl = "url";
         var workflowJobId = "workflowJobId";
+        var createdAt = "created";
+        var updatedAt = "updated";
 
         var pathAt = BitbucketPathAtMother.of();
 
@@ -458,20 +474,15 @@ class ProvisionerActionsServiceTest {
 
         when(projectComponentsService.updatePartiallyExistingComponent(
                 eq(projectComponents),
-                any(ProjectComponentUpdateRequest.class)
+                any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serialized = prepareMocksForSave(updatedProjectComponents);
+        var serialized = prepareMocksForSave();
 
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 projectKey,
-                status,
-                componentId,
-                catalogItemId,
-                componentUrl,
-                workflowJobId,
-                List.of()
+                request(componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, List.of())
         );
 
         // then
@@ -498,19 +509,15 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
 
         when(projectComponentsService.updateExistingComponent(
-                any(), any(ProjectComponentUpdateRequest.class)
+                any(), any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
-        prepareMocksForSave(ProjectComponentsMother.of());
+        prepareMocksForSave();
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 "projectKey",
-                Status.CREATED,
-                componentId,
-                "catalogItemId",
-                "url",
-                List.of()
+                request(componentId, "catalogItemId", Status.CREATED, "url", null, "created", "updated", List.of())
         );
 
         verify(projectComponentsService).updateExistingComponent(
@@ -540,19 +547,15 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
 
         when(projectComponentsService.updateExistingComponent(
-                any(), any(ProjectComponentUpdateRequest.class)
+                any(), any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
-        prepareMocksForSave(ProjectComponentsMother.of());
+        prepareMocksForSave();
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 "projectKey",
-                Status.CREATED,
-                componentId,
-                "catalogItemId",
-                "url",
-                List.of()
+                request(componentId, "catalogItemId", Status.CREATED, "url", null, "created", "updated", List.of())
         );
 
         // then
@@ -591,31 +594,26 @@ class ProvisionerActionsServiceTest {
 
         when(projectComponentsService.updatePartiallyExistingComponent(
                 any(),
-                any(ProjectComponentUpdateRequest.class)
+                any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
-        prepareMocksForSave(ProjectComponentsMother.of());
+        prepareMocksForSave();
 
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 "projectKey",
-                Status.FAILED,
-                componentId,
-                "catalogItemId",
-                "url",
-                "jobId",
-                List.of()
+                request(componentId, "catalogItemId", Status.FAILED, "url", "jobId", "created", "updated", List.of())
         );
 
         // then
         assertThat(Long.parseLong(component.getUpdatedAt())).isGreaterThan(0);
     }
 
-    private String prepareMocksForSave(ProjectComponents updatedProjectComponents) throws JsonProcessingException {
+    private String prepareMocksForSave() throws JsonProcessingException {
         var serializedUpdatedProjectComponents = "{ serialized-updated-json: true }";
 
         when(objectMapper.writerWithDefaultPrettyPrinter()).thenReturn(objectWriter);
-        when(objectWriter.writeValueAsString(updatedProjectComponents)).thenReturn(serializedUpdatedProjectComponents);
+        when(objectWriter.writeValueAsString(any())).thenReturn(serializedUpdatedProjectComponents);
 
         return serializedUpdatedProjectComponents;
     }
