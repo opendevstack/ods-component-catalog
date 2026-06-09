@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -111,12 +112,14 @@ class ProvisionerActionsServiceTest {
 
         prepareMocksForGetNonExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.addNewComponent(
-                projectComponents,
-                componentId,
-                catalogItemId,
-                status,
-                componentUrl,
-                parameters
+                eq(projectComponents),
+                eq(componentId),
+                eq(catalogItemId),
+                eq(status),
+                eq(componentUrl),
+                any(),
+                any(),
+                eq(parameters)
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -161,12 +164,14 @@ class ProvisionerActionsServiceTest {
 
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.updateExistingComponent(
-                projectComponents,
-                componentId,
-                catalogItemId,
-                status,
-                componentUrl,
-                Collections.emptyList()
+                eq(projectComponents),
+                eq(componentId),
+                eq(catalogItemId),
+                eq(status),
+                eq(componentUrl),
+                any(),
+                any(),
+                eq(Collections.emptyList())
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -387,13 +392,15 @@ class ProvisionerActionsServiceTest {
 
         // partial update call
         when(projectComponentsService.updatePartiallyExistingComponent(
-                projectComponents,
-                componentId,
-                catalogItemId,
-                status,
-                componentUrl,
-                workflowJobId,
-                List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build())
+                eq(projectComponents),
+                eq(componentId),
+                eq(catalogItemId),
+                eq(status),
+                eq(componentUrl),
+                eq(workflowJobId),
+                any(),
+                any(),
+                eq(List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build()))
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -486,6 +493,8 @@ class ProvisionerActionsServiceTest {
                 eq(status),
                 eq(componentUrl),
                 eq(workflowJobId),
+                any(),
+                any(),
                 any()
         )).thenReturn(updatedProjectComponents);
 
@@ -504,6 +513,160 @@ class ProvisionerActionsServiceTest {
 
         // then
         verify(bitbucketService).pushFile(pathAt, null, serialized);
+    }
+    @Test
+    void givenExistingComponent_whenUpdate_thenCreatedAtIsPreserved() throws Exception {
+        // given
+        var projectKey = "projectKey";
+        var componentId = "componentId";
+
+        var existing = new ProjectComponent();
+        existing.setCreatedAt("originalCreatedAt");
+
+        var components = new HashMap<String, ProjectComponent>();
+        components.put(componentId, existing);
+
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(components);
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of("commit"));
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        when(projectComponentsService.updateExistingComponent(
+                any(), any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(ProjectComponentsMother.of());
+
+        prepareMocksForSave(ProjectComponentsMother.of());
+
+        // when
+        provisionerActionsService.updateComponentProvisioningStatus(
+                projectKey,
+                Status.CREATED,
+                componentId,
+                "catalogItemId",
+                "url",
+                List.of()
+        );
+
+        // then
+        verify(projectComponentsService).updateExistingComponent(
+                eq(projectComponents),
+                eq(componentId),
+                any(),
+                any(),
+                any(),
+                eq("originalCreatedAt"), // 🔥 clave
+                any(),
+                any()
+        );
+    }
+
+    @Test
+    void givenExistingComponent_whenUpdate_thenUpdatedAtIsGenerated() throws Exception {
+        // given
+        var projectKey = "projectKey";
+        var componentId = "componentId";
+
+        var existing = new ProjectComponent();
+        existing.setCreatedAt("originalCreatedAt");
+
+        var components = new HashMap<String, ProjectComponent>();
+        components.put(componentId, existing);
+
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(components);
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of("commit"));
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        when(projectComponentsService.updateExistingComponent(
+                any(), any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(ProjectComponentsMother.of());
+
+        prepareMocksForSave(ProjectComponentsMother.of());
+
+        when(projectComponentsService.updateExistingComponent(
+                any(), any(), any(), any(), any(),
+                any(), any(), any()
+        )).thenReturn(ProjectComponentsMother.of());
+
+        prepareMocksForSave(ProjectComponentsMother.of());
+
+        // when
+        provisionerActionsService.updateComponentProvisioningStatus(
+                projectKey,
+                Status.CREATED,
+                componentId,
+                "catalogItemId",
+                "url",
+                List.of()
+        );
+
+        // then
+        verify(projectComponentsService).updateExistingComponent(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                argThat(updated -> {
+                    try {
+                        return Long.parseLong(updated) > 0;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }),
+                any()
+        );
+    }
+
+    @Test
+    void givenExistingComponent_whenPartialUpdate_thenUpdatedAtIsModified() throws Exception {
+        // given
+        var componentId = "componentId";
+
+        var component = new ProjectComponent();
+        component.setUpdatedAt("old");
+
+        var map = new HashMap<String, ProjectComponent>();
+        map.put(componentId, component);
+
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(map);
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of("commit"));
+
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        when(projectComponentsService.updatePartiallyExistingComponent(
+                any(), any(), any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(ProjectComponentsMother.of());
+
+        prepareMocksForSave(ProjectComponentsMother.of());
+
+        // when
+        provisionerActionsService.updatePartiallyComponentProvisioningStatus(
+                "projectKey",
+                Status.FAILED,
+                componentId,
+                "catalogItemId",
+                "url",
+                "jobId",
+                List.of()
+        );
+
+        // then
+        assertThat(Long.parseLong(component.getUpdatedAt())).isGreaterThan(0);
     }
 
     private String prepareMocksForSave(ProjectComponents updatedProjectComponents) throws JsonProcessingException {

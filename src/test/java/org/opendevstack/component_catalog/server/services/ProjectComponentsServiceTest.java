@@ -43,7 +43,7 @@ class ProjectComponentsServiceTest {
         String encoded = base64("repo/path?at=refs/heads/main");
 
         //when
-        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url", Collections.emptyList());
+        ProjectComponents updated = service.addNewComponent(pc, "comp1", encoded, Status.CREATING, "url", "created", "updated", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents()).containsKey("comp1");
@@ -54,6 +54,8 @@ class ProjectComponentsServiceTest {
         assertThat(added.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/main"));
         assertThat(added.getStatus()).isEqualTo(Status.CREATING);
         assertThat(added.getComponentUrl()).isEqualTo("url");
+        assertThat(added.getCreatedAt()).isEqualTo("created");
+        assertThat(added.getUpdatedAt()).isEqualTo("updated");
     }
 
     @Test
@@ -70,6 +72,8 @@ class ProjectComponentsServiceTest {
                 .catalogItemRef(null)
                 .componentUrl("oldUrl")
                 .status(Status.CREATING)
+                .createdAt("oldCreated")
+                .updatedAt("oldUpdated")
                 .build();
 
         ProjectComponents pc = ProjectComponents.builder()
@@ -78,7 +82,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl", parameters);
+                service.updateExistingComponent(pc, "comp1", encodedFull, Status.CREATED, "newUrl", "created", "updated", parameters);
 
         //then
         ProjectComponent updatedComp = updated.getComponents().get("comp1");
@@ -87,6 +91,8 @@ class ProjectComponentsServiceTest {
         assertThat(updatedComp.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/main"));
         assertThat(updatedComp.getComponentUrl()).isEqualTo("newUrl");
         assertThat(updatedComp.getParameters()).containsExactly(parameter);
+        assertThat(updatedComp.getCreatedAt()).isEqualTo("created");
+        assertThat(updatedComp.getUpdatedAt()).isEqualTo("updated");
     }
 
     @Test
@@ -106,7 +112,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x", Collections.emptyList());
+                service.updateExistingComponent(pc, "comp1", encodedFullDifferent, Status.CREATED, "x", "created", "updated", Collections.emptyList());
 
         //then
         assertThat(updated.getComponents().get("comp1").getCatalogItemId())
@@ -122,7 +128,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x", Collections.emptyList()))
+                service.updateExistingComponent(pc, "unknown", "zzz", Status.CREATED, "x", "created", "updated", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 
@@ -141,6 +147,8 @@ class ProjectComponentsServiceTest {
                 .catalogItemRef(base64("?at=refs/heads/main"))
                 .componentUrl("oldUrl")
                 .status(Status.CREATING)
+                .createdAt("oldCreatedAt")
+                .updatedAt("oldUpdatedAt")
                 .build();
 
         ProjectComponents pc = ProjectComponents.builder()
@@ -149,7 +157,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, null, parameters);
+                service.updatePartiallyExistingComponent(pc, "comp1", encodedFull, Status.CREATED, null, null, "created", "updated", parameters);
 
         //then
         ProjectComponent result = updated.getComponents().get("comp1");
@@ -157,6 +165,8 @@ class ProjectComponentsServiceTest {
         assertThat(result.getStatus()).isEqualTo(Status.CREATED);
         assertThat(result.getComponentUrl()).isEqualTo("oldUrl"); // unchanged
         assertThat(result.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/dev"));
+        assertThat(result.getCreatedAt()).isEqualTo("created");
+        assertThat(result.getUpdatedAt()).isEqualTo("updated");
     }
 
     @Test
@@ -168,7 +178,7 @@ class ProjectComponentsServiceTest {
 
         //when //then
         assertThatThrownBy(() ->
-                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", null, Collections.emptyList()))
+                service.updatePartiallyExistingComponent(pc, "missing", "zzz", Status.CREATED, "x", null, "created", "updated", Collections.emptyList()))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
 
@@ -204,7 +214,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "", Collections.emptyList());
+                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "", null, null, Collections.emptyList());
 
         //then
         assertThat(updated.getComponents().get("comp1").getWorkflowJobId()).isEqualTo("existing-job-id");
@@ -227,7 +237,7 @@ class ProjectComponentsServiceTest {
 
         //when
         ProjectComponents updated =
-                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "new-job-id", Collections.emptyList());
+                service.updatePartiallyExistingComponent(pc, "comp1", null, Status.CREATED, null, "new-job-id", null, null, Collections.emptyList());
 
         //then
         assertThat(updated.getComponents().get("comp1").getWorkflowJobId()).isEqualTo("new-job-id");
@@ -255,6 +265,42 @@ class ProjectComponentsServiceTest {
 
         //then
         assertThat(repoPath).isEqualTo(base64("repo/x"));
+    }
+
+    @Test
+    void givenNullTimestamps_whenUpdatePartially_thenTimestampsAreOverwrittenWithNull() {
+        //given
+        String encodedRepo = base64("repo/a");
+
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .createdAt("oldCreated")
+                .updatedAt("oldUpdated")
+                .status(Status.CREATING)
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        //when
+        ProjectComponents updated = service.updatePartiallyExistingComponent(
+                pc,
+                "comp1",
+                null,
+                Status.CREATED,
+                null,
+                null,
+                null,
+                null,
+                Collections.emptyList());
+
+        //then
+        ProjectComponent result = updated.getComponents().get("comp1");
+
+        assertThat(result.getCreatedAt()).isNull();
+        assertThat(result.getUpdatedAt()).isNull();
     }
 
 }
