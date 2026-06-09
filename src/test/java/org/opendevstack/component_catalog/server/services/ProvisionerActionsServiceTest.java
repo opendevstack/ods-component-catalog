@@ -3,7 +3,6 @@ package org.opendevstack.component_catalog.server.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,23 +19,16 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,22 +96,13 @@ class ProvisionerActionsServiceTest {
 
         var parameterParam = Pair.of("parameterName", List.of("parameterValue"));
 
-        var parameter = Parameter.builder().name(parameterParam.getLeft()).values(parameterParam.getValue()).build();
-        var parameters = List.of(parameter);
-
         prepareMocksForGetBitbucketPathAt(pathAt);
         when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of(sourceCommitId));
 
         prepareMocksForGetNonExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.addNewComponent(
                 eq(projectComponents),
-                eq(componentId),
-                eq(catalogItemId),
-                eq(status),
-                eq(componentUrl),
-                any(),
-                any(),
-                eq(parameters)
+                any(ProjectComponentUpdateRequest.class)
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -165,13 +148,7 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
         when(projectComponentsService.updateExistingComponent(
                 eq(projectComponents),
-                eq(componentId),
-                eq(catalogItemId),
-                eq(status),
-                eq(componentUrl),
-                any(),
-                any(),
-                eq(Collections.emptyList())
+                any(ProjectComponentUpdateRequest.class)
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -393,14 +370,7 @@ class ProvisionerActionsServiceTest {
         // partial update call
         when(projectComponentsService.updatePartiallyExistingComponent(
                 eq(projectComponents),
-                eq(componentId),
-                eq(catalogItemId),
-                eq(status),
-                eq(componentUrl),
-                eq(workflowJobId),
-                any(),
-                any(),
-                eq(List.of(Parameter.builder().name("paramName").values(List.of("paramValue")).build()))
+                any(ProjectComponentUpdateRequest.class)
         )).thenReturn(updatedProjectComponents);
 
         var serializedUpdatedProjectComponents = prepareMocksForSave(updatedProjectComponents);
@@ -488,14 +458,7 @@ class ProvisionerActionsServiceTest {
 
         when(projectComponentsService.updatePartiallyExistingComponent(
                 eq(projectComponents),
-                eq(componentId),
-                eq(catalogItemId),
-                eq(status),
-                eq(componentUrl),
-                eq(workflowJobId),
-                any(),
-                any(),
-                any()
+                any(ProjectComponentUpdateRequest.class)
         )).thenReturn(updatedProjectComponents);
 
         var serialized = prepareMocksForSave(updatedProjectComponents);
@@ -517,7 +480,6 @@ class ProvisionerActionsServiceTest {
     @Test
     void givenExistingComponent_whenUpdate_thenCreatedAtIsPreserved() throws Exception {
         // given
-        var projectKey = "projectKey";
         var componentId = "componentId";
 
         var existing = new ProjectComponent();
@@ -536,14 +498,14 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
 
         when(projectComponentsService.updateExistingComponent(
-                any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(ProjectComponentUpdateRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
         prepareMocksForSave(ProjectComponentsMother.of());
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
-                projectKey,
+                "projectKey",
                 Status.CREATED,
                 componentId,
                 "catalogItemId",
@@ -551,23 +513,15 @@ class ProvisionerActionsServiceTest {
                 List.of()
         );
 
-        // then
         verify(projectComponentsService).updateExistingComponent(
                 eq(projectComponents),
-                eq(componentId),
-                any(),
-                any(),
-                any(),
-                eq("originalCreatedAt"), // 🔥 clave
-                any(),
-                any()
+                argThat(req -> "originalCreatedAt".equals(req.getCreatedAt()))
         );
     }
 
     @Test
     void givenExistingComponent_whenUpdate_thenUpdatedAtIsGenerated() throws Exception {
         // given
-        var projectKey = "projectKey";
         var componentId = "componentId";
 
         var existing = new ProjectComponent();
@@ -586,21 +540,14 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
 
         when(projectComponentsService.updateExistingComponent(
-                any(), any(), any(), any(), any(), any(), any(), any()
-        )).thenReturn(ProjectComponentsMother.of());
-
-        prepareMocksForSave(ProjectComponentsMother.of());
-
-        when(projectComponentsService.updateExistingComponent(
-                any(), any(), any(), any(), any(),
-                any(), any(), any()
+                any(), any(ProjectComponentUpdateRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
         prepareMocksForSave(ProjectComponentsMother.of());
 
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
-                projectKey,
+                "projectKey",
                 Status.CREATED,
                 componentId,
                 "catalogItemId",
@@ -611,19 +558,13 @@ class ProvisionerActionsServiceTest {
         // then
         verify(projectComponentsService).updateExistingComponent(
                 any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                argThat(updated -> {
+                argThat(req -> {
                     try {
-                        return Long.parseLong(updated) > 0;
+                        return Long.parseLong(req.getUpdatedAt()) > 0;
                     } catch (Exception e) {
                         return false;
                     }
-                }),
-                any()
+                })
         );
     }
 
@@ -649,7 +590,8 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
 
         when(projectComponentsService.updatePartiallyExistingComponent(
-                any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(),
+                any(ProjectComponentUpdateRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
         prepareMocksForSave(ProjectComponentsMother.of());

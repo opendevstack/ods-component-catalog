@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -30,29 +27,23 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents addNewComponent(ProjectComponents projectComponents,
-                                             String componentId,
-                                             String catalogItemId,
-                                             Status status,
-                                             String componentUrl,
-                                             String createdAt,
-                                             String updatedAt,
-                                             List<Parameter> parameters) {
-        var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
-        var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
+                                             ProjectComponentUpdateRequest request) {
+        var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(request.getCatalogItemId());
+        var branchReference = getBranchRefFromCatalogItemId(request.getCatalogItemId());
 
         var updatedComponents = Optional.ofNullable(projectComponents.getComponents())
                 .map(HashMap::new)
                 .orElse(new HashMap<>());
 
-        updatedComponents.put(componentId, ProjectComponent.builder()
-                .componentId(componentId)
+        updatedComponents.put(request.getComponentId(), ProjectComponent.builder()
+                .componentId(request.getComponentId())
                 .catalogItemId(catalogItemIdWithoutBranch)
-                .status(status)
+                .status(request.getStatus())
                 .catalogItemRef(branchReference)
-                .componentUrl(componentUrl)
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .parameters(parameters)
+                .componentUrl(request.getComponentUrl())
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .parameters(request.getParameters())
                 .build());
 
         var updatedProjectComponents = ProjectComponents.builder()
@@ -66,23 +57,17 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents updateExistingComponent(ProjectComponents projectComponents,
-                                                     String componentId,
-                                                     String catalogItemId,
-                                                     Status status,
-                                                     String componentUrl,
-                                                     String createdAt,
-                                                     String updatedAt,
-                                                     List<Parameter> parameters) {
+                                                     ProjectComponentUpdateRequest request) {
 
         Map<String, ProjectComponent> components = projectComponents.getComponents();
 
-        if (!components.containsKey(componentId)) {
-            throw new InvalidComponentStateException("Component with id " + componentId + " does not exist");
+        if (!components.containsKey(request.getComponentId())) {
+            throw new InvalidComponentStateException("Component with id " + request.getComponentId() + " does not exist");
         }
 
-        var existing = components.get(componentId);
-        var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
-        var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
+        var existing = components.get(request.getComponentId());
+        var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(request.getCatalogItemId());
+        var branchReference = getBranchRefFromCatalogItemId(request.getCatalogItemId());
 
         if (!existing.getCatalogItemId().equals(catalogItemIdWithoutBranch)) {
             return projectComponents;
@@ -91,16 +76,16 @@ public class ProjectComponentsService {
         ProjectComponent updated = ProjectComponent.builder()
                 .componentId(existing.getComponentId())
                 .catalogItemId(existing.getCatalogItemId())
-                .status(status)
+                .status(request.getStatus())
                 .catalogItemRef(branchReference)
-                .componentUrl(StringUtils.isBlank(componentUrl) ? existing.getComponentUrl() : componentUrl)
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .parameters(parameters)
+                .componentUrl(StringUtils.isBlank(request.getComponentUrl()) ? existing.getComponentUrl() : request.getComponentUrl())
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .parameters(request.getParameters())
                 .build();
 
         Map<String, ProjectComponent> updatedMap = new HashMap<>(components);
-        updatedMap.put(componentId, updated);
+        updatedMap.put(request.getComponentId(), updated);
 
         return ProjectComponents.builder()
                 .components(updatedMap)
@@ -109,32 +94,16 @@ public class ProjectComponentsService {
 
     @SneakyThrows
     public ProjectComponents updatePartiallyExistingComponent(ProjectComponents projectComponents,
-                                                              String componentId,
-                                                              String catalogItemId,
-                                                              Status status,
-                                                              String componentUrl,
-                                                              String workflowJobId,
-                                                              String created_at,
-                                                              String updated_at,
-                                                              List<Parameter> parameters) {
+                                                              ProjectComponentUpdateRequest request) {
 
-        validateComponentExists(projectComponents, componentId);
+        validateComponentExists(projectComponents, request.getComponentId());
 
         Map<String, ProjectComponent> updatedMap = projectComponents.getComponents()
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> updateComponentIfMatch(
-                                entry,
-                                componentId,
-                                catalogItemId,
-                                status,
-                                componentUrl,
-                                workflowJobId,
-                                created_at,
-                                updated_at,
-                                parameters)
+                        entry -> updateComponentIfMatch(entry, request)
                 ));
 
         return ProjectComponents.builder()
@@ -181,29 +150,22 @@ public class ProjectComponentsService {
     }
 
     private ProjectComponent updateComponentIfMatch(Map.Entry<String, ProjectComponent> entry,
-                                                    String componentId,
-                                                    String catalogItemId,
-                                                    Status status,
-                                                    String componentUrl,
-                                                    String workflowJobId,
-                                                    String createdAt,
-                                                    String updatedAt,
-                                                    List<Parameter> parameters) {
+                                                    ProjectComponentUpdateRequest request) {
 
-        if (!entry.getKey().equals(componentId)) {
+        if (!entry.getKey().equals(request.getComponentId())) {
             return entry.getValue(); // leave unchanged
         }
 
         return ProjectComponent.builder()
                 .componentId(entry.getValue().getComponentId())
                 .catalogItemId(entry.getValue().getCatalogItemId())
-                .status(status)
-                .catalogItemRef(resolveCatalogItemRef(entry.getValue(), catalogItemId))
-                .componentUrl(resolveComponentUrl(entry.getValue(), componentUrl))
-                .workflowJobId(resolveWorkflowJobId(entry.getValue(), workflowJobId))
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .parameters(resolveParameters(entry.getValue(), parameters))
+                .status(request.getStatus())
+                .catalogItemRef(resolveCatalogItemRef(entry.getValue(), request.getCatalogItemId()))
+                .componentUrl(resolveComponentUrl(entry.getValue(), request.getComponentUrl()))
+                .workflowJobId(resolveWorkflowJobId(entry.getValue(), request.getWorkflowJobId()))
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .parameters(resolveParameters(entry.getValue(), request.getParameters()))
                 .build();
     }
 

@@ -14,10 +14,7 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -58,21 +55,34 @@ public class ProvisionerActionsService {
         ProjectComponents updatedProjectComponents;
 
         var currentTimestamp = System.currentTimeMillis();
+        var request = ProjectComponentUpdateRequest.builder()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .status(status)
+                .componentUrl(componentUrl)
+                .createdAt("")
+                .updatedAt("")
+                .parameters(projectComponentParameters)
+                .build();
 
         if (existsComponent) {
             log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
 
             var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
             var updatedAt = String.valueOf(currentTimestamp);
+            request.setCreatedAt(createdAt);
+            request.setUpdatedAt(updatedAt);
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
-                    projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
+                    projectComponents, request);
         } else {
             log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
 
             var createdAt = String.valueOf(currentTimestamp);
             var updatedAt = String.valueOf(currentTimestamp);
+            request.setCreatedAt(createdAt);
+            request.setUpdatedAt(updatedAt);
             updatedProjectComponents = projectComponentsService.addNewComponent(
-                    projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
+                    projectComponents, request);
         }
 
         // Update file with new status
@@ -108,8 +118,20 @@ public class ProvisionerActionsService {
         var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
         var updatedAt = projectComponents.getComponents().get(componentId).getUpdatedAt();
         log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
+
+        var request = ProjectComponentUpdateRequest.builder()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .status(status)
+                .componentUrl(componentUrl)
+                .workflowJobId(workflowJobId)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .parameters(projectComponentParameters)
+                .build();
+
         var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
-                projectComponents, componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, projectComponentParameters);
+                projectComponents, request);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
