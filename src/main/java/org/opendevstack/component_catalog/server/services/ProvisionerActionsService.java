@@ -57,18 +57,28 @@ public class ProvisionerActionsService {
         var existsComponent = componentExistsInProjectComponents(projectComponents, componentId);
         ProjectComponents updatedProjectComponents;
 
+        var currentTimestamp = System.currentTimeMillis();
+        var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
+        var updatedAt = String.valueOf(currentTimestamp);
+
+        projectComponents.getComponents().get(componentId).setUpdatedAt(updatedAt);
         if (existsComponent) {
             log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
+
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
-                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
+                    projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
         } else {
             log.trace("Adding new componentKey: {} to projectComponents: {}", componentId, projectComponents);
+
+            createdAt = String.valueOf(currentTimestamp);
+            projectComponents.getComponents().get(componentId).setCreatedAt(createdAt);
             updatedProjectComponents = projectComponentsService.addNewComponent(
-                    projectComponents, componentId, catalogItemId, status, componentUrl, projectComponentParameters);
+                    projectComponents, componentId, catalogItemId, status, componentUrl, createdAt, updatedAt, projectComponentParameters);
         }
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
+        log.trace("{} component with timestamp {}", (existsComponent ? "Updated" : "Created"), currentTimestamp);
     }
 
     @Synchronized
@@ -89,16 +99,22 @@ public class ProvisionerActionsService {
 
         var projectComponents = getProjectComponents(projectKey);
 
-        if (projectComponents == null || projectComponents.getComponents() == null) {
+        if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(componentId)) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
         }
 
+        var currentTimestamp = System.currentTimeMillis();
+        projectComponents.getComponents().get(componentId).setUpdatedAt(String.valueOf(currentTimestamp));
+
+        var createdAt = projectComponents.getComponents().get(componentId).getCreatedAt();
+        var updatedAt = projectComponents.getComponents().get(componentId).getUpdatedAt();
         log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", componentId, projectComponents, status);
         var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
-                projectComponents, componentId, catalogItemId, status, componentUrl, workflowJobId, projectComponentParameters);
+                projectComponents, componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, projectComponentParameters);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
+        log.trace("Updated component with timestamp {}", currentTimestamp);
     }
 
     @Synchronized

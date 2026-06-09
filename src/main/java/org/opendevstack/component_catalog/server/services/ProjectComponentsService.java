@@ -34,6 +34,8 @@ public class ProjectComponentsService {
                                              String catalogItemId,
                                              Status status,
                                              String componentUrl,
+                                             String createdAt,
+                                             String updatedAt,
                                              List<Parameter> parameters) {
         var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(catalogItemId);
         var branchReference = getBranchRefFromCatalogItemId(catalogItemId);
@@ -48,6 +50,8 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(branchReference)
                 .componentUrl(componentUrl)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
                 .parameters(parameters)
                 .build());
 
@@ -66,6 +70,8 @@ public class ProjectComponentsService {
                                                      String catalogItemId,
                                                      Status status,
                                                      String componentUrl,
+                                                     String createdAt,
+                                                     String updatedAt,
                                                      List<Parameter> parameters) {
 
         Map<String, ProjectComponent> components = projectComponents.getComponents();
@@ -88,6 +94,8 @@ public class ProjectComponentsService {
                 .status(status)
                 .catalogItemRef(branchReference)
                 .componentUrl(StringUtils.isBlank(componentUrl) ? existing.getComponentUrl() : componentUrl)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
                 .parameters(parameters)
                 .build();
 
@@ -106,6 +114,8 @@ public class ProjectComponentsService {
                                                               Status status,
                                                               String componentUrl,
                                                               String workflowJobId,
+                                                              String created_at,
+                                                              String updated_at,
                                                               List<Parameter> parameters) {
 
         validateComponentExists(projectComponents, componentId);
@@ -122,6 +132,8 @@ public class ProjectComponentsService {
                                 status,
                                 componentUrl,
                                 workflowJobId,
+                                created_at,
+                                updated_at,
                                 parameters)
                 ));
 
@@ -174,6 +186,8 @@ public class ProjectComponentsService {
                                                     Status status,
                                                     String componentUrl,
                                                     String workflowJobId,
+                                                    String createdAt,
+                                                    String updatedAt,
                                                     List<Parameter> parameters) {
 
         if (!entry.getKey().equals(componentId)) {
@@ -187,6 +201,8 @@ public class ProjectComponentsService {
                 .catalogItemRef(resolveCatalogItemRef(entry.getValue(), catalogItemId))
                 .componentUrl(resolveComponentUrl(entry.getValue(), componentUrl))
                 .workflowJobId(resolveWorkflowJobId(entry.getValue(), workflowJobId))
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
                 .parameters(resolveParameters(entry.getValue(), parameters))
                 .build();
     }
