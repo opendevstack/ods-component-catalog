@@ -54,14 +54,14 @@ public class ProvisionerActionsService {
         request.setUpdatedAt(currentTimestamp);
 
         if (existsComponent) {
-            log.trace("Updating componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
+            log.debug("Updating componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
 
             var createdAt = projectComponents.getComponents().get(request.getComponentId()).getCreatedAt();
             request.setCreatedAt(createdAt);
             updatedProjectComponents = projectComponentsService.updateExistingComponent(
                     projectComponents, request);
         } else {
-            log.trace("Adding new componentKey: {} to projectComponents: {}", request.getComponentId(), projectComponents);
+            log.debug("Adding new componentKey: {} to projectComponents: {}", request.getComponentId(), projectComponents);
 
             request.setCreatedAt(currentTimestamp);
             updatedProjectComponents = projectComponentsService.addNewComponent(
@@ -70,7 +70,7 @@ public class ProvisionerActionsService {
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
-        log.trace("{} component with timestamp {}", (existsComponent ? "Updated" : "Created"), currentTimestamp);
+        log.debug("{} component with timestamp {}", (existsComponent ? "Updated" : "Created"), currentTimestamp);
     }
 
     @Synchronized
@@ -93,14 +93,14 @@ public class ProvisionerActionsService {
         request.setUpdatedAt(projectComponents.getComponents().get(request.getComponentId()).getUpdatedAt());
         projectComponents.getComponents().get(request.getComponentId()).setUpdatedAt(String.valueOf(currentTimestamp));
 
-        log.trace("Updating partially componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
+        log.debug("Updating partially componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
 
         var updatedProjectComponents = projectComponentsService.updatePartiallyExistingComponent(
                 projectComponents, request);
 
         // Update file with new status
         saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
-        log.trace("Updated component with timestamp {}", currentTimestamp);
+        log.debug("Updated component with timestamp {}", currentTimestamp);
     }
 
     @Synchronized
