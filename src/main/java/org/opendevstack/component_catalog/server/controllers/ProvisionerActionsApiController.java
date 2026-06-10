@@ -46,6 +46,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
                 .status(Status.valueOf(status))
                 .componentUrl(normalizedComponentUrl)
+                .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
                 .parameters(parameters)
                 .build();
 
@@ -70,6 +71,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
                 .status(Status.valueOf(status))
                 .componentUrl(normalizedComponentUrl)
+                .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
                 .parameters(parameters)
                 .build();
 
