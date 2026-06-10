@@ -37,13 +37,14 @@ class ProvisionerActionsApiControllerTest {
                                             String catalogItemId,
                                             Status status,
                                             String url,
+                                            String workflowJobId,
                                             List<Parameter> params) {
         return ProjectComponentRequest.builder()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .status(status)
                 .componentUrl(url)
-                .workflowJobId(null)
+                .workflowJobId(workflowJobId)
                 .createdAt(null)
                 .updatedAt(null)
                 .parameters(params)
@@ -58,6 +59,7 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
+        var workflowJobId = "123456789";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -73,6 +75,7 @@ class ProvisionerActionsApiControllerTest {
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
+                .workflowJobId(workflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -81,7 +84,7 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, componentUrl, parameters)
+                request(componentId, catalogItemId, status, componentUrl, workflowJobId, parameters)
         );
     }
 
@@ -93,6 +96,7 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
+        var workflowJobId = "123456789";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -108,6 +112,7 @@ class ProvisionerActionsApiControllerTest {
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
+                .workflowJobId(workflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -117,7 +122,7 @@ class ProvisionerActionsApiControllerTest {
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, componentUrl, parameters)
+                request(componentId, catalogItemId, status, componentUrl, workflowJobId, parameters)
         );
     }
 
@@ -128,6 +133,7 @@ class ProvisionerActionsApiControllerTest {
         var status = Status.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
+        var workflowJobId = "123456789";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -142,6 +148,7 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
+                .workflowJobId(workflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -150,7 +157,7 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, "", parameters)
+                request(componentId, catalogItemId, status, "", workflowJobId, parameters)
         );
     }
 
@@ -161,6 +168,7 @@ class ProvisionerActionsApiControllerTest {
         var status = Status.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
+        var workflowJobId = "123456789";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -175,6 +183,7 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
+                .workflowJobId(workflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -183,7 +192,7 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, "", parameters)
+                request(componentId, catalogItemId, status, "", workflowJobId, parameters)
         );
     }
 
