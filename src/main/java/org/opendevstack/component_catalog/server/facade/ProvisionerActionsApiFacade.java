@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jspecify.annotations.NonNull;
@@ -10,6 +9,7 @@ import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateR
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemUserActionGroupsRestriction;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictions;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
@@ -42,9 +42,9 @@ public class ProvisionerActionsApiFacade {
     }
 
 
-    public static @NonNull List<Pair<@NotNull String, @NotNull List<String>>> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+    public static @NonNull List<Parameter> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         return provisioningStatusUpdateRequest.getParameters().stream()
-                .map(parameter -> Pair.of(parameter.getName(), parameter.getValues()))
+                .map(param -> Parameter.builder().name(param.getName()).values(param.getValues()).build())
                 .toList();
     }
 

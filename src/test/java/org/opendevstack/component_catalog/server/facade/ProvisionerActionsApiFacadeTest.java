@@ -11,6 +11,7 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
@@ -50,7 +51,7 @@ class ProvisionerActionsApiFacadeTest {
     }
 
     @Test
-    void map_convertsParametersToPairs() {
+    void map_convertsParametersToPlainParameter() {
         // given
         var parameter1 = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("param1")
@@ -68,8 +69,14 @@ class ProvisionerActionsApiFacadeTest {
 
         // then
         assertThat(result).containsExactly(
-                Pair.of("param1", List.of("value1", "value2")),
-                Pair.of("param2", List.of("value3"))
+                Parameter.builder()
+                        .name("param1")
+                        .values(List.of("value1", "value2"))
+                        .build(),
+                Parameter.builder()
+                        .name("param2")
+                        .values(List.of("value3"))
+                        .build()
         );
     }
 

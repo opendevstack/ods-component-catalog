@@ -1,7 +1,6 @@
 package org.opendevstack.component_catalog.server.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,6 +10,8 @@ import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -31,6 +32,24 @@ class ProvisionerActionsApiControllerTest {
     @InjectMocks
     private ProvisionerActionsApiController provisionerActionsApiController;
 
+    // helper
+    private ProjectComponentRequest request(String componentId,
+                                            String catalogItemId,
+                                            Status status,
+                                            String url,
+                                            List<Parameter> params) {
+        return ProjectComponentRequest.builder()
+                .componentId(componentId)
+                .catalogItemId(catalogItemId)
+                .status(status)
+                .componentUrl(url)
+                .workflowJobId(null)
+                .createdAt(null)
+                .updatedAt(null)
+                .parameters(params)
+                .build();
+    }
+
     @Test
     void givenAProjectKey_whenNotifyProvisioningCompleted_thenServiceIsCalled() throws JsonProcessingException {
         // given
@@ -39,7 +58,12 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
-        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
+        var parametersInner = List.of(parameterInner);
+        var parameter = Parameter.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
                 .build();
@@ -49,9 +73,7 @@ class ProvisionerActionsApiControllerTest {
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
-                .parameters(parameters);
-
-        var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
+                .parameters(parametersInner);
 
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
@@ -59,7 +81,8 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, componentUrl, mappedParameters);
+                request(componentId, catalogItemId, status, componentUrl, parameters)
+        );
     }
 
     @Test
@@ -70,21 +93,22 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
-        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
                 .build();
-        var workflowJobId = "workflowJobId";
+        var parametersInner = List.of(parameterInner);
+        var parameter = Parameter.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
         var parameters = List.of(parameter);
 
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
-                .workflowJobId(workflowJobId)
-                .parameters(parameters);
-
-        var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
+                .parameters(parametersInner);
 
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
@@ -93,12 +117,7 @@ class ProvisionerActionsApiControllerTest {
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                status,
-                componentId,
-                catalogItemId,
-                componentUrl,
-                workflowJobId,
-                mappedParameters
+                request(componentId, catalogItemId, status, componentUrl, parameters)
         );
     }
 
@@ -109,8 +128,12 @@ class ProvisionerActionsApiControllerTest {
         var status = Status.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
-        var workflowJobId = "workflowJobId";
-        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
+        var parametersInner = List.of(parameterInner);
+        var parameter = Parameter.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
                 .build();
@@ -119,10 +142,7 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
-                .workflowJobId(workflowJobId)
-                .parameters(parameters);
-
-        var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
+                .parameters(parametersInner);
 
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
@@ -130,17 +150,23 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, "", workflowJobId, mappedParameters);
+                request(componentId, catalogItemId, status, "", parameters)
+        );
     }
 
     @Test
     void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdate_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
-        var status = Status.CREATED;
+        var status = Status.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
-        var parameter = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name("parameterName")
+                .values(List.of("parameterValue"))
+                .build();
+        var parametersInner = List.of(parameterInner);
+        var parameter = Parameter.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
                 .build();
@@ -149,9 +175,7 @@ class ProvisionerActionsApiControllerTest {
         var request = new ProvisioningStatusUpdateRequest()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
-                .parameters(parameters);
-
-        var mappedParameters = List.of(Pair.of(parameter.getName(), parameter.getValues()));
+                .parameters(parametersInner);
 
         // when
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
@@ -159,7 +183,8 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                status, componentId, catalogItemId, "", mappedParameters);
+                request(componentId, catalogItemId, status, "", parameters)
+        );
     }
 
     @Test
