@@ -90,8 +90,8 @@ public class ProvisionerActionsService {
         }
 
         var currentTimestamp = System.currentTimeMillis();
-        request.setUpdatedAt(projectComponents.getComponents().get(request.getComponentId()).getUpdatedAt());
-        projectComponents.getComponents().get(request.getComponentId()).setUpdatedAt(String.valueOf(currentTimestamp));
+        request.setCreatedAt(projectComponents.getComponents().get(request.getComponentId()).getCreatedAt());
+        request.setUpdatedAt(String.valueOf(currentTimestamp));
 
         log.debug("Updating partially componentKey: {} to projectComponents: {}. Status: {}", request.getComponentId(), projectComponents, request.getStatus());
 
