@@ -22,12 +22,10 @@ import org.opendevstack.component_catalog.server.services.exceptions.InvalidEnti
 import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -577,7 +575,49 @@ class ProvisionerActionsServiceTest {
         var componentId = "componentId";
 
         var component = new ProjectComponent();
-        component.setUpdatedAt("old");
+        component.setUpdatedAt("123");
+
+        var map = new HashMap<String, ProjectComponent>();
+        map.put(componentId, component);
+
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(map);
+
+        var pathAt = BitbucketPathAtMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of("commit"));
+
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+
+        when(projectComponentsService.updatePartiallyExistingComponent(
+                any(),
+                any(ProjectComponentRequest.class)
+        )).thenReturn(ProjectComponents.builder().components(
+                Map.of(componentId, component)
+        ).build());
+
+        prepareMocksForSave();
+
+        // when
+        provisionerActionsService.updatePartiallyComponentProvisioningStatus(
+                "projectKey",
+                request(componentId, "catalogItemId", Status.FAILED, "url", "jobId", "created", "updated", List.of())
+        );
+
+        // then
+        assertThat(Long.parseLong(component.getUpdatedAt())).isGreaterThan(0);
+    }
+
+    @Test
+    void givenExistingComponent_whenPartialUpdate_thenCreatedAtIsNotModified() throws Exception {
+        // given
+        var componentId = "componentId";
+
+        var originalCreatedAt = "123";
+        var anotherCreatedAt = "wrongNumber!";
+        var component = new ProjectComponent();
+        component.setCreatedAt(originalCreatedAt);
 
         var map = new HashMap<String, ProjectComponent>();
         map.put(componentId, component);
@@ -602,11 +642,11 @@ class ProvisionerActionsServiceTest {
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 "projectKey",
-                request(componentId, "catalogItemId", Status.FAILED, "url", "jobId", "created", "updated", List.of())
+                request(componentId, "catalogItemId", Status.FAILED, "url", "jobId", anotherCreatedAt, "updated", List.of())
         );
 
         // then
-        assertThat(Long.parseLong(component.getUpdatedAt())).isGreaterThan(0);
+        assertThat(component.getCreatedAt()).isEqualTo(originalCreatedAt);
     }
 
     private String prepareMocksForSave() throws JsonProcessingException {
