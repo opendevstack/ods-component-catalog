@@ -44,8 +44,7 @@ public class ProvisionerActionsApiFacade {
 
     public static @NonNull List<Parameter> map(ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         return provisioningStatusUpdateRequest.getParameters().stream()
-                .map(parameter -> Pair.of(parameter.getName(), parameter.getValues()))
-                .map(pair -> Parameter.builder().name(pair.getLeft()).values(pair.getRight()).build())
+                .map(param -> Parameter.builder().name(param.getName()).values(param.getValues()).build())
                 .toList();
     }
 

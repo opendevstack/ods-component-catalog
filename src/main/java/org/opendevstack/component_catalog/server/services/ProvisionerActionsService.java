@@ -51,7 +51,6 @@ public class ProvisionerActionsService {
 
         var currentTimestamp = String.valueOf(System.currentTimeMillis());
 
-        request.setCreatedAt(currentTimestamp);
         request.setUpdatedAt(currentTimestamp);
 
         if (existsComponent) {
@@ -64,6 +63,7 @@ public class ProvisionerActionsService {
         } else {
             log.trace("Adding new componentKey: {} to projectComponents: {}", request.getComponentId(), projectComponents);
 
+            request.setCreatedAt(currentTimestamp);
             updatedProjectComponents = projectComponentsService.addNewComponent(
                     projectComponents, request);
         }
