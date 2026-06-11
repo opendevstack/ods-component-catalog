@@ -123,6 +123,8 @@ public class CatalogApiAdapter {
 
         item.setRestrictions(catalogItemRestriction);
 
+        item.setUpdatedAt(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
+
         return item;
     }
 
