@@ -996,6 +996,11 @@ components:
           type: string
           format: date-time
           example: '2021-07-01T00:00:00Z'
+        updatedAt:
+          type: integer
+          format: int64
+          example: 1625097600000
+          description: Timestamp in milliseconds since Unix epoch
         userActions:
           type: array
           items:

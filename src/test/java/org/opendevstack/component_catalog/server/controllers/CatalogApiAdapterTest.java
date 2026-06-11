@@ -96,6 +96,9 @@ class CatalogApiAdapterTest {
 
         CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
 
+        // updatedAt should be set from CatalogItemEntityContext.lastCommitDateUTC (milliseconds since epoch)
+        assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
+
         // Mandatory fields
         Optional<CatalogItemUserAction> codeActionOnItem = item.getUserActions().stream()
                 .filter(ua -> Objects.equals("CODE", ua.getId()))
@@ -162,6 +165,9 @@ class CatalogApiAdapterTest {
                 .build();
 
         CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+
+        // updatedAt should be set even when the principal has no repo permissions
+        assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
 
         Optional<CatalogItemUserAction> codeAction = item.getUserActions().stream()
                 .filter(ua -> Objects.equals("CODE", ua.getId()))
