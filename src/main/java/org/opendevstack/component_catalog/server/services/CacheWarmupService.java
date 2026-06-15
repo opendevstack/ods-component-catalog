@@ -149,10 +149,10 @@ public class CacheWarmupService implements ApplicationRunner {
                     .map(filename -> filename.replace(".json", ""))
                     .toList();
 
-            int nComponents;
+            Integer nComponents;
             for (String projectKey : projectKeys) {
                 try {
-                    if ((nComponents = warmupProvisionedComponentsFromProject(projectKey)) != 0) {
+                    if ((nComponents = warmupProvisionedComponentsFromProject(projectKey)) != null) {
                         loaded += nComponents;
                     } else {
                         log.info("Couldn't load project components from project key {}", projectKey);
@@ -173,13 +173,13 @@ public class CacheWarmupService implements ApplicationRunner {
         }
     }
 
-    private int warmupProvisionedComponentsFromProject(String projectKey) {
+    private Integer warmupProvisionedComponentsFromProject(String projectKey) {
         log.debug("Loading components from project {} into the project components cache...", projectKey);
         ProjectComponents projectComponents = provisionerActionsService.getProjectComponents(projectKey);
         return Optional.ofNullable(projectComponents)
                 .map(ProjectComponents::getComponents)
                 .map(Map::size)
-                .orElse(0);
+                .orElse(null);
     }
 }
 
