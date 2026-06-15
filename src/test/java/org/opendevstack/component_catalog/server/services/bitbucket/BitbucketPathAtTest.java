@@ -68,4 +68,49 @@ public class BitbucketPathAtTest {
         assertThat(bitbucketPathAt.getRepoSlug()).isEqualTo("repo-slug");
         assertThat(bitbucketPathAt.getAt()).isEqualTo("refs/heads/master");
     }
+
+    @Test
+    public void givenASubPathWithExtension_whenGetProjectKeyFromSubPath_thenFileNameWithoutExtensionIsReturned() {
+        // given
+        var baseRawUrl = "https://my-bitbucket-server.com";
+        var baseRestUrl = "https://my-bitbucket-server.com/rest/api/latest";
+        var pathAt = "/projects/MYPROJECT/repos/repo-slug/raw/some-package/PROJECT_KEY.json?at=refs%2Fheads%2Fmaster";
+        var subPath = "projects/PROJECT_KEY.json";
+
+        var bitbucketPathAt = BitbucketPathAt.builder()
+                .baseRawUrl(baseRawUrl)
+                .baseRestUrl(baseRestUrl)
+                .pathAt(pathAt)
+                .subPath(subPath)
+                .build();
+
+        // when
+        var projectKey = bitbucketPathAt.getProjectKeyFromSubPath();
+
+        // then
+        assertThat(projectKey).isEqualTo("PROJECT_KEY");
+    }
+
+    @Test
+    public void givenASubPathWithoutExtension_whenGetProjectKeyFromSubPath_thenFileNameIsReturned() {
+        // given
+        var baseRawUrl = "https://my-bitbucket-server.com";
+        var baseRestUrl = "https://my-bitbucket-server.com/rest/api/latest";
+        var pathAt = "/projects/MYPROJECT/repos/repo-slug/raw/some-package/PROJECT_KEY?at=refs%2Fheads%2Fmaster";
+        var subPath = "projects/PROJECT_KEY";
+
+        var bitbucketPathAt = BitbucketPathAt.builder()
+                .baseRawUrl(baseRawUrl)
+                .baseRestUrl(baseRestUrl)
+                .pathAt(pathAt)
+                .subPath(subPath)
+                .build();
+
+        // when
+        var projectKey = bitbucketPathAt.getProjectKeyFromSubPath();
+
+        // then
+        assertThat(projectKey).isEqualTo("PROJECT_KEY");
+    }
+
 }

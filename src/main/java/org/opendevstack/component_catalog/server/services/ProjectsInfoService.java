@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@CacheConfig(cacheNames={ApplicationPropertiesConfiguration.BitbucketServiceCacheProps.CACHE_NAME})
+@CacheConfig(cacheNames={ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps.CACHE_NAME})
 @AllArgsConstructor
 @Slf4j
 public class ProjectsInfoService {

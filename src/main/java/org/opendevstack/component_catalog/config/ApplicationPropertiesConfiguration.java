@@ -24,8 +24,14 @@ public class ApplicationPropertiesConfiguration {
 
     @Bean("bitbucketServiceCacheConfig")
     @ConfigurationProperties(prefix = "component-catalog.caching.bitbucket-service-cache")
-    public BitbucketServiceCacheProps bitbucketServiceCacheProps() {
-        return BitbucketServiceCacheProps.builder().build();
+    public CatalogsCollectionCacheProps bitbucketServiceCacheProps() {
+        return CatalogsCollectionCacheProps.builder().build();
+    }
+
+    @Bean("provisionedComponentsCacheConfig")
+    @ConfigurationProperties(prefix = "component-catalog.caching.provisioned-components-cache")
+    public ProvisionedComponentsCacheProps provisionedComponentsCacheProps() {
+        return ProvisionedComponentsCacheProps.builder().build();
     }
 
     @Bean("projectsInfoServiceConfig")
@@ -68,8 +74,20 @@ public class ApplicationPropertiesConfiguration {
 
     @Builder // useful for unit testing
     @Data
-    public static class BitbucketServiceCacheProps {
+    public static class CatalogsCollectionCacheProps {
         public static final String CACHE_NAME = "bitbucket-service-cache";
+
+        @Builder.Default
+        private boolean enabled = true;
+        private DataSize maxSize;
+        @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
+        private Duration evictionInterval;
+    }
+
+    @Builder // useful for unit testing
+    @Data
+    public static class ProvisionedComponentsCacheProps {
+        public static final String CACHE_NAME = "provisioned-components-cache";
 
         @Builder.Default
         private boolean enabled = true;

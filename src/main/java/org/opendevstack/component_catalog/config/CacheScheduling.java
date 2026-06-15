@@ -1,7 +1,7 @@
 package org.opendevstack.component_catalog.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps;
 import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -64,12 +64,12 @@ public class CacheScheduling {
             fixedDelayString   = "#{bitbucketServiceCacheConfig.getEvictionInterval().toMillis()}"
     )
     public void scheduledCacheEvictionAndWarmup() {
-        var cache = cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME);
+        var cache = cacheManager.getCache(CatalogsCollectionCacheProps.CACHE_NAME);
         if (cache != null) {
             cache.clear();
             log.debug("Bitbucket Service cache evicted.");
         }
-        cacheWarmupService.warmup();
+        cacheWarmupService.warmupCatalogsCache();
     }
 }
 
