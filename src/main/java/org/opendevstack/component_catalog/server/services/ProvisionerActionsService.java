@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -207,7 +207,7 @@ public class ProvisionerActionsService {
 
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
     @Synchronized
-    @Cacheable(cacheNames = ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
+    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
     public ProjectComponents getProjectComponents(String projectKey) {
         return getProjectComponents(getBitbucketPathAt(projectKey));
     }

@@ -1,16 +1,20 @@
 package org.opendevstack.component_catalog.server.controllers;
 
-import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
-import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
-import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
-import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
+import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentListResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 
@@ -145,4 +149,70 @@ class ProjectComponentsControllerTest {
         ).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid arguments");
     }
+
+    @Test
+    void givenValidRequest_whenGetAllProjectComponents_thenReturnOkWithResponse() {
+        // given
+        Integer page = 0;
+        Integer size = 20;
+
+        var responseBody = mock(ProjectComponentListResponse.class);
+
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/project/components");
+
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        when(projectComponentsFacade.getAllProjectComponents(
+                eq(accessToken),
+                eq(page),
+                eq(size),
+                anyString()
+        )).thenReturn(responseBody);
+
+        // when
+        var response = projectComponentsController.getAllProjectComponents(page, size);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(responseBody);
+
+        verify(authenticationFacade).getAccessToken();
+        verify(projectComponentsFacade).getAllProjectComponents(
+                eq(accessToken),
+                eq(page),
+                eq(size),
+                anyString()
+        );
+    }
+
+    @Test
+    void givenFacadeThrowsException_whenGetAllProjectComponents_thenPropagateException() {
+        // given
+        Integer page = 0;
+        Integer size = 20;
+
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/project/components");
+
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        when(projectComponentsFacade.getAllProjectComponents(
+                eq(accessToken),
+                eq(page),
+                eq(size),
+                anyString()
+        )).thenThrow(new RuntimeException("Error"));
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsController.getAllProjectComponents(page, size)
+        ).isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error");
+    }
+
 }

@@ -1,16 +1,18 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.ProjectComponentsApi;
 import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.component_catalog.server.model.ProjectComponentListResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,5 +41,18 @@ public class ProjectComponentsController implements ProjectComponentsApi {
         var accessToken = authenticationFacade.getAccessToken();
         var projectComponent = projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
         return ResponseEntity.ok(projectComponent);
+    }
+
+    @Override
+    public ResponseEntity<ProjectComponentListResponse> getAllProjectComponents(Integer page, Integer size) {
+        var accessToken = authenticationFacade.getAccessToken();
+
+        String baseUrl = ServletUriComponentsBuilder
+                .fromCurrentRequestUri()
+                .build()
+                .toUriString();
+
+        var response = projectComponentsFacade.getAllProjectComponents(accessToken, page, size, baseUrl);
+        return ResponseEntity.ok(response);
     }
 }
