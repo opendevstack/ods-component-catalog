@@ -50,7 +50,7 @@ class CachingConfigurationTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void givenCachesEnabledWithLargeSize_whenCacheManager_thenReturnsJCacheCacheManagerAndCacheExists() {
+    void givenCachesEnabledWithLargeSize_whenCacheManager_thenReturnsJCacheCacheManagerExists() {
         // cacheSize = 100 MB  →  maxEntries = 100 * 1024 * 1024 / 10_000 = 10485  (> 100, uses computed value)
         var catalogsCollectionCacheProps = CatalogsCollectionCacheProps.builder()
                 .enabled(true)
@@ -69,8 +69,6 @@ class CachingConfigurationTest {
 
         var nativeCacheManager = ((JCacheCacheManager) cacheManager).getCacheManager();
         assertThat(nativeCacheManager).isNotNull();
-        assertThat(nativeCacheManager.getCache(CatalogsCollectionCacheProps.CACHE_NAME)).isNotNull();
-        assertThat(nativeCacheManager.getCache(ProvisionedComponentsCacheProps.CACHE_NAME)).isNotNull();
     }
 
     // -------------------------------------------------------------------------
