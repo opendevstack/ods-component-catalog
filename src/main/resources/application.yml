@@ -43,6 +43,10 @@ component-catalog:
       enabled: true
       eviction-interval: ${CACHING_BITBUCKET_SERVICE_CACHE_EVICTION_INTERVAL}
       max-size: ${CACHING_BITBUCKET_SERVICE_CACHE_MAX_SIZE}
+    projects-info-service-cache:
+      enabled: true
+      eviction-interval: ${CACHING_PROJECTS_INFO_SERVICE_CACHE_EVICTION_INTERVAL}
+      max-size: ${CACHING_PROJECTS_INFO_SERVICE_CACHE_MAX_SIZE}
     provisioned-components-cache:
       enabled: true
       eviction-interval: ${CACHING_PROJECT_COMPONENTS_CACHE_EVICTION_INTERVAL}

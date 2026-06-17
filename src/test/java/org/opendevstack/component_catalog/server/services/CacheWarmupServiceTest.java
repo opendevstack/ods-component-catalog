@@ -57,7 +57,7 @@ class CacheWarmupServiceTest {
     void givenNoCatalogOfCatalogs_whenWarmup_CatalogsCache_thenSkipsWithWarning() throws Exception {
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.empty());
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verify(catalogsCollectionService).getCatalogsCollection();
         verifyNoInteractions(catalogEntitiesService);
@@ -75,7 +75,7 @@ class CacheWarmupServiceTest {
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(items);
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
@@ -93,7 +93,7 @@ class CacheWarmupServiceTest {
                 .thenReturn(List.of(CatalogItemEntityContextMother.of()))
                 .thenThrow(new InvalidIdException("catalog-bad"));
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
@@ -111,7 +111,7 @@ class CacheWarmupServiceTest {
                 .thenThrow(new RuntimeException("Unexpected error"))
                 .thenReturn(List.of());
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verify(catalogEntitiesService, times(2)).getCatalogItemsEntities(any());
     }
@@ -131,7 +131,7 @@ class CacheWarmupServiceTest {
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         // Only the valid target should reach getCatalogItemsEntities
         verify(catalogEntitiesService, times(1)).getCatalogItemsEntities(any());
@@ -146,7 +146,7 @@ class CacheWarmupServiceTest {
         when(catalogsCollectionService.getCatalogsCollection())
                 .thenThrow(new RuntimeException("Connection refused"));
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verifyNoInteractions(catalogEntitiesService);
     }
@@ -162,7 +162,7 @@ class CacheWarmupServiceTest {
         when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.of(entity));
         when(catalogEntitiesService.getCatalogItemsEntities(any())).thenReturn(List.of());
 
-        service.warmupCatalogsCache();
+        service.warmupCatalogsBitbucketServiceCache();
 
         verify(catalogEntitiesService, times(1)).getCatalogItemsEntities(any());
     }

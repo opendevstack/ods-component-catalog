@@ -15,7 +15,7 @@ import org.opendevstack.component_catalog.client.bitbucket.v89.auth.HttpBearerAu
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.*;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketIOException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketInvalidEntityException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import static org.opendevstack.component_catalog.util.EitherUtils.*;
 
 @Service
-@CacheConfig(cacheNames = {CatalogsCollectionCacheProps.CACHE_NAME})
+@CacheConfig(cacheNames = {BitbucketServiceCacheProps.CACHE_NAME})
 @AllArgsConstructor
 @Slf4j
 public class BitbucketService {

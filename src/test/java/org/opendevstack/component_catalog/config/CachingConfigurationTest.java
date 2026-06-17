@@ -6,7 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectsInfoServiceCacheProps;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
@@ -33,14 +34,17 @@ class CachingConfigurationTest {
 
     @Test
     void givenCacheDisabled_whenCacheManager_thenReturnsNoOpCacheManager() {
-        var catalogsCollectionCacheProps = CatalogsCollectionCacheProps.builder()
+        var catalogsCollectionCacheProps = BitbucketServiceCacheProps.builder()
+                .enabled(false)
+                .build();
+        var projectsInfoServiceCacheProps = ProjectsInfoServiceCacheProps.builder()
                 .enabled(false)
                 .build();
         var projectComponentsCacheProps = ProvisionedComponentsCacheProps.builder()
                 .enabled(false)
                 .build();
 
-        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectComponentsCacheProps);
+        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectsInfoServiceCacheProps, projectComponentsCacheProps);
 
         assertThat(cacheManager).isInstanceOf(NoOpCacheManager.class);
     }
@@ -52,7 +56,12 @@ class CachingConfigurationTest {
     @Test
     void givenCachesEnabledWithLargeSize_whenCacheManager_thenReturnsJCacheCacheManagerExists() {
         // cacheSize = 100 MB  →  maxEntries = 100 * 1024 * 1024 / 10_000 = 10485  (> 100, uses computed value)
-        var catalogsCollectionCacheProps = CatalogsCollectionCacheProps.builder()
+        var catalogsCollectionCacheProps = BitbucketServiceCacheProps.builder()
+                .enabled(true)
+                .maxSize(DataSize.ofMegabytes(100))
+                .evictionInterval(Duration.ofMinutes(120))
+                .build();
+        var projectsInfoServiceCacheProps = ProjectsInfoServiceCacheProps.builder()
                 .enabled(true)
                 .maxSize(DataSize.ofMegabytes(100))
                 .evictionInterval(Duration.ofMinutes(120))
@@ -63,7 +72,7 @@ class CachingConfigurationTest {
                 .evictionInterval(Duration.ofMinutes(120))
                 .build();
 
-        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectComponentsCacheProps);
+        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectsInfoServiceCacheProps, projectComponentsCacheProps);
 
         assertThat(cacheManager).isInstanceOf(JCacheCacheManager.class);
 

@@ -27,7 +27,7 @@ import static org.opendevstack.component_catalog.server.services.common.IdEncode
  *       last commit info, contributors file, etc.</li>
  * </ol>
  * This way the cache always looks "full" to the first user after a restart or after a scheduled
- * eviction (because the cache configuration scheduler calls {@link #warmupCatalogsCache()} right after evicting).
+ * eviction (because the cache configuration scheduler calls {@link #warmupCatalogsBitbucketServiceCache()} right after evicting).
  * </p>
  */
 @Service
@@ -48,17 +48,17 @@ public class CacheWarmupService implements ApplicationRunner {
     @Async
     public void run(ApplicationArguments args) {
         log.info("Cache warmup: starting asynchronously after application startup...");
-        warmupCatalogsCache();
+        warmupCatalogsBitbucketServiceCache();
         warmupProjectComponentsCache();
     }
 
     /**
-     * Performs a full cache warmup of the catalogs collection cache.
+     * Performs a full cache warmup of the catalogs collection in the Bitbucket service cache.
      * Safe to call multiple times (idempotent from the cache's point of view).
      */
-    public void warmupCatalogsCache() {
+    public void warmupCatalogsBitbucketServiceCache() {
         try {
-            log.info("Starting catalogs collection cache warmup...");
+            log.info("Starting catalogs collection warmup in the Bitbucket service cache...");
             long initWarmup = System.currentTimeMillis();
 
             var maybeCatalogsCollection = catalogsCollectionService.getCatalogsCollection();

@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.config;
 
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectsInfoServiceCacheProps;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import lombok.extern.slf4j.Slf4j;
 import org.ehcache.config.CacheConfiguration;
@@ -17,6 +18,7 @@ import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.cache.Cache;
 import javax.cache.Caching;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,22 +32,31 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
 
     @Bean
     public CacheManager cacheManager(
-            CatalogsCollectionCacheProps bitbucketCacheConfig,
+            BitbucketServiceCacheProps bitbucketCacheConfig,
+            ProjectsInfoServiceCacheProps projectsInfoServiceCacheConfig,
             ProvisionedComponentsCacheProps provisionedComponentsCacheConfig)
     {
-        if (!bitbucketCacheConfig.isEnabled() && !provisionedComponentsCacheConfig.isEnabled()) {
-            log.info("Catalog collections cache and provisioned components cache are both disabled");
+        if (!bitbucketCacheConfig.isEnabled() &&
+                !projectsInfoServiceCacheConfig.isEnabled() &&
+                !provisionedComponentsCacheConfig.isEnabled()) {
+            log.info("All caches are disabled");
             return new NoOpCacheManager();
         }
 
-        var bitbucketServiceEhCacheConfig = buildCatalogCacheConfig(bitbucketCacheConfig.getMaxSize().toMegabytes());
+        var bitbucketServiceEhCacheConfig = buildBitbucketServiceCacheConfig(bitbucketCacheConfig.getMaxSize().toMegabytes());
+        var projectsInfoServiceEhCacheConfig = buildProjectsInfoServiceCacheConfig(projectsInfoServiceCacheConfig.getMaxSize().toMegabytes());
         var provisionedComponentsEhCacheConfig = buildProjectComponentsCacheConfig(provisionedComponentsCacheConfig.getMaxSize().toMegabytes());
 
         var ehCaches = new HashMap<String, CacheConfiguration<?, ?>>();
         if (bitbucketCacheConfig.isEnabled()) {
             ehCaches.putAll(bitbucketServiceEhCacheConfig);
         } else {
-            log.info("Catalog collections cache is disabled");
+            log.info("Bitbucket service cache is disabled");
+        }
+        if (projectsInfoServiceCacheConfig.isEnabled()) {
+            ehCaches.putAll(projectsInfoServiceEhCacheConfig);
+        } else {
+            log.info("Projects info service cache is disabled");
         }
         if (provisionedComponentsCacheConfig.isEnabled()) {
             ehCaches.putAll(provisionedComponentsEhCacheConfig);
@@ -61,12 +72,20 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         return new JCacheCacheManager(cacheManager);
     }
 
-    private Map<String, CacheConfiguration<?, ?>> buildCatalogCacheConfig(long cacheSize) {
+    private Map<String, CacheConfiguration<?, ?>> buildBitbucketServiceCacheConfig(long cacheSize) {
         // NOTE: heap tier is used instead of offheap because cached values (Optional, Pair, etc.)
         // are not Serializable, which is required by EHCache's offheap tier.
         // cacheSize is in MB; we convert to an approximate number of entries (assuming ~10KB per entry on average).
         long maxEntries = Math.max(100, cacheSize * 1024 * 1024 / 10_000);
-        return ehCachesConfig(maxEntries, CatalogsCollectionCacheProps.CACHE_NAME);
+        return ehCachesConfig(maxEntries, BitbucketServiceCacheProps.CACHE_NAME);
+    }
+
+    private Map<String, CacheConfiguration<?, ?>> buildProjectsInfoServiceCacheConfig(long cacheSize) {
+        // NOTE: heap tier is used instead of offheap because cached values (Optional, Pair, etc.)
+        // are not Serializable, which is required by EHCache's offheap tier.
+        // cacheSize is in MB; we convert to an approximate number of entries (assuming ~10KB per entry on average).
+        long maxEntries = Math.max(100, cacheSize * 1024 * 1024 / 10_000);
+        return ehCachesConfig(maxEntries, ProjectsInfoServiceCacheProps.CACHE_NAME);
     }
 
     private Map<String, CacheConfiguration<?, ?>> buildProjectComponentsCacheConfig(long cacheSize) {

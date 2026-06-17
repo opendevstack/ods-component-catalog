@@ -2,7 +2,7 @@ package org.opendevstack.component_catalog.config;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogsCollectionCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
 import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -25,22 +25,22 @@ class CacheSchedulingTest {
     @Test
     void whenScheduledCacheEvictionAndWarmup_thenCacheClearedBeforeWarmup() {
         Cache cache = mock(Cache.class);
-        when(cacheManager.getCache(CatalogsCollectionCacheProps.CACHE_NAME)).thenReturn(cache);
+        when(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).thenReturn(cache);
 
         cacheScheduling.scheduledCacheEvictionAndWarmup();
 
         var inOrder = inOrder(cache, cacheWarmupService);
         inOrder.verify(cache).clear();
-        inOrder.verify(cacheWarmupService).warmupCatalogsCache();
+        inOrder.verify(cacheWarmupService).warmupCatalogsBitbucketServiceCache();
     }
 
     @Test
     void whenScheduledCacheEvictionAndWarmup_andCacheNotFound_thenWarmupStillCalled() {
-        when(cacheManager.getCache(CatalogsCollectionCacheProps.CACHE_NAME)).thenReturn(null);
+        when(cacheManager.getCache(BitbucketServiceCacheProps.CACHE_NAME)).thenReturn(null);
 
         cacheScheduling.scheduledCacheEvictionAndWarmup();
 
-        verify(cacheWarmupService).warmupCatalogsCache();
+        verify(cacheWarmupService).warmupCatalogsBitbucketServiceCache();
     }
 }
 
