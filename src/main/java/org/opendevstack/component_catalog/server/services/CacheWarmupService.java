@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.services;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityTarget;
+import org.opendevstack.component_catalog.server.services.common.Pair;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.springframework.boot.ApplicationArguments;
@@ -141,28 +142,15 @@ public class CacheWarmupService implements ApplicationRunner {
             }
             log.info("Project components cache warmup: found {} projects to fully warm up.", projectJsonList.size());
 
-            int loaded = 0;
-            int errors = 0;
 
             var projectKeys = projectJsonList.stream()
                     .filter(filename -> filename.endsWith(".json"))
                     .map(filename -> filename.replace(".json", ""))
                     .toList();
 
-            Integer nComponents;
-            for (String projectKey : projectKeys) {
-                try {
-                    if ((nComponents = warmupProvisionedComponentsFromProject(projectKey)) != null) {
-                        loaded += nComponents;
-                    } else {
-                        log.info("Couldn't load project components from project key {}", projectKey);
-                        ++errors;
-                    }
-                } catch (Exception e) {
-                    log.warn("Project components cache warmup: error loading project '{}': {}", projectKey, e.getMessage());
-                    ++errors;
-                }
-            }
+            Pair<Integer, Integer> result = warmupProjects(projectKeys);
+            int loaded = result.getLeft();
+            int errors = result.getRight();
 
             log.info("Project components cache warmup: finished. Project components loaded: {}. Projects not loaded: {}. Number of projects: {}", loaded, errors, projectJsonList.size());
             log.info("Project components warmup took {} seconds.", (System.currentTimeMillis() - initWarmup)/1000);
@@ -171,6 +159,26 @@ public class CacheWarmupService implements ApplicationRunner {
             // Never let warmup failures crash the app or break the eviction scheduler
             log.error("Project components cache warmup: unexpected error during warmup, cache may be partially populated.", e);
         }
+    }
+
+    private Pair<Integer, Integer> warmupProjects(List<String> projectKeys) {
+        Integer nComponents;
+        int loaded = 0;
+        int errors = 0;
+        for (String projectKey : projectKeys) {
+            try {
+                if ((nComponents = warmupProvisionedComponentsFromProject(projectKey)) != null) {
+                    loaded += nComponents;
+                } else {
+                    log.info("Couldn't load project components from project key {}", projectKey);
+                    ++errors;
+                }
+            } catch (Exception e) {
+                log.warn("Project components cache warmup: error loading project '{}': {}", projectKey, e.getMessage());
+                ++errors;
+            }
+        }
+        return Pair.<Integer, Integer>builder().left(loaded).right(errors).build();
     }
 
     private Integer warmupProvisionedComponentsFromProject(String projectKey) {

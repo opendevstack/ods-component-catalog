@@ -47,7 +47,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         validate(projectComponents, request.getComponentId(), request.getStatus());
 
@@ -88,7 +88,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(request.getComponentId())) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
@@ -135,7 +135,7 @@ public class ProvisionerActionsService {
         log.debug("Checking if provisioning completed for projectKey: {}, componentId: {}",
                 projectKey, catalogItemId);
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         return isProvisioned(projectComponents, catalogItemId);
     }

@@ -93,12 +93,8 @@ public class ProjectComponentsFacade {
     }
 
     public ProjectComponentListResponse getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
-        if (!validateTokenPermittedOids(accessToken)) {
-            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
-        }
-        if (page < 0 || size < 0 || size > 100) {
-            throw new IllegalArgumentException("Page must be a positive number and size must be between 0 and 100.");
-        }
+        validateTokenPermittedOids(accessToken);
+        PaginationUtils.validatePagination(page, size, 100);
 
         var allProjectsJsons = provisionerActionsService.listAllProjectsJsons().stream()
                 .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
@@ -121,7 +117,7 @@ public class ProjectComponentsFacade {
                     // The overall sorting order is from creation date ASC
                     // If not createdAt/updatedAt are present, we treat the item
                     // as one of the oldest, without further comparing
-                    .sorted(Comparator.comparing((ProjectComponent c) -> hasNoDates(c) ? 0 : 1)
+                    .sorted(Comparator.comparing((ProjectComponent c) -> !hasNoDates(c))
                                 .thenComparing(c -> hasNoDates(c) ? 0 : extractTimestamp(c))
                     )
                     .toList();
@@ -178,8 +174,10 @@ public class ProjectComponentsFacade {
                         g.toUpperCase().contains(projectKey.toUpperCase()));
     }
 
-    private boolean validateTokenPermittedOids(String accessToken) {
+    private void validateTokenPermittedOids(String accessToken) {
         var oid = JwtUtils.extractClaim(accessToken, "oid");
-        return oid.map(permittedOids::contains).orElse(false);
+        if (!oid.map(permittedOids::contains).orElse(false)) {
+            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
+        }
     }
 }
