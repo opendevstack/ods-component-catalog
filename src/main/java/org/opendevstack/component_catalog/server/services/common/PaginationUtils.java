@@ -10,8 +10,15 @@ public class PaginationUtils {
     public static Pagination buildPagination(int page, int size, int totalElements, String basePath) {
         int totalPages = (size == 0) ? 0 : (int) Math.ceil((double) totalElements / size);
 
-        var next = (page < totalPages - 1) ? URI.create(basePath + "?page=" + Math.max(page + 1, 1) + "&size=" + size) : null;
-        var previous = (page > 0) ? URI.create(basePath + "?page=" + Math.min(page - 1, totalPages - 1) + "&size=" + size) : null;
+        var nextPageCandidate = Math.max(page + 1, 1);
+        var previousPageCandidate = Math.min(page - 1, totalPages - 1);
+
+        var next = (page < totalPages - 1) ?
+                URI.create(basePath + "?page=" + nextPageCandidate + "&size=" + size)
+                : null;
+        var previous = (page > 0) ?
+                URI.create(basePath + "?page=" + previousPageCandidate + "&size=" + size)
+                : null;
 
         return Pagination.builder()
                 .page(page)

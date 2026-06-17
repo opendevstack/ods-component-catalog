@@ -14,6 +14,7 @@ import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -104,15 +105,15 @@ public class ProjectComponentsFacade {
                 .sorted()
                 .toList();
 
-        AtomicInteger index = new AtomicInteger();
+        int index = 0;
         int fromIndex = page * size;
         int toIndex = fromIndex + size;
         Collection<ProjectComponent> projectComponents;
         List<ProjectComponentListItem> data = new ArrayList<>();
         for (String projectKey : allProjectsJsons) {
             projectComponents = provisionerActionsService.getProjectComponents(projectKey).getComponents().values();
-            if (index.get() >= toIndex) {
-                index.addAndGet(projectComponents.size());
+            if (index >= toIndex) {
+                index += projectComponents.size();
                 continue;
             }
             List<ProjectComponent> sortedComponents = projectComponents
@@ -126,22 +127,22 @@ public class ProjectComponentsFacade {
                     .toList();
 
             for (ProjectComponent component : sortedComponents) {
-                if (index.get() >= fromIndex && index.get() < toIndex) {
-                    projectComponentListItemMapper.mapToProjectComponentListItem(component, projectKey)
-                        .ifPresent(p ->
-                            {
-                                // Badly formed project components shouldn't be returned
-                                // in the response
-                                data.add(p);
-                                index.getAndIncrement();
-                            }
-                        );
+                if (index >= fromIndex && index < toIndex) {
+                    Optional<ProjectComponentListItem> p =  projectComponentListItemMapper.mapToProjectComponentListItem(component, projectKey);
+                    if (p.isPresent()) {
+                        // Badly formed project components shouldn't be returned
+                        // in the response
+                        data.add(p.orElseThrow(() -> new InvalidComponentStateException(
+                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
+                        ));
+                        index++;
+                    }
                 } else {
-                    index.getAndIncrement();
+                    index++;
                 }
             }
         }
-        int totalElements = index.get();
+        int totalElements = index;
         Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, paginationBaseUrl);
 
         return ProjectComponentListResponse.builder()

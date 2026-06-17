@@ -1406,7 +1406,7 @@ components:
       example:
         projectKey: SOMEPROJECT
         componentId: any-component-id-from-backend
-        caller: some-person@email.com
+        caller: some-person@example.com
         catalogItemSlug: some_technology-name
         createdAt: 1707043200000
         updatedAt: 1707043200000
@@ -1423,7 +1423,7 @@ components:
           type: string
         caller:
           description: The email of who provisioned the component.
-          example: some-person@email.com
+          example: some-person@example.com
           type: string
         catalogItemSlug:
           description: The provisioned catalog item slug.
@@ -1484,13 +1484,13 @@ components:
         data:
           - projectKey: SOMEPROJECT
             componentId: any-component-id-from-backend
-            caller: some-person@email.com
+            caller: some-person@example.com
             catalogItemSlug: some_technology-name
             createdAt: 1707043200000
             updatedAt: 1707043200000
           - projectKey: ANOTHERPROJECT
             componentId: another-component-id-from-backend
-            caller: some-person2@email.com
+            caller: some-person2@example.com
             catalogItemSlug: another_technology-name
             createdAt: 1707043200001
             updatedAt: 1707043200002
