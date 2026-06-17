@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @AllArgsConstructor
@@ -114,12 +113,7 @@ public class ProjectComponentsFacade {
             }
             List<ProjectComponent> sortedComponents = projectComponents
                     .stream()
-                    // The overall sorting order is from creation date ASC
-                    // If not createdAt/updatedAt are present, we treat the item
-                    // as one of the oldest, without further comparing
-                    .sorted(Comparator.comparing((ProjectComponent c) -> !hasNoDates(c))
-                                .thenComparing(c -> hasNoDates(c) ? 0 : extractTimestamp(c))
-                    )
+                    .sorted(this::compareProjectComponent)
                     .toList();
 
             for (ProjectComponent component : sortedComponents) {
@@ -147,19 +141,6 @@ public class ProjectComponentsFacade {
                 .build();
     }
 
-    private boolean hasNoDates(ProjectComponent c) {
-        return (c.getCreatedAt() == null || c.getCreatedAt().isBlank())
-                && (c.getUpdatedAt() == null || c.getUpdatedAt().isBlank());
-    }
-
-    private Long extractTimestamp(ProjectComponent c) {
-        if (c.getCreatedAt() != null && !c.getCreatedAt().isBlank()) {
-            return Long.parseLong(c.getCreatedAt());
-        }
-
-        return Long.parseLong(c.getUpdatedAt());
-    }
-
     private boolean notValid(ProjectComponents projectComponents, String projectKey, String accessToken) {
         return (projectComponents == null || projectComponents.getComponents() == null ||
                 projectComponents.getComponents().isEmpty() || StringUtils.isBlank(accessToken) ||
@@ -180,4 +161,32 @@ public class ProjectComponentsFacade {
             throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
         }
     }
+
+    private boolean hasNoDates(ProjectComponent c) {
+        return (c.getCreatedAt() == null || c.getCreatedAt().isBlank())
+                && (c.getUpdatedAt() == null || c.getUpdatedAt().isBlank());
+    }
+
+    private Long extractTimestamp(ProjectComponent c) {
+        if (c.getCreatedAt() != null && !c.getCreatedAt().isBlank()) {
+            return Long.parseLong(c.getCreatedAt());
+        }
+
+        return Long.parseLong(c.getUpdatedAt());
+    }
+
+    private int compareProjectComponent(ProjectComponent a, ProjectComponent b) {
+        // The overall sorting order is from creation date ASC
+        // If not createdAt/updatedAt are present, we treat the item
+        // as one of the oldest, without further comparing
+
+        int cmp = Boolean.compare(!hasNoDates(a), !hasNoDates(b));
+        if (cmp != 0) return cmp;
+
+        long t1 = hasNoDates(a) ? 0 : extractTimestamp(a);
+        long t2 = hasNoDates(b) ? 0 : extractTimestamp(b);
+
+        return Long.compare(t1, t2);
+    }
+
 }
