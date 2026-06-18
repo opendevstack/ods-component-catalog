@@ -24,9 +24,10 @@ import java.util.List;
 
 import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.asCatalogItemUserAction;
 import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.overrideNullFields;
-import static org.opendevstack.component_catalog.server.mappers.MapperUtils.nullish;
+import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isAbsent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNull;
 
 class EntitiesMapperTest {
 
@@ -172,18 +173,18 @@ class EntitiesMapperTest {
         assertEquals("dest-type", result.getType());
         assertEquals(false, result.getRequired());
 
-        assertFalse(nullish(result.getDefaultValue()));
+        assertFalse(isAbsent(result.getDefaultValue()));
         assertEquals("dest-default", result.getDefaultValue().get());
 
         assertEquals("src-label", result.getLabel());
 
-        assertFalse(nullish(result.getPlaceholder()));
+        assertFalse(isAbsent(result.getPlaceholder()));
         assertEquals("dest-placeholder", result.getPlaceholder().get());
 
-        assertFalse(nullish(result.getHint()));
+        assertFalse(isAbsent(result.getHint()));
         assertEquals("src-hint", result.getHint().get());
 
-        assertFalse(nullish(result.getSendOnDeletion()));
+        assertFalse(isAbsent(result.getSendOnDeletion()));
 
         assertTrue(result.getVisible());
     }
@@ -351,6 +352,83 @@ class EntitiesMapperTest {
         .isEqualTo(false);
         assertThat(userActionEntityRestrictions.getProjects()).isEqualTo(new String[]{"ProjectA", "ProjectB"});
         assertThat(userActionEntityRestrictions.getLocations()).isEqualTo(new String[]{"LocationA", "LocationB"});
+    }
+
+    @Test
+    void givenPresentNullJsonNullable_whenOverrideAbsentFields_thenDoesntOverrideValue() {
+        // given
+        var src = CatalogItemUserActionParameter.builder()
+                .defaultValue(JsonNullable.of(null))
+                .build();
+
+        var dest = CatalogItemUserActionParameter.builder()
+                .defaultValue(JsonNullable.of("dest-default"))
+                .build();
+
+        // when
+        var result = EntitiesMapper.overrideNullFields(src, dest);
+
+        // then
+        assertFalse(isAbsent(result.getDefaultValue()));
+        assertFalse(isNull(result.getDefaultValue()));
+        assertNotNull(result.getDefaultValue().get());
+    }
+
+    @Test
+    void givenUndefinedJsonNullable_whenOverrideAbsentFields_thenDoesntOverrideValue() {
+        // given
+        var src = CatalogItemUserActionParameter.builder()
+                .defaultValue(JsonNullable.undefined())
+                .build();
+
+        var dest = CatalogItemUserActionParameter.builder()
+                .defaultValue(JsonNullable.of("dest-default"))
+                .build();
+
+        // when
+        var result = EntitiesMapper.overrideNullFields(src, dest);
+
+        // then
+        assertFalse(isAbsent(result.getDefaultValue()));
+        assertFalse(isNull(result.getDefaultValue()));
+        assertEquals("dest-default", result.getDefaultValue().get());
+    }
+
+    @Test
+    void givenPresentNullList_whenOverrideAbsentFields_thenDoesntOverrideList() {
+        // given
+        var src = CatalogItemUserActionParameter.builder()
+                .options(JsonNullable.of(null))
+                .build();
+
+        var dest = CatalogItemUserActionParameter.builder()
+                .options(JsonNullable.of(List.of("opt1")))
+                .build();
+
+        // when
+        var result = EntitiesMapper.overrideNullFields(src, dest);
+
+        // then
+        assertFalse(isAbsent(result.getOptions()));
+        assertNotNull(result.getOptions().get());
+    }
+
+    @Test
+    void givenUndefinedList_whenOverrideAbsentFields_thenKeepDestinationList() {
+        // given
+        var src = CatalogItemUserActionParameter.builder()
+                .options(JsonNullable.undefined())
+                .build();
+
+        var dest = CatalogItemUserActionParameter.builder()
+                .options(JsonNullable.of(List.of("opt1")))
+                .build();
+
+        // when
+        var result = EntitiesMapper.overrideNullFields(src, dest);
+
+        // then
+        assertEquals(List.of("opt1"), result.getOptions().get());
     }
 
     static void assertCatalogItemUserActionParameterMapping(UserActionEntityParameter from,
