@@ -437,7 +437,7 @@ class CatalogApiAdapterTest {
     }
 
     @Test
-    void givenACatalogItem_AndItemContainsParameters_AndOneParameterIsCustomizable_andCustomUserActionDoesNotDefineIt_whenFinalizeUserActions_thenCustomParameterAppers() {
+    void givenACatalogItem_AndItemContainsParameters_AndOneParameterIsCustomizable_andCustomUserActionDoesNotDefineIt_whenFinalizeUserActions_thenCustomParameterAppears() {
         // given
         var customUserActionProvision = generateCustomUserActions();
         var defaultUserActionProvision = generateDefaultUserActionEntity();

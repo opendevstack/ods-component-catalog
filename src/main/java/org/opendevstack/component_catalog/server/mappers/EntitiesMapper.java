@@ -20,7 +20,8 @@ import java.util.stream.Stream;
 
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 
-import static org.opendevstack.component_catalog.server.mappers.MapperUtils.nullish;
+import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isAbsent;
+import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNull;
 import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.nullableIdEncode;
 
 @Component
@@ -308,16 +309,16 @@ public class EntitiesMapper {
                 .name(overrideNullFields(src.getName(), dest.getName()))
                 .type(overrideNullFields(src.getType(), dest.getType()))
                 .required(overrideNullFields(src.getRequired(), dest.getRequired()))
-                .defaultValue(overrideNullFields(src.getDefaultValue(), dest.getDefaultValue()))
-                .defaultValues(overrideNullFields(src.getDefaultValues(), dest.getDefaultValues()))
-                .locations(overrideNullFields(src.getLocations(), dest.getLocations()))
-                .options(overrideNullFields(src.getOptions(), dest.getOptions()))
+                .defaultValue(overrideAbsentFields(src.getDefaultValue(), dest.getDefaultValue()))
+                .defaultValues(overrideAbsentFields(src.getDefaultValues(), dest.getDefaultValues()))
+                .locations(overrideAbsentFields(src.getLocations(), dest.getLocations()))
+                .options(overrideAbsentFields(src.getOptions(), dest.getOptions()))
                 .label(overrideNullFields(src.getLabel(), dest.getLabel()))
-                .placeholder(overrideNullFields(src.getPlaceholder(), dest.getPlaceholder()))
-                .hint(overrideNullFields(src.getHint(), dest.getHint()))
-                .sendOnDeletion(overrideNullFields(src.getSendOnDeletion(), dest.getSendOnDeletion()))
+                .placeholder(overrideAbsentFields(src.getPlaceholder(), dest.getPlaceholder()))
+                .hint(overrideAbsentFields(src.getHint(), dest.getHint()))
+                .sendOnDeletion(overrideAbsentFields(src.getSendOnDeletion(), dest.getSendOnDeletion()))
                 .visible(overrideNullFields(src.getVisible(), dest.getVisible()))
-                .validations(overrideNullFields(src.getValidations(), dest.getValidations()))
+                .validations(overrideAbsentFields(src.getValidations(), dest.getValidations()))
                 .build();
     }
 
@@ -340,7 +341,7 @@ public class EntitiesMapper {
                 .build();
     }
 
-    public static <T> T overrideNullFields(T baseValue, T userConfiguredValue) {
+    private static <T> T overrideNullFields(T baseValue, T userConfiguredValue) {
         if (userConfiguredValue == null) {
             return baseValue;
         } else {
@@ -348,8 +349,16 @@ public class EntitiesMapper {
         }
     }
 
-    public static <T> JsonNullable<T> overrideNullFields(JsonNullable<T> baseValue, JsonNullable<T> userConfiguredValue) {
-        if (nullish(userConfiguredValue)) {
+    private static <T> JsonNullable<T> overrideNullFields(JsonNullable<T> baseValue, JsonNullable<T> userConfiguredValue) {
+        if (isNull(userConfiguredValue) || isAbsent(userConfiguredValue)) {
+            return baseValue;
+        } else {
+            return userConfiguredValue;
+        }
+    }
+
+    private static <T> JsonNullable<T> overrideAbsentFields(JsonNullable<T> baseValue, JsonNullable<T> userConfiguredValue) {
+        if (isAbsent(userConfiguredValue)) {
             return baseValue;
         } else {
             return userConfiguredValue;

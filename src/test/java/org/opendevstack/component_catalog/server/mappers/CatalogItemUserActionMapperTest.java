@@ -72,30 +72,4 @@ class CatalogItemUserActionMapperTest {
         }
     }
 
-    @Test
-    void overrideNullFields_forCatalogItemUserActionEntities() {
-        // given
-        var customParameter = CatalogItemUserActionParameterMother.of("custom parameter name", "custom parameter type");
-
-        CatalogItemUserAction baseCatalogItemUserAction = CatalogItemUserActionMother.of();
-        CatalogItemUserAction customCatalogItemUserAction = CatalogItemUserAction.builder()
-                .id("TEST_PROVISION")
-                .displayName("Custom TEST Provision")
-                .parameters(List.of(customParameter))
-                .build();
-
-        // when
-        var mergedCatalogItemUserAction = catalogItemUserActionMapper.overrideNullFields(baseCatalogItemUserAction,
-                customCatalogItemUserAction);
-
-        // then
-        assertThat(mergedCatalogItemUserAction).isNotNull();
-        assertThat(mergedCatalogItemUserAction.getId()).isEqualTo("TEST_PROVISION");
-        assertThat(mergedCatalogItemUserAction.getDisplayName()).isEqualTo("Custom TEST Provision");
-        assertThat(mergedCatalogItemUserAction.getUrl()).isEqualTo(JsonNullable.of("http://example.com/action1"));
-        assertThat(mergedCatalogItemUserAction.getTriggerMessage()).isEqualTo(JsonNullable.of("Trigger Action 1"));
-        assertThat(mergedCatalogItemUserAction.getParameters()).hasSize(1);
-        assertThat(mergedCatalogItemUserAction.getParameters()).contains(customParameter);
-    }
-
 }

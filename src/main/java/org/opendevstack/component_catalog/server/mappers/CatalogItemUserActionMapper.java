@@ -115,23 +115,6 @@ public class CatalogItemUserActionMapper {
                 .build();
     }
 
-    public CatalogItemUserAction overrideNullFields(CatalogItemUserAction baseValues, CatalogItemUserAction userConfiguredValues) {
-        log.debug("Overriding null/empty fields from CatalogItemUserAction: {} from default {}", baseValues, userConfiguredValues);
-
-        // This was calculated above, and it should always be correct, but it is meaninful incorrect, as methods should have no dependencies.
-        // We need to fix this, and apply the merge in here somehow.
-        var parameters = userConfiguredValues.getParameters();
-        return CatalogItemUserAction.builder()
-                .id(EntitiesMapper.overrideNullFields(baseValues.getId(), userConfiguredValues.getId()))
-                .displayName(EntitiesMapper.overrideNullFields(baseValues.getDisplayName(),
-                        userConfiguredValues.getDisplayName()))
-                .url(EntitiesMapper.overrideNullFields(baseValues.getUrl(), userConfiguredValues.getUrl()))
-                .triggerMessage(EntitiesMapper.overrideNullFields(baseValues.getTriggerMessage(),
-                        userConfiguredValues.getTriggerMessage()))
-                .parameters(parameters)
-                .build();
-    }
-
     public Pair<Boolean, String> evaluateRestrictions(UserActionEntityRestrictions restrictions,
                                                       List<String> clusters,
                                                       List<CatalogItemUserActionParameter> parameters,
