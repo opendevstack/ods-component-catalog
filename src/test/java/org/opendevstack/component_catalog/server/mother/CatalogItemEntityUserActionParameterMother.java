@@ -26,7 +26,6 @@ public class CatalogItemEntityUserActionParameterMother {
                 .label(label)
                 .placeholder(placeholder)
                 .hint(hint)
-                .customizable(customizable)
                 .sendOnDeletion(sendOnDeletion)
                 .visible(visible)
                 .build();
