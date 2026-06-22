@@ -60,7 +60,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
-        var response = catalogItemsApiController.getCatalogItems(catalogId, SortOrder.ASC);
+        var response = catalogItemsApiController.getCatalogItems(SortOrder.ASC, catalogId);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -75,7 +75,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItems(invalidCatalogId, SortOrder.ASC))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItems(SortOrder.ASC, invalidCatalogId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid catalog id");
     }
@@ -85,7 +85,7 @@ class CatalogItemsApiControllerTest {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
 
         // When
-        var response = catalogItemsApiController.getCatalogItems(catalogId, SortOrder.ASC);
+        var response = catalogItemsApiController.getCatalogItems(SortOrder.ASC, catalogId);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

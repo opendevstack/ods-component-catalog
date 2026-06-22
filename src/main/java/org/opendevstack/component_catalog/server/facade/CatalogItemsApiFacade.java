@@ -5,14 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
+import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
-import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
-import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
-import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.*;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
@@ -21,10 +19,7 @@ import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdEx
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.opendevstack.component_catalog.util.FunctionalUtils.fieldSorter;
 
@@ -39,6 +34,7 @@ public class CatalogItemsApiFacade {
     private final CatalogEntitiesService catalogEntitiesService;
     private final UserActionsEntitiesService userActionsEntitiesService;
     private final CatalogItemBySlugService catalogItemBySlugService;
+    private final CatalogsCollectionService catalogsCollectionService;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
@@ -78,6 +74,30 @@ public class CatalogItemsApiFacade {
     }
 
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
+            throws InvalidIdException, InvalidCatalogEntityException {
+        if (catalogRequestParams.getCatalogId() != null) {
+            return fetchCatalogItemByCatalog(catalogRequestParams);
+        }
+
+        var catalogsCollection = catalogsCollectionService.getCatalogsCollection().orElseThrow(() -> new InvalidCatalogEntityException("No catalogs were found."));
+        var allCatalogsIds = catalogApiAdapter.asCatalogDescriptors(catalogsCollection).stream()
+                .map(CatalogDescriptor::getId)
+                .toList();
+
+        List<CatalogItem> allCatalogItems = new ArrayList<>();
+        for (String catalogId : allCatalogsIds) {
+            allCatalogItems.addAll(fetchCatalogItemByCatalog(
+                    CatalogRequestParams.builder()
+                        .catalogId(catalogId)
+                        .sortOrder(catalogRequestParams.getSortOrder())
+                        .build())
+            );
+        }
+
+        return allCatalogItems;
+    }
+
+    private List<CatalogItem> fetchCatalogItemByCatalog(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         var principalPermissions = currentPrincipalCatalogPermissions(catalogRequestParams.getCatalogId());
         var itemsEntitiesCtxs = catalogEntitiesService.getCatalogItemsEntities(catalogRequestParams.getCatalogId());
