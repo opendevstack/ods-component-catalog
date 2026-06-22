@@ -40,6 +40,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
             var catalogItemRequestParams = CatalogRequestParams.builder()
                     .catalogId(catalogId)
                     .sortOrder(sortByTitle)
+                    .accessToken(authenticationFacade.getAccessToken())
                     .build();
 
             var items = catalogItemsApiFacade.fetchCatalogItems(catalogItemRequestParams);

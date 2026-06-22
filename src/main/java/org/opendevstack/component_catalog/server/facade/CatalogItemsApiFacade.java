@@ -3,8 +3,10 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.OdsApiServerServiceProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
@@ -17,6 +19,7 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
+import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -35,6 +38,7 @@ public class CatalogItemsApiFacade {
     private final UserActionsEntitiesService userActionsEntitiesService;
     private final CatalogItemBySlugService catalogItemBySlugService;
     private final CatalogsCollectionService catalogsCollectionService;
+    private final OdsApiServerServiceProps odsApiServerServiceProps;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
@@ -79,6 +83,8 @@ public class CatalogItemsApiFacade {
             return fetchCatalogItemByCatalog(catalogRequestParams);
         }
 
+        validateTokenFromOds(catalogRequestParams.getAccessToken());
+
         var catalogsCollection = catalogsCollectionService.getCatalogsCollection().orElseThrow(() -> new InvalidCatalogEntityException("No catalogs were found."));
         var allCatalogsIds = catalogApiAdapter.asCatalogDescriptors(catalogsCollection).stream()
                 .map(CatalogDescriptor::getId)
@@ -95,6 +101,13 @@ public class CatalogItemsApiFacade {
         }
 
         return allCatalogItems;
+    }
+
+    private void validateTokenFromOds(String accessToken) throws ForbiddenException {
+        var oid = JwtUtils.extractClaim(accessToken, "oid");
+        if (!oid.orElse("").equals(odsApiServerServiceProps.getOid())) {
+            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
+        }
     }
 
     private List<CatalogItem> fetchCatalogItemByCatalog(CatalogRequestParams catalogRequestParams)

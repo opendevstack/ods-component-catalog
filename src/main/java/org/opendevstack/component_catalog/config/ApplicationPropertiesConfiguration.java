@@ -34,6 +34,12 @@ public class ApplicationPropertiesConfiguration {
         return ExternalServiceProps.builder().build();
     }
 
+    @Bean("odsApiServerServiceConfig")
+    @ConfigurationProperties(prefix = "component-catalog.ods-api-service.service")
+    public OdsApiServerServiceProps odsApiServerServiceProps() {
+        return OdsApiServerServiceProps.builder().build();
+    }
+
     @Bean("catalogProjectComponentsGroupsRestrictionConfig")
     @ConfigurationProperties(prefix = "catalog.project-components.groups-restriction")
     public CatalogProjectComponentsGroupsRestrictionProps catalogProjectComponentsGroupsRestrictionConfig() {
@@ -76,6 +82,12 @@ public class ApplicationPropertiesConfiguration {
         private DataSize maxSize;
         @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
         private Duration evictionInterval;
+    }
+
+    @Builder // useful for unit testing
+    @Data
+    public static class OdsApiServerServiceProps {
+        private String oid;
     }
 
     @Builder
