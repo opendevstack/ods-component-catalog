@@ -15,7 +15,6 @@ public class CatalogItemEntityUserActionParameterMother {
                                                                String label,
                                                                String placeholder,
                                                                String hint,
-                                                               boolean customizable,
                                                                boolean sendOnDeletion,
                                                                boolean visible) {
         return CatalogItemEntityUserActionParameter.builder()
@@ -26,7 +25,6 @@ public class CatalogItemEntityUserActionParameterMother {
                 .label(label)
                 .placeholder(placeholder)
                 .hint(hint)
-                .customizable(customizable)
                 .sendOnDeletion(sendOnDeletion)
                 .visible(visible)
                 .build();
@@ -43,7 +41,6 @@ public class CatalogItemEntityUserActionParameterMother {
                         "Simple placeholder",
                         "Wait for the hint",
                         false,
-                        false,
                         false),
                 of(
                         "new_parameter",
@@ -53,7 +50,6 @@ public class CatalogItemEntityUserActionParameterMother {
                         "The project key.",
                         "Another placeholder",
                         null,
-                        true,
                         true,
                         true)
         };
