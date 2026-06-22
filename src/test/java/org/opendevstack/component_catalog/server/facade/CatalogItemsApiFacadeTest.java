@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.OdsApiServerServiceProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -22,6 +23,7 @@ import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.util.JwtUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +57,9 @@ class CatalogItemsApiFacadeTest {
 
     @Mock
     private CatalogsCollectionService catalogsCollectionService;
+
+    @Mock
+    private OdsApiServerServiceProps odsApiServerServiceProps;
 
     @Spy
     @InjectMocks
@@ -403,83 +408,99 @@ class CatalogItemsApiFacadeTest {
 
     @Test
     void fetchCatalogItems_whenCatalogsCollectionIsEmpty_throwsInvalidCatalogEntityException() throws Exception {
-        // given
-        var params = CatalogRequestParams.builder()
-                .catalogId(null)
-                .sortOrder(SortOrder.ASC)
-                .build();
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
+                    .thenReturn(Optional.of("expectedOid"));
 
-        when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.empty());
+            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
 
-        // when / then
-        assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
-                .isInstanceOf(InvalidCatalogEntityException.class);
+            var params = CatalogRequestParams.builder()
+                    .catalogId(null)
+                    .accessToken("validToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        verify(catalogsCollectionService).getCatalogsCollection();
+            when(catalogsCollectionService.getCatalogsCollection()).thenReturn(Optional.empty());
+
+            // when / then
+            assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
+                    .isInstanceOf(InvalidCatalogEntityException.class);
+
+            verify(catalogsCollectionService).getCatalogsCollection();
+        }
     }
 
     @Test
     void fetchCatalogItems_whenNoCatalogIdIsProvidedWithinTheRequestParams_thenFetchesAllCatalogItems() throws Exception {
-        // given
-        var params = CatalogRequestParams.builder()
-                .catalogId(null)
-                .sortOrder(SortOrder.ASC)
-                .build();
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
+                    .thenReturn(Optional.of("expectedOid"));
 
-        var catalogsCollection = mock(CatalogsCollectionsEntity.class);
-        when(catalogsCollectionService.getCatalogsCollection())
-                .thenReturn(Optional.of(catalogsCollection));
+            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
 
-        var descriptor1 = mock(CatalogDescriptor.class);
-        var descriptor2 = mock(CatalogDescriptor.class);
+            var params = CatalogRequestParams.builder()
+                    .catalogId(null)
+                    .accessToken("validToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        when(descriptor1.getId()).thenReturn("catalog-1");
-        when(descriptor2.getId()).thenReturn("catalog-2");
+            var catalogsCollection = mock(CatalogsCollectionsEntity.class);
+            when(catalogsCollectionService.getCatalogsCollection())
+                    .thenReturn(Optional.of(catalogsCollection));
 
-        when(catalogApiAdapter.asCatalogDescriptors(catalogsCollection))
-                .thenReturn(List.of(descriptor1, descriptor2));
+            var descriptor1 = mock(CatalogDescriptor.class);
+            var descriptor2 = mock(CatalogDescriptor.class);
 
-        var ctx1 = mock(CatalogItemEntityContext.class);
-        var ctx2 = mock(CatalogItemEntityContext.class);
+            when(descriptor1.getId()).thenReturn("catalog-1");
+            when(descriptor2.getId()).thenReturn("catalog-2");
 
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-1"))
-                .thenReturn(List.of(ctx1));
-        when(catalogEntitiesService.getCatalogItemsEntities("catalog-2"))
-                .thenReturn(List.of(ctx2));
+            when(catalogApiAdapter.asCatalogDescriptors(catalogsCollection))
+                    .thenReturn(List.of(descriptor1, descriptor2));
 
-        when(userActionsEntitiesService.getDefaultUserActionsEntity())
-                .thenReturn(mock(UserActionsEntity.class));
+            var ctx1 = mock(CatalogItemEntityContext.class);
+            var ctx2 = mock(CatalogItemEntityContext.class);
 
-        doReturn(Set.of()).when(catalogItemsApiFacade)
-                .currentPrincipalCatalogPermissions(anyString());
+            when(catalogEntitiesService.getCatalogItemsEntities("catalog-1"))
+                    .thenReturn(List.of(ctx1));
+            when(catalogEntitiesService.getCatalogItemsEntities("catalog-2"))
+                    .thenReturn(List.of(ctx2));
 
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByContributingFileExists(anyString());
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByProject(any(), any());
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
 
-        CatalogItem item1 = new CatalogItem();
-        item1.setId("item-1");
+            doReturn(Set.of()).when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(anyString());
 
-        CatalogItem item2 = new CatalogItem();
-        item2.setId("item-2");
+            doReturn(true).when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(anyString());
+            doReturn(true).when(catalogItemsApiFacade)
+                    .filterByProject(any(), any());
 
-        doAnswer(inv -> {
-            CatalogRequestParams p = inv.getArgument(0);
-            return "catalog-1".equals(p.getCatalogId()) ? item1 : item2;
-        }).when(catalogItemsApiFacade).asCatalogItem(any());
+            CatalogItem item1 = new CatalogItem();
+            item1.setId("item-1");
 
-        // when
-        var result = catalogItemsApiFacade.fetchCatalogItems(params);
+            CatalogItem item2 = new CatalogItem();
+            item2.setId("item-2");
 
-        // then
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(CatalogItem::getId)
-                .containsExactlyInAnyOrder("item-1", "item-2");
+            doAnswer(inv -> {
+                CatalogRequestParams p = inv.getArgument(0);
+                return "catalog-1".equals(p.getCatalogId()) ? item1 : item2;
+            }).when(catalogItemsApiFacade).asCatalogItem(any());
 
-        verify(catalogsCollectionService).getCatalogsCollection();
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-1");
-        verify(catalogEntitiesService).getCatalogItemsEntities("catalog-2");
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(CatalogItem::getId)
+                    .containsExactlyInAnyOrder("item-1", "item-2");
+
+            verify(catalogsCollectionService).getCatalogsCollection();
+            verify(catalogEntitiesService).getCatalogItemsEntities("catalog-1");
+            verify(catalogEntitiesService).getCatalogItemsEntities("catalog-2");
+        }
     }
 
     @Test
@@ -522,6 +543,58 @@ class CatalogItemsApiFacadeTest {
 
         verify(catalogsCollectionService, never()).getCatalogsCollection();
     }
+
+    @Test
+    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() throws Exception {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() -> JwtUtils.extractClaim("badToken", "oid"))
+                    .thenReturn(Optional.of("wrongOid"));
+
+            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+
+            var params = CatalogRequestParams.builder()
+                    .catalogId(null)
+                    .accessToken("badToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            // when / then
+            assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
+                    .isInstanceOf(ForbiddenException.class);
+        }
+    }
+
+    @Test
+    void fetchCatalogItems_whenCatalogIdProvided_doesNotValidateToken() throws Exception {
+        // given
+        var catalogId = "catalog-1";
+
+        var params = CatalogRequestParams.builder()
+                .catalogId(catalogId)
+                .accessToken(null)
+                .sortOrder(SortOrder.ASC)
+                .build();
+
+        when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                .thenReturn(List.of());
+
+        when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                .thenReturn(mock(UserActionsEntity.class));
+
+        doReturn(Set.of()).when(catalogItemsApiFacade)
+                .currentPrincipalCatalogPermissions(catalogId);
+
+        doReturn(true).when(catalogItemsApiFacade)
+                .filterByContributingFileExists(catalogId);
+
+        // when
+        catalogItemsApiFacade.fetchCatalogItems(params);
+
+        // then
+        // no validation is performed upon the access token
+    }
+
 
     @Test
     void fetchCatalogItem_whenEntityFoundAndPassesFilters_returnsOk()
