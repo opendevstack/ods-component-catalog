@@ -101,7 +101,9 @@ public class ApplicationPropertiesConfiguration {
     public static class OdsApiServerServiceProps {
         private String oid;
     }
-    
+
+    @Builder
+    @Data
     public static class ProjectsInfoServiceCacheProps {
         public static final String CACHE_NAME = "projects-info-service-cache";
 
