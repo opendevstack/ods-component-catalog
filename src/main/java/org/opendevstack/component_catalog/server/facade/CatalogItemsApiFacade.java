@@ -80,7 +80,7 @@ public class CatalogItemsApiFacade {
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         if (catalogRequestParams.getCatalogId() != null) {
-            return fetchCatalogItemByCatalog(catalogRequestParams);
+            return fetchCatalogItemsByCatalogId(catalogRequestParams);
         }
 
         validateTokenFromOds(catalogRequestParams.getAccessToken());
@@ -92,7 +92,7 @@ public class CatalogItemsApiFacade {
 
         List<CatalogItem> allCatalogItems = new ArrayList<>();
         for (String catalogId : allCatalogsIds) {
-            allCatalogItems.addAll(fetchCatalogItemByCatalog(
+            allCatalogItems.addAll(fetchCatalogItemsByCatalogId(
                     CatalogRequestParams.builder()
                         .catalogId(catalogId)
                         .sortOrder(catalogRequestParams.getSortOrder())
@@ -110,7 +110,7 @@ public class CatalogItemsApiFacade {
         }
     }
 
-    private List<CatalogItem> fetchCatalogItemByCatalog(CatalogRequestParams catalogRequestParams)
+    private List<CatalogItem> fetchCatalogItemsByCatalogId(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         var principalPermissions = currentPrincipalCatalogPermissions(catalogRequestParams.getCatalogId());
         var itemsEntitiesCtxs = catalogEntitiesService.getCatalogItemsEntities(catalogRequestParams.getCatalogId());
