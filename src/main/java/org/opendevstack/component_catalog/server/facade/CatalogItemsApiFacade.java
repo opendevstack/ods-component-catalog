@@ -150,17 +150,25 @@ public class CatalogItemsApiFacade {
     private Integer calculateComponentCount(CatalogRequestParams catalogRequestParams) {
         var projectComponentsList = provisionerActionsService.getAllProjectComponents();
 
+        log.debug("Calculating component count for catalog item {} and projectComponents: {}", catalogRequestParams.getCatalogItemEntityContext().getId(), projectComponentsList);
+
         var componentCount = 0;
 
         for (ProjectComponents projectComponents : projectComponentsList) {
-            var localComponentCount = projectComponents.getComponents().values().stream()
-                    .filter(component -> component.getCatalogItemId().equals(catalogRequestParams.getCatalogItemId()))
-                    .count();
-            
-            componentCount += localComponentCount;
+            var catalogItemId = catalogRequestParams.getCatalogItemEntityContext().getId();
+
+            for (var component : projectComponents.getComponents().values()) {
+                log.debug("Checking if Component {} with catalogItemId {} relates to catalog item {}", component, component.getCatalogItemId(), catalogItemId);
+
+                if (component.getCatalogItemId() != null && component.getCatalogItemId().equals(catalogItemId)) {
+                    log.debug("Component {} relates to catalog item {}", component, catalogItemId);
+
+                    componentCount++;
+                }
+            }
         }
 
-        log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemId());
+        log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemEntityContext().getId());
 
         return (int) componentCount;
     }

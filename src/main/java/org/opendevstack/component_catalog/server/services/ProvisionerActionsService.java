@@ -26,6 +26,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -203,11 +204,25 @@ public class ProvisionerActionsService {
                 .at(provisionerActionsConfiguration.getBranchName())
                 .subPath(provisionerActionsConfiguration.getProjectsPath())
                 .build();
-        return bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+
+        log.debug("Listing all project JSONs from path: {}", bitbucketProjectsDirectoryPathAt);
+        var projectJsonFiles = bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+
+        log.debug("Project JSON files retrieved: {}", projectJsonFiles);
+        return projectJsonFiles;
     }
 
     public List<ProjectComponents> getAllProjectComponents() {
-        return Collections.emptyList();
+        log.debug("Retrieving all project components");
+        var projectComponentsProjectKeys = getAllProjectComponentsProjectKeys();
+
+        var projectComponentsList = projectComponentsProjectKeys.stream()
+                .map(this::getProjectComponents)
+                .toList();
+
+        log.debug("Project components retrieved: {}", projectComponentsList);
+
+        return projectComponentsList;
     }
 
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
@@ -244,15 +259,16 @@ public class ProvisionerActionsService {
                 .build();
     }
 
-    private List<BitbucketPathAt> getAllProjectComponentsPathAt() {
-        var basePath = bitbucketService.pathAtBuilder()
-                .projectKey(provisionerActionsConfiguration.getProjectKey())
-                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
-                .subPath("/")
-                .at(provisionerActionsConfiguration.getBranchName())
-                .build();
+    private List<String> getAllProjectComponentsProjectKeys() {
+        var projectComponentFiles = listAllProjectsJsons();
 
-        return bitbucketService.getAllFilesInPath(basePath);
+        var projectKeys = projectComponentFiles.stream()
+                .map(fileName -> fileName.split(".json")[0])
+                .toList();
+
+        log.debug("Project keys found: {}", projectKeys);
+
+        return projectKeys;
     }
 
 }
