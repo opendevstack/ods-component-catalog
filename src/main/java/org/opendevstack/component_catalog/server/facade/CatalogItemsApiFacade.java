@@ -12,6 +12,7 @@ import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
@@ -40,41 +41,24 @@ public class CatalogItemsApiFacade {
     private final UserActionsEntitiesService userActionsEntitiesService;
     private final CatalogItemBySlugService catalogItemBySlugService;
 
+    private final ProvisionerActionsService provisionerActionsService;
+
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+        var componentCount = calculateComponentCount(catalogRequestParams);
+
+        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups);
-    }
+        var componentCount = calculateComponentCount(catalogRequestParams);
 
-    private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
-        if (catalogRequestParams.getAccessToken() == null) {
-            return Collections.emptyList();
-        } else {
-            return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
-        }
-    }
-
-    private List<String> getClusters(CatalogRequestParams catalogRequestParams) {
-        if (catalogRequestParams.getAccessToken() == null) {
-            return Collections.emptyList();
-        } else {
-            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
-            var clusters = Optional.ofNullable(projectInfo)
-                    .map(ProjectInfo::getClusters)
-                    .orElse(Collections.emptyList());
-
-            log.debug("Clusters {} for the project {}", clusters, catalogRequestParams.getProjectKey());
-
-            return clusters;
-        }
+        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
@@ -159,6 +143,41 @@ public class CatalogItemsApiFacade {
         } catch (InvalidIdException e) {
             log.error("Unable to get permissions for: '{}' and resource with id: {}", principalName, id, e);
             return Set.of();
+        }
+    }
+
+    private Integer calculateComponentCount(CatalogRequestParams catalogRequestParams) {
+        var projectComponents = provisionerActionsService.getProjectComponents(catalogRequestParams.getProjectKey());
+
+        var componentCount = projectComponents.getComponents().values().stream()
+                .filter(component -> component.getCatalogItemId().equals(catalogRequestParams.getCatalogItemId()))
+                .count();
+
+        log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemId());
+
+        return (int) componentCount;
+    }
+
+    private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
+        if (catalogRequestParams.getAccessToken() == null) {
+            return Collections.emptyList();
+        } else {
+            return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
+        }
+    }
+
+    private List<String> getClusters(CatalogRequestParams catalogRequestParams) {
+        if (catalogRequestParams.getAccessToken() == null) {
+            return Collections.emptyList();
+        } else {
+            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
+            var clusters = Optional.ofNullable(projectInfo)
+                    .map(ProjectInfo::getClusters)
+                    .orElse(Collections.emptyList());
+
+            log.debug("Clusters {} for the project {}", clusters, catalogRequestParams.getProjectKey());
+
+            return clusters;
         }
     }
 }

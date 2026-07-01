@@ -17,6 +17,8 @@ import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
@@ -56,6 +58,9 @@ class CatalogItemsApiFacadeTest {
     private CatalogItemBySlugService catalogItemBySlugService;
 
     @Mock
+    private ProvisionerActionsService provisionerActionsService;
+
+    @Mock
     private AuthenticationFacade authenticationFacade;
 
     @Spy
@@ -86,9 +91,13 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        var componentCount = 5; // Example component count for testing
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -96,7 +105,7 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
-        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
@@ -126,7 +135,11 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        var componentCount = 5; // Example component count for testing
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -134,7 +147,7 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
-        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
@@ -159,7 +172,11 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        var componentCount = 5; // Example component count for testing
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -198,7 +215,11 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups)).thenReturn(expectedFilters);
+        var componentCount = 5; // Example component count for testing
+
+        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
@@ -207,7 +228,7 @@ class CatalogItemsApiFacadeTest {
         assertThat(result).isSameAs(expectedFilters);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
 
-        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
@@ -232,7 +253,12 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups)).thenReturn(expectedFilters);
+        var componentCount = 5; // Example component count for testing
+        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
@@ -242,7 +268,7 @@ class CatalogItemsApiFacadeTest {
         verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
         verify(projectsInfoService, times(0)).getProjectGroups(catalogItemRequestParams.getAccessToken());
 
-        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
     }
 
 

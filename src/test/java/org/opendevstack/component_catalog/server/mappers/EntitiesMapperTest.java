@@ -79,8 +79,9 @@ class EntitiesMapperTest {
         var catalogItemEntityCtx = CatalogItemEntityContextMother.of();
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
+        var componentCount = 5; // Example component count for testing
 
-        var catalogItem = entitiesMapper.asCatalogItem(catalogItemEntityCtx, clusters, userGroups, Strings.EMPTY);
+        var catalogItem = entitiesMapper.asCatalogItem(catalogItemEntityCtx, clusters, userGroups, Strings.EMPTY, componentCount);
 
         assertEquals("Appshell in Angular", catalogItem.getTitle());
         assertEquals(2, catalogItem.getUserActions().size());
