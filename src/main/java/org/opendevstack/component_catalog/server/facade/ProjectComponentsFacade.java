@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -100,44 +101,12 @@ public class ProjectComponentsFacade {
                 .sorted()
                 .toList();
 
-        int index = 0;
-        int fromIndex = page * size;
-        int toIndex = fromIndex + size;
-        Collection<ProjectComponent> projectComponents;
-        List<ProjectComponentMetrics> data = new ArrayList<>();
-        for (String projectKey : allProjectsJsons) {
-            projectComponents = provisionerActionsService.getProjectComponents(projectKey).getComponents().values();
-            if (index >= toIndex) {
-                index += projectComponents.size();
-                continue;
-            }
-            List<ProjectComponent> sortedComponents = projectComponents
-                    .stream()
-                    .sorted(this::compareProjectComponent)
-                    .toList();
-
-            for (ProjectComponent component : sortedComponents) {
-                if (index >= fromIndex && index < toIndex) {
-                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
-                    if (p.isPresent()) {
-                        // Badly formed project components shouldn't be returned
-                        // in the response
-                        data.add(p.orElseThrow(() -> new InvalidComponentStateException(
-                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
-                        ));
-                        index++;
-                    }
-                } else {
-                    index++;
-                }
-            }
-        }
-        int totalElements = index;
-        Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, paginationBaseUrl);
+        Pair<List<ProjectComponentMetrics>, Pagination> paginatedProjectComponentsMetrics =
+                buildProjectComponentMetricsPaginatedResults(allProjectsJsons, page, size, paginationBaseUrl);
 
         return ProjectComponentsMetrics.builder()
-                .data(data)
-                .pagination(pagination)
+                .data(paginatedProjectComponentsMetrics.getLeft())
+                .pagination(paginatedProjectComponentsMetrics.getRight())
                 .build();
     }
 
@@ -187,6 +156,46 @@ public class ProjectComponentsFacade {
         long t2 = hasNoDates(b) ? 0 : extractTimestamp(b);
 
         return Long.compare(t1, t2);
+    }
+
+    private Pair<List<ProjectComponentMetrics>, Pagination> buildProjectComponentMetricsPaginatedResults(
+            List<String> allProjectKeys, int page, int size, String paginationBaseUrl) {
+        int index = 0;
+        int fromIndex = page * size;
+        int toIndex = fromIndex + size;
+        Collection<ProjectComponent> projectComponents;
+        List<ProjectComponentMetrics> data = new ArrayList<>();
+        for (String projectKey : allProjectKeys) {
+            projectComponents = provisionerActionsService.getProjectComponents(projectKey).getComponents().values();
+            if (index >= toIndex) {
+                index += projectComponents.size();
+                continue;
+            }
+            List<ProjectComponent> sortedComponents = projectComponents
+                    .stream()
+                    .sorted(this::compareProjectComponent)
+                    .toList();
+
+            for (ProjectComponent component : sortedComponents) {
+                if (index >= fromIndex && index < toIndex) {
+                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
+                    if (p.isPresent()) {
+                        // Badly formed project components shouldn't be returned
+                        // in the response
+                        data.add(p.orElseThrow(() -> new InvalidComponentStateException(
+                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
+                        ));
+                        index++;
+                    }
+                } else {
+                    index++;
+                }
+            }
+        }
+        int totalElements = index;
+        Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, paginationBaseUrl);
+
+        return Pair.of(data, pagination);
     }
 
 }
