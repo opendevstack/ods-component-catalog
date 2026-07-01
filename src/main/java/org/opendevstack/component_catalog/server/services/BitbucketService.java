@@ -123,9 +123,9 @@ public class BitbucketService {
     public List<String> getFilenamesFromRemoteDirectory(BitbucketPathAt pathAt) {
         List<String> result = new ArrayList<>();
         BigDecimal start = BigDecimal.ZERO;
-        boolean last = false;
+        boolean keepFetching = true;
 
-        while (!last && start != null) {
+        while (keepFetching) {
             StreamFiles200Response response = repositoryApi.streamFiles1(
                     pathAt.getSubPath(),
                     pathAt.getProjectKey(),
@@ -134,16 +134,18 @@ public class BitbucketService {
                     start,
                     null
             );
-            if (response == null || response.getValues() == null) {
-                break;
+
+            if (response != null && response.getValues() != null) {
+                result.addAll(response.getValues().stream()
+                        .map(Object::toString)
+                        .toList());
+
+                start = Optional.ofNullable(response.getNextPageStart())
+                        .map(BigDecimal::valueOf)
+                        .orElse(null);
             }
 
-            result.addAll(response.getValues().stream()
-                    .map(Object::toString)
-                    .toList());
-
-            last = Boolean.TRUE.equals(response.getIsLastPage());
-            start = Optional.ofNullable(response.getNextPageStart()).map(BigDecimal::valueOf).orElse(null);
+            keepFetching = !result.isEmpty() && start != null;
         }
 
         return result;
