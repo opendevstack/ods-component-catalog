@@ -5,9 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.ProjectComponentsApi;
 import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
-import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentListResponse;
+import org.opendevstack.component_catalog.server.model.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -44,7 +42,7 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     }
 
     @Override
-    public ResponseEntity<ProjectComponentListResponse> getAllProjectComponents(Integer page, Integer size) {
+    public ResponseEntity<ProjectComponentsMetrics> getAllProjectComponents(Integer page, Integer size) {
         var accessToken = authenticationFacade.getAccessToken();
 
         String baseUrl = ServletUriComponentsBuilder

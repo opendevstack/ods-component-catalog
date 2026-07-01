@@ -10,7 +10,7 @@ import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentListResponse;
+import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -156,7 +156,7 @@ class ProjectComponentsControllerTest {
         Integer page = 0;
         Integer size = 20;
 
-        var responseBody = mock(ProjectComponentListResponse.class);
+        var responseBody = mock(ProjectComponentsMetrics.class);
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
 

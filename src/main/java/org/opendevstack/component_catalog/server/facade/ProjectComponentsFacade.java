@@ -7,7 +7,7 @@ import org.opendevstack.component_catalog.config.ApplicationPropertiesConfigurat
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
-import org.opendevstack.component_catalog.server.mappers.ProjectComponentListItemMapper;
+import org.opendevstack.component_catalog.server.mappers.ProjectComponentMetricsMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
 import org.opendevstack.component_catalog.server.model.*;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
@@ -34,7 +34,7 @@ public class ProjectComponentsFacade {
     private final ProjectsInfoService projectsInfoService;
     private final ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
     private final CatalogProjectComponentsGroupsRestrictionProps  catalogProjectComponentsGroupsRestrictionProps;
-    private final ProjectComponentListItemMapper projectComponentListItemMapper;
+    private final ProjectComponentMetricsMapper projectComponentListItemMapper;
 
     @Value("${devstack.marketplace-api.permitted-oids}")
     private final List<String> permittedOids;
@@ -91,7 +91,7 @@ public class ProjectComponentsFacade {
                 );
     }
 
-    public ProjectComponentListResponse getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
+    public ProjectComponentsMetrics getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
         validateTokenPermittedOids(accessToken);
         PaginationUtils.validatePagination(page, size, 100);
 
@@ -104,7 +104,7 @@ public class ProjectComponentsFacade {
         int fromIndex = page * size;
         int toIndex = fromIndex + size;
         Collection<ProjectComponent> projectComponents;
-        List<ProjectComponentListItem> data = new ArrayList<>();
+        List<ProjectComponentMetrics> data = new ArrayList<>();
         for (String projectKey : allProjectsJsons) {
             projectComponents = provisionerActionsService.getProjectComponents(projectKey).getComponents().values();
             if (index >= toIndex) {
@@ -118,7 +118,7 @@ public class ProjectComponentsFacade {
 
             for (ProjectComponent component : sortedComponents) {
                 if (index >= fromIndex && index < toIndex) {
-                    Optional<ProjectComponentListItem> p =  projectComponentListItemMapper.mapToProjectComponentListItem(component, projectKey);
+                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
                     if (p.isPresent()) {
                         // Badly formed project components shouldn't be returned
                         // in the response
@@ -135,7 +135,7 @@ public class ProjectComponentsFacade {
         int totalElements = index;
         Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, paginationBaseUrl);
 
-        return ProjectComponentListResponse.builder()
+        return ProjectComponentsMetrics.builder()
                 .data(data)
                 .pagination(pagination)
                 .build();

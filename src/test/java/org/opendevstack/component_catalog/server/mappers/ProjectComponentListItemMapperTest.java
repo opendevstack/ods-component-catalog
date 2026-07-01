@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
-import org.opendevstack.component_catalog.server.model.ProjectComponentListItem;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 
@@ -25,11 +25,11 @@ class ProjectComponentListItemMapperTest {
     @Mock
     private ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
 
-    private ProjectComponentListItemMapper mapper;
+    private ProjectComponentMetricsMapper mapper;
 
     @BeforeEach
     void setUp() {
-        mapper = new ProjectComponentListItemMapper(
+        mapper = new ProjectComponentMetricsMapper(
                 provisionerActionsConfiguration,
                 bitbucketServiceProps
         );
@@ -52,8 +52,8 @@ class ProjectComponentListItemMapperTest {
         component.setUpdatedAt("2000");
 
         // when
-        Optional<ProjectComponentListItem> result =
-                mapper.mapToProjectComponentListItem(component, projectKey);
+        Optional<ProjectComponentMetrics> result =
+                mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -77,8 +77,8 @@ class ProjectComponentListItemMapperTest {
         component.setUpdatedAt("2000");
 
         // when
-        Optional<ProjectComponentListItem> result =
-                mapper.mapToProjectComponentListItem(component, projectKey);
+        Optional<ProjectComponentMetrics> result =
+                mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -97,8 +97,8 @@ class ProjectComponentListItemMapperTest {
         component.setUpdatedAt("2000");
 
         // when
-        Optional<ProjectComponentListItem> result =
-                mapper.mapToProjectComponentListItem(component, projectKey);
+        Optional<ProjectComponentMetrics> result =
+                mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -116,8 +116,8 @@ class ProjectComponentListItemMapperTest {
         component.setUpdatedAt(null);
 
         // when
-        Optional<ProjectComponentListItem> result =
-                mapper.mapToProjectComponentListItem(component, projectKey);
+        Optional<ProjectComponentMetrics> result =
+                mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -136,8 +136,8 @@ class ProjectComponentListItemMapperTest {
         component.setUpdatedAt("2000");
 
         // when
-        Optional<ProjectComponentListItem> result =
-                mapper.mapToProjectComponentListItem(component, projectKey);
+        Optional<ProjectComponentMetrics> result =
+                mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isEmpty();

@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
-import org.opendevstack.component_catalog.server.model.ProjectComponentListItem;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
@@ -20,16 +20,16 @@ import java.util.Optional;
 @Component
 @Slf4j
 @AllArgsConstructor
-public class ProjectComponentListItemMapper {
+public class ProjectComponentMetricsMapper {
 
     private final ProvisionerActionsConfiguration provisionerActionsConfiguration;
 
     @Qualifier("bitbucketServiceConfig")
     private final ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
 
-    public Optional<ProjectComponentListItem> mapToProjectComponentListItem(ProjectComponent comp, String projectKey) {
+    public Optional<ProjectComponentMetrics> mapToProjectComponentMetrics(ProjectComponent comp, String projectKey) {
         try {
-            return Optional.of(ProjectComponentListItem.builder()
+            return Optional.of(ProjectComponentMetrics.builder()
                     .projectKey(projectKey)
                     .componentId(comp.getComponentId())
                     .caller(getParameterValueByName(Optional.ofNullable(comp.getParameters()).orElse(List.of()), "caller"))

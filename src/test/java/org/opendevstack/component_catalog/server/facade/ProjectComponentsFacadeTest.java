@@ -6,15 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogItemDefaultProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.*;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentListItem;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -60,7 +60,7 @@ class ProjectComponentsFacadeTest {
     private CatalogProjectComponentsGroupsRestrictionProps catalogGroupsRestrictionProps;
 
     @Mock
-    private ProjectComponentListItemMapper projectComponentListItemMapper;
+    private ProjectComponentMetricsMapper projectComponentListItemMapper;
 
     @BeforeEach
     void setUp() {
@@ -537,8 +537,8 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentListItem(component, projectKey))
-                .thenReturn(Optional.of(ProjectComponentListItem.builder()
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
+                .thenReturn(Optional.of(ProjectComponentMetrics.builder()
                         .componentId("C1")
                         .projectKey(projectKey)
                         .build()));
@@ -568,7 +568,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentListItem(component, projectKey))
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
                 .thenReturn(Optional.empty());
 
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
@@ -603,10 +603,10 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentListItem(any(), eq(projectKey)))
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), eq(projectKey)))
                 .thenAnswer(inv -> {
                     ProjectComponent pc = inv.getArgument(0);
-                    return Optional.of(ProjectComponentListItem.builder()
+                    return Optional.of(ProjectComponentMetrics.builder()
                             .componentId(pc.getComponentId())
                             .projectKey(projectKey)
                             .build());
@@ -634,8 +634,8 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents("B"))
                 .thenReturn(ProjectComponentsMother.of(Map.of("k1", comp)));
 
-        when(projectComponentListItemMapper.mapToProjectComponentListItem(any(), any()))
-                .thenReturn(Optional.of(ProjectComponentListItem.builder().build()));
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), any()))
+                .thenReturn(Optional.of(ProjectComponentMetrics.builder().build()));
 
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
