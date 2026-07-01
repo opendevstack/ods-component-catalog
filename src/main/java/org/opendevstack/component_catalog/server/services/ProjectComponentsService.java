@@ -127,7 +127,7 @@ public class ProjectComponentsService {
                 .build();
     }
 
-    protected String getRepoPathFromCatalogItemId(String catalogItemId) throws InvalidEntityException {
+    public String getRepoPathFromCatalogItemId(String catalogItemId) throws InvalidEntityException {
         return Optional.ofNullable(catalogItemId)
                 .map(ProjectComponentsService::decodeId)
                 .map(String::new)

@@ -212,19 +212,6 @@ public class ProvisionerActionsService {
         return projectJsonFiles;
     }
 
-    public List<ProjectComponents> getAllProjectComponents() {
-        log.debug("Retrieving all project components");
-        var projectComponentsProjectKeys = getAllProjectComponentsProjectKeys();
-
-        var projectComponentsList = projectComponentsProjectKeys.stream()
-                .map(this::getProjectComponents)
-                .toList();
-
-        log.debug("Project components retrieved: {}", projectComponentsList);
-
-        return projectComponentsList;
-    }
-
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
     @Synchronized
     @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
@@ -259,7 +246,8 @@ public class ProvisionerActionsService {
                 .build();
     }
 
-    private List<String> getAllProjectComponentsProjectKeys() {
+    // FIXME: Add a cache here also
+    public List<String> getAllProjectComponentsProjectKeys() {
         var projectComponentFiles = listAllProjectsJsons();
 
         var projectKeys = projectComponentFiles.stream()

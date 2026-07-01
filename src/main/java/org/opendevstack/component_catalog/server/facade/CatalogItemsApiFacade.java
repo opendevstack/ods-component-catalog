@@ -11,6 +11,7 @@ import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
@@ -18,6 +19,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityP
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
@@ -41,6 +43,7 @@ public class CatalogItemsApiFacade {
     private final CatalogEntitiesService catalogEntitiesService;
     private final UserActionsEntitiesService userActionsEntitiesService;
     private final CatalogItemBySlugService catalogItemBySlugService;
+    private final ProjectComponentsService projectComponentsService;
 
     private final ProvisionerActionsService provisionerActionsService;
 
@@ -148,7 +151,7 @@ public class CatalogItemsApiFacade {
     }
 
     private Integer calculateComponentCount(CatalogRequestParams catalogRequestParams) {
-        var projectComponentsList = provisionerActionsService.getAllProjectComponents();
+        var projectComponentsList = getAllProjectComponents();
 
         log.debug("Calculating component count for catalog item {} and projectComponents: {}", catalogRequestParams.getCatalogItemEntityContext().getId(), projectComponentsList);
 
@@ -158,12 +161,18 @@ public class CatalogItemsApiFacade {
             var catalogItemId = catalogRequestParams.getCatalogItemEntityContext().getId();
 
             for (var component : projectComponents.getComponents().values()) {
-                log.debug("Checking if Component {} with catalogItemId {} relates to catalog item {}", component, component.getCatalogItemId(), catalogItemId);
+                try {
+                    var catalogItemIdWithoutRef = projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId);
 
-                if (component.getCatalogItemId() != null && component.getCatalogItemId().equals(catalogItemId)) {
-                    log.debug("Component {} relates to catalog item {}", component, catalogItemId);
+                    log.debug("Checking if Component {} with catalogItemId {} relates to catalog item {}", component, catalogItemIdWithoutRef, catalogItemId);
 
-                    componentCount++;
+                    if (catalogItemIdWithoutRef != null && catalogItemIdWithoutRef.equals(component.getCatalogItemId())) {
+                        log.debug("Component {} relates to catalog item {}", component, catalogItemId);
+
+                        componentCount++;
+                    }
+                } catch (InvalidEntityException e) {
+                    log.error("Error decoding catalogItemId for component {}: {}", component, e.getMessage());
                 }
             }
         }
@@ -194,5 +203,18 @@ public class CatalogItemsApiFacade {
 
             return clusters;
         }
+    }
+
+    private List<ProjectComponents> getAllProjectComponents() {
+        log.debug("Retrieving all project components");
+        var projectComponentsProjectKeys = provisionerActionsService.getAllProjectComponentsProjectKeys();
+
+        var projectComponentsList = projectComponentsProjectKeys.stream()
+                .map(provisionerActionsService::getProjectComponents)
+                .toList();
+
+        log.debug("Project components retrieved: {}", projectComponentsList);
+
+        return projectComponentsList;
     }
 }
