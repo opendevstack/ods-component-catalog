@@ -19,6 +19,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogService
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Component;
 
@@ -147,11 +148,17 @@ public class CatalogItemsApiFacade {
     }
 
     private Integer calculateComponentCount(CatalogRequestParams catalogRequestParams) {
-        var projectComponents = provisionerActionsService.getProjectComponents(catalogRequestParams.getProjectKey());
+        var projectComponentsList = provisionerActionsService.getAllProjectComponents();
 
-        var componentCount = projectComponents.getComponents().values().stream()
-                .filter(component -> component.getCatalogItemId().equals(catalogRequestParams.getCatalogItemId()))
-                .count();
+        var componentCount = 0;
+
+        for (ProjectComponents projectComponents : projectComponentsList) {
+            var localComponentCount = projectComponents.getComponents().values().stream()
+                    .filter(component -> component.getCatalogItemId().equals(catalogRequestParams.getCatalogItemId()))
+                    .count();
+            
+            componentCount += localComponentCount;
+        }
 
         log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemId());
 

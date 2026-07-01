@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -189,6 +190,10 @@ public class ProvisionerActionsService {
         return false;
     }
 
+    public List<ProjectComponents> getAllProjectComponents() {
+        return Collections.emptyList();
+    }
+
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
     @Synchronized
     public ProjectComponents getProjectComponents(String projectKey) {
@@ -219,6 +224,17 @@ public class ProvisionerActionsService {
                 .subPath(provisionerActionsConfiguration.getSubPath().replace(provisionerActionsConfiguration.getSubPathToken(), projectKey))
                 .at(provisionerActionsConfiguration.getBranchName())
                 .build();
+    }
+
+    private List<BitbucketPathAt> getAllProjectComponentsPathAt() {
+        var basePath = bitbucketService.pathAtBuilder()
+                .projectKey(provisionerActionsConfiguration.getProjectKey())
+                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
+                .subPath("/")
+                .at(provisionerActionsConfiguration.getBranchName())
+                .build();
+
+        return bitbucketService.getAllFilesInPath(basePath);
     }
 
 }

@@ -299,4 +299,8 @@ public class BitbucketService {
                 .collect(Collectors.toSet());
     }
 
+    @Deprecated
+    public List<BitbucketPathAt> getAllFilesInPath(BitbucketPathAt pathAt) {
+        return Collections.emptyList();
+    }
 }
