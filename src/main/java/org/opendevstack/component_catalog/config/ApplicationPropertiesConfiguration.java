@@ -28,6 +28,18 @@ public class ApplicationPropertiesConfiguration {
         return BitbucketServiceCacheProps.builder().build();
     }
 
+    @Bean("projectsInfoServiceCacheConfig")
+    @ConfigurationProperties(prefix = "component-catalog.caching.projects-info-service-cache")
+    public ProjectsInfoServiceCacheProps projectsInfoServiceCacheProps() {
+        return ProjectsInfoServiceCacheProps.builder().build();
+    }
+
+    @Bean("provisionedComponentsCacheConfig")
+    @ConfigurationProperties(prefix = "component-catalog.caching.provisioned-components-cache")
+    public ProvisionedComponentsCacheProps provisionedComponentsCacheProps() {
+        return ProvisionedComponentsCacheProps.builder().build();
+    }
+
     @Bean("projectsInfoServiceConfig")
     @ConfigurationProperties(prefix = "component-catalog.projects-info-service.service")
     public ExternalServiceProps projectsInfoServiceServiceProps() {
@@ -88,6 +100,28 @@ public class ApplicationPropertiesConfiguration {
     @Data
     public static class OdsApiServerServiceProps {
         private String oid;
+    }
+    
+    public static class ProjectsInfoServiceCacheProps {
+        public static final String CACHE_NAME = "projects-info-service-cache";
+
+        @Builder.Default
+        private boolean enabled = true;
+        private DataSize maxSize;
+        @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
+        private Duration evictionInterval;
+    }
+
+    @Builder // useful for unit testing
+    @Data
+    public static class ProvisionedComponentsCacheProps {
+        public static final String CACHE_NAME = "provisioned-components-cache";
+
+        @Builder.Default
+        private boolean enabled = true;
+        private DataSize maxSize;
+        @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
+        private Duration evictionInterval;
     }
 
     @Builder

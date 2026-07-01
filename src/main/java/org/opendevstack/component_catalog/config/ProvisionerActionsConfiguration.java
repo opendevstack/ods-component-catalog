@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class ProvisionerActionsConfiguration {
     private String projectKey;
     private String repositorySlug;
+    private String projectsPath;
     private String subPath;
     private String subPathToken;
     private String branchName;

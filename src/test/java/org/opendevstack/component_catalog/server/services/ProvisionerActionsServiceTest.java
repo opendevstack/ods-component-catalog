@@ -16,13 +16,13 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.RestEnti
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.ProjectComponentsMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.*;
@@ -50,9 +50,13 @@ class ProvisionerActionsServiceTest {
     @Mock
     private BitbucketPathAt.BitbucketPathAtBuilder bitbucketPathAtBuilder;
 
-    private ProvisionerActionsConfiguration provisionerActionsConfiguration;
-
+    @Mock
     private ProvisionerActionsService provisionerActionsService;
+
+    @Mock
+    private ProjectComponentsCacheService projectComponentsCacheService;
+
+    private ProvisionerActionsConfiguration provisionerActionsConfiguration;
 
     // helper
     private ProjectComponentRequest request(String componentId,
@@ -80,7 +84,8 @@ class ProvisionerActionsServiceTest {
         provisionerActionsConfiguration = new  ProvisionerActionsConfiguration();
         populateProvisionerActionsConfiguration();
 
-        provisionerActionsService = new ProvisionerActionsService(bitbucketService, objectMapper, projectComponentsService, provisionerActionsConfiguration);
+        provisionerActionsService = new ProvisionerActionsService(bitbucketService, objectMapper,
+                projectComponentsService, provisionerActionsConfiguration, projectComponentsCacheService);
     }
 
     @Test
@@ -647,6 +652,36 @@ class ProvisionerActionsServiceTest {
 
         // then
         assertThat(component.getCreatedAt()).isEqualTo(originalCreatedAt);
+    }
+
+    @Test
+    void givenConfiguration_whenListAllProjectsJsons_thenBitbucketServiceIsCalledAndResultReturned() {
+        // given
+        var pathAt = BitbucketPathAtMother.of();
+        var expectedFilenames = List.of("PROJECT_A_KEY.json", "PROJECT_B_KEY.json");
+
+        when(bitbucketService.pathAtBuilder()).thenReturn(bitbucketPathAtBuilder);
+
+        when(bitbucketPathAtBuilder.projectKey(provisionerActionsConfiguration.getProjectKey()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getRepositorySlug()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.at(provisionerActionsConfiguration.getBranchName()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.subPath(provisionerActionsConfiguration.getProjectsPath()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.build()).thenReturn(pathAt);
+
+        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt))
+                .thenReturn(expectedFilenames);
+
+        // when
+        var result = provisionerActionsService.listAllProjectsJsons();
+
+        // then
+        assertThat(result).isEqualTo(expectedFilenames);
+
+        verify(bitbucketService).getFilenamesFromRemoteDirectory(pathAt);
     }
 
     private String prepareMocksForSave() throws JsonProcessingException {
