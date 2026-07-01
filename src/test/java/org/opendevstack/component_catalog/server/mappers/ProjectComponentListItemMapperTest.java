@@ -126,12 +126,21 @@ class ProjectComponentListItemMapperTest {
     }
 
     @Test
-    void givenInvalidDate_whenMap_thenReturnsEmptyOptional() {
+    void givenCompletelyInvalidProjectComponent_whenMap_thenOptionalPresentValueIsReturned() {
         // given
         var projectKey = "PROJECT_KEY";
 
         var component = new ProjectComponent();
         component.setComponentId("comp-1");
+        component.setComponentUrl("wrong:url^");
+        component.setCatalogItemId(null);
+        component.setCatalogItemRef(null);
+        component.setParameters(
+                List.of(Parameter.builder()
+                    .name("caller")
+                    .values(null) // Expected value is a list
+                .build())
+        );
         component.setCreatedAt("invalid");
         component.setUpdatedAt("2000");
 
@@ -140,6 +149,6 @@ class ProjectComponentListItemMapperTest {
                 mapper.mapToProjectComponentMetrics(component, projectKey);
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(result.isPresent());
     }
 }

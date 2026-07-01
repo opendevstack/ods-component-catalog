@@ -28,19 +28,14 @@ public class ProjectComponentMetricsMapper {
     private final ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
 
     public Optional<ProjectComponentMetrics> mapToProjectComponentMetrics(ProjectComponent comp, String projectKey) {
-        try {
-            return Optional.of(ProjectComponentMetrics.builder()
-                    .projectKey(projectKey)
-                    .componentId(comp.getComponentId())
-                    .caller(getParameterValueByName(Optional.ofNullable(comp.getParameters()).orElse(List.of()), "caller"))
-                    .catalogItemSlug(getCatalogItemSlug(comp.getCatalogItemId()))
-                    .createdAt(parseBigDecimal(comp.getCreatedAt()))
-                    .updatedAt(parseBigDecimal(comp.getUpdatedAt()))
-                    .build());
-        } catch (Exception e) {
-            log.error("Error trying to map project component {} from project {} to ProjectComponentListItem.", comp.getComponentId(), projectKey);
-            return Optional.empty();
-        }
+        return Optional.of(ProjectComponentMetrics.builder()
+            .projectKey(projectKey)
+            .componentId(comp.getComponentId())
+            .caller(getParameterValueByName(Optional.ofNullable(comp.getParameters()).orElse(List.of()), "caller"))
+            .catalogItemSlug(getCatalogItemSlug(comp.getCatalogItemId()))
+            .createdAt(parseBigDecimal(comp.getCreatedAt()))
+            .updatedAt(parseBigDecimal(comp.getUpdatedAt()))
+            .build());
     }
 
     private String getParameterValueByName(List<Parameter> parameters, String paramName) {
@@ -48,6 +43,7 @@ public class ProjectComponentMetricsMapper {
                 .filter(p -> p.getName().equalsIgnoreCase(paramName))
                 .findFirst()
                 .map(Parameter::getValues)
+                .filter(values -> !values.isEmpty())
                 .map(List::getFirst)
                 .orElse( null);
     }
@@ -85,6 +81,14 @@ public class ProjectComponentMetricsMapper {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return BigDecimal.valueOf(Long.parseLong(value));
+
+        BigDecimal ret = null;
+        try {
+            ret = BigDecimal.valueOf(Long.parseLong(value));
+        } catch (NumberFormatException e) {
+            log.debug("Error trying to parse timestamp {} to number.", value);
+        }
+
+        return ret;
     }
 }
