@@ -3,18 +3,24 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.apache.commons.lang3.tuple.Pair;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
+import org.opendevstack.component_catalog.server.mappers.ProjectComponentMetricsMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
-import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
-import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.*;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
+import org.opendevstack.component_catalog.util.JwtUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -28,7 +34,11 @@ public class ProjectComponentsFacade {
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
     private final ProjectsInfoService projectsInfoService;
     private final ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
-    private ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps  catalogProjectComponentsGroupsRestrictionProps;
+    private final CatalogProjectComponentsGroupsRestrictionProps  catalogProjectComponentsGroupsRestrictionProps;
+    private final ProjectComponentMetricsMapper projectComponentListItemMapper;
+
+    @Value("${devstack.marketplace-api.permitted-oids}")
+    private final List<String> permittedOids;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -82,6 +92,24 @@ public class ProjectComponentsFacade {
                 );
     }
 
+    public ProjectComponentsMetrics getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
+        validateTokenPermittedOids(accessToken);
+        PaginationUtils.validatePagination(page, size, 100);
+
+        var allProjectsJsons = provisionerActionsService.listAllProjectsJsons().stream()
+                .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
+                .sorted()
+                .toList();
+
+        Pair<List<ProjectComponentMetrics>, Pagination> paginatedProjectComponentsMetrics =
+                buildProjectComponentMetricsPaginatedResults(allProjectsJsons, page, size, paginationBaseUrl);
+
+        return ProjectComponentsMetrics.builder()
+                .data(paginatedProjectComponentsMetrics.getLeft())
+                .pagination(paginatedProjectComponentsMetrics.getRight())
+                .build();
+    }
+
     private boolean notValid(ProjectComponents projectComponents, String projectKey, String accessToken) {
         return (projectComponents == null || projectComponents.getComponents() == null ||
                 projectComponents.getComponents().isEmpty() || StringUtils.isBlank(accessToken) ||
@@ -95,4 +123,79 @@ public class ProjectComponentsFacade {
                 .anyMatch(g -> catalogProjectComponentsGroupsRestrictionProps.getPrefix().stream().anyMatch(g.toUpperCase()::startsWith) &&
                         g.toUpperCase().contains(projectKey.toUpperCase()));
     }
+
+    private void validateTokenPermittedOids(String accessToken) {
+        var oid = JwtUtils.extractClaim(accessToken, "oid");
+        if (!oid.map(permittedOids::contains).orElse(false)) {
+            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
+        }
+    }
+
+    private boolean hasNoDates(ProjectComponent c) {
+        return (c.getCreatedAt() == null || c.getCreatedAt().isBlank())
+                && (c.getUpdatedAt() == null || c.getUpdatedAt().isBlank());
+    }
+
+    private Long extractTimestamp(ProjectComponent c) {
+        if (c.getCreatedAt() != null && !c.getCreatedAt().isBlank()) {
+            return Long.parseLong(c.getCreatedAt());
+        }
+
+        return Long.parseLong(c.getUpdatedAt());
+    }
+
+    private int compareProjectComponent(ProjectComponent a, ProjectComponent b) {
+        // The overall sorting order is from creation date ASC
+        // If not createdAt/updatedAt are present, we treat the item
+        // as one of the oldest, without further comparing
+
+        int cmp = Boolean.compare(!hasNoDates(a), !hasNoDates(b));
+        if (cmp != 0) return cmp;
+
+        long t1 = hasNoDates(a) ? 0 : extractTimestamp(a);
+        long t2 = hasNoDates(b) ? 0 : extractTimestamp(b);
+
+        return Long.compare(t1, t2);
+    }
+
+    private Pair<List<ProjectComponentMetrics>, Pagination> buildProjectComponentMetricsPaginatedResults(
+            List<String> allProjectKeys, int page, int size, String paginationBaseUrl) {
+        int index = 0;
+        int fromIndex = page * size;
+        int toIndex = fromIndex + size;
+        Collection<ProjectComponent> projectComponents;
+        List<ProjectComponentMetrics> data = new ArrayList<>();
+        for (String projectKey : allProjectKeys) {
+            projectComponents = provisionerActionsService.getProjectComponents(projectKey).getComponents().values();
+            if (index >= toIndex) {
+                index += projectComponents.size();
+                continue;
+            }
+            List<ProjectComponent> sortedComponents = projectComponents
+                    .stream()
+                    .sorted(this::compareProjectComponent)
+                    .toList();
+
+            for (ProjectComponent component : sortedComponents) {
+                if (index >= fromIndex && index < toIndex) {
+                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
+                    if (p.isPresent()) {
+                        // Badly formed project components shouldn't be returned
+                        // in the response
+                        data.add(p.orElseThrow(() -> new InvalidComponentStateException(
+                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
+                        ));
+                        index++;
+                    }
+                } else {
+                    index++;
+                }
+            }
+        }
+        int totalElements = index;
+        Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, paginationBaseUrl);
+
+        return Pair.of(data, pagination);
+    }
+
 }
