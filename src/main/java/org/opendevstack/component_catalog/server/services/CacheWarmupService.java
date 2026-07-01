@@ -2,8 +2,8 @@ package org.opendevstack.component_catalog.server.services;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityTarget;
-import org.opendevstack.component_catalog.server.services.common.Pair;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.springframework.boot.ApplicationArguments;
@@ -178,7 +178,7 @@ public class CacheWarmupService implements ApplicationRunner {
                 ++errors;
             }
         }
-        return Pair.<Integer, Integer>builder().left(loaded).right(errors).build();
+        return Pair.of(loaded, errors);
     }
 
     private Integer warmupProvisionedComponentsFromProject(String projectKey) {
