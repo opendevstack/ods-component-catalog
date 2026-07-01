@@ -6,15 +6,19 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
-import org.jspecify.annotations.NonNull;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.*;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -32,6 +36,7 @@ public class ProvisionerActionsService {
     private final ObjectMapper objectMapper;
     private final ProjectComponentsService projectComponentsService;
     private final ProvisionerActionsConfiguration provisionerActionsConfiguration;
+    private final ProjectComponentsCacheService projectComponentsCacheService;
 
     @Synchronized
     public void updateComponentProvisioningStatus(String projectKey,
@@ -43,7 +48,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         validate(projectComponents, request.getComponentId(), request.getStatus());
 
@@ -84,7 +89,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(request.getComponentId())) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
@@ -131,7 +136,7 @@ public class ProvisionerActionsService {
         log.debug("Checking if provisioning completed for projectKey: {}, componentId: {}",
                 projectKey, catalogItemId);
 
-        var projectComponents = getProjectComponents(projectKey);
+        var projectComponents = getProjectComponents(getBitbucketPathAt(projectKey));
 
         return isProvisioned(projectComponents, catalogItemId);
     }
@@ -144,13 +149,14 @@ public class ProvisionerActionsService {
         }
     }
 
-    // We need to prevent there is no update if some other is on the middle of it
+    // We need to prevent there is no update if some other is in the middle of it
     // Pending to discuss ISO levels and how to block in deep
     @Synchronized
     protected void saveProjectComponents(BitbucketPathAt pathAt, String sourceCommitId, ProjectComponents updatedProjectComponents) throws JsonProcessingException {
         try {
             String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
             bitbucketService.pushFile(pathAt, sourceCommitId, jsonUpdatedProjectComponents);
+            projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
         } catch (HttpClientErrorException httpClientErrorException) {
             log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
 
@@ -190,18 +196,30 @@ public class ProvisionerActionsService {
         return false;
     }
 
+    public List<String> listAllProjectsJsons() {
+        var bitbucketProjectsDirectoryPathAt = bitbucketService.pathAtBuilder()
+                .projectKey(provisionerActionsConfiguration.getProjectKey())
+                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
+                .at(provisionerActionsConfiguration.getBranchName())
+                .subPath(provisionerActionsConfiguration.getProjectsPath())
+                .build();
+        return bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+    }
+
     public List<ProjectComponents> getAllProjectComponents() {
         return Collections.emptyList();
     }
 
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
     @Synchronized
+    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
     public ProjectComponents getProjectComponents(String projectKey) {
         return getProjectComponents(getBitbucketPathAt(projectKey));
     }
 
     @Synchronized
     public ProjectComponents getProjectComponents(BitbucketPathAt pathAt) {
+        log.info("Retrieving project components from project {} via Bitbucket API...", pathAt.getProjectKeyFromSubPath());
         return bitbucketService.getTextFileContents(pathAt)
                 .map( content -> {
                     try {

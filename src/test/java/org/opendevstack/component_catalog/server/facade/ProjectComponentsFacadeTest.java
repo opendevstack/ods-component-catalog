@@ -6,13 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogItemDefaultProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.*;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -34,7 +36,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProjectComponentsFacadeTest {
     private final String accessToken = "token";
-    private ApplicationPropertiesConfiguration.CatalogItemDefaultProps catalogItemDefaultProps;
+    private CatalogItemDefaultProps catalogItemDefaultProps;
 
     @Mock
     private ProvisionerActionsService provisionerActionsService;
@@ -55,14 +57,19 @@ class ProjectComponentsFacadeTest {
     private ProjectComponentExtendedInfoMapper projectComponentExtendedInfoMapper;
 
     @Mock
-    private ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps catalogGroupsRestrictionProps;
+    private CatalogProjectComponentsGroupsRestrictionProps catalogGroupsRestrictionProps;
+
+    @Mock
+    private ProjectComponentMetricsMapper projectComponentListItemMapper;
 
     @BeforeEach
     void setUp() {
+        var permittedOids = List.of("oid1", "oid2", "oid3");
         ProjectComponentsInfoMapper projectComponentsInfoMapper = new ProjectComponentsInfoMapper(catalogItemsApiFacade,
                 catalogItemDefaultProps);
         projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper,
-                projectsInfoService, projectComponentExtendedInfoMapper, catalogGroupsRestrictionProps);
+                projectsInfoService, projectComponentExtendedInfoMapper, catalogGroupsRestrictionProps,
+                projectComponentListItemMapper, permittedOids);
 
         lenient().when(authenticationFacade.getAccessToken()).thenReturn("accessToken");
         lenient().when(catalogGroupsRestrictionProps.getPrefix()).thenReturn(List.of("BI-AS-ATLASSIAN-P-"));
@@ -484,6 +491,163 @@ class ProjectComponentsFacadeTest {
         // then
         assertThat(result).isNotNull();
     }
+
+    @Test
+    void givenTokenWithInvalidOid_whenGetAllProjectComponents_thenThrowForbidden() {
+        // given
+        String token = "invalid-token";
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getAllProjectComponents(token, 0, 10, "url")
+        ).isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void givenInvalidPageOrSize_whenGetAllProjectComponents_thenThrowIllegalArgument() {
+        // given
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when / then
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getAllProjectComponents(validToken, -1, 10, "url")
+        ).isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getAllProjectComponents(validToken, 0, -1, "url")
+        ).isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() ->
+                projectComponentsFacade.getAllProjectComponents(validToken, 0, 101, "url")
+        ).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void givenOneProjectWithComponents_whenGetAllProjectComponents_thenReturnPaginatedResult() {
+        // given
+        String projectKey = "PRJ-1";
+
+        var component = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        component.setCreatedAt("100");
+
+        var projectComponents = ProjectComponentsMother.of(Map.of("k1", component));
+
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of(projectKey + ".json"));
+        when(provisionerActionsService.getProjectComponents(projectKey))
+                .thenReturn(projectComponents);
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
+                .thenReturn(Optional.of(ProjectComponentMetrics.builder()
+                        .componentId("C1")
+                        .projectKey(projectKey)
+                        .build()));
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+
+        // then
+        assertThat(result.getData()).hasSize(1);
+        assertThat(result.getData().getFirst().getComponentId()).isEqualTo("C1");
+        assertThat(result.getPagination()).isNotNull();
+    }
+
+    @Test
+    void givenMapperReturnsEmpty_whenGetAllProjectComponents_thenElementIsSkipped() {
+        // given
+        String projectKey = "PRJ-1";
+
+        var component = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+
+        var projectComponents = ProjectComponentsMother.of(Map.of("k1", component));
+
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of(projectKey + ".json"));
+        when(provisionerActionsService.getProjectComponents(projectKey))
+                .thenReturn(projectComponents);
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
+                .thenReturn(Optional.empty());
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+
+        // then
+        assertThat(result.getData()).isEmpty();
+    }
+
+    @Test
+    void givenMultipleItems_whenPaginationApplies_thenReturnCorrectSlice() {
+        // given
+        String projectKey = "PRJ-1";
+
+        var c1 = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var c2 = ProjectComponentMother.of("C2", "cat", "ref", Status.CREATED);
+
+        c1.setCreatedAt("100");
+        c2.setCreatedAt("200");
+
+        var projectComponents = ProjectComponentsMother.of(
+                new LinkedHashMap<>(Map.of(
+                        "k1", c1,
+                        "k2", c2
+                ))
+        );
+
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of(projectKey + ".json"));
+        when(provisionerActionsService.getProjectComponents(projectKey))
+                .thenReturn(projectComponents);
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), eq(projectKey)))
+                .thenAnswer(inv -> {
+                    ProjectComponent pc = inv.getArgument(0);
+                    return Optional.of(ProjectComponentMetrics.builder()
+                            .componentId(pc.getComponentId())
+                            .projectKey(projectKey)
+                            .build());
+                });
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(validToken, 1, 1, "url");
+
+        // then
+        assertThat(result.getData()).hasSize(1);
+    }
+
+    @Test
+    void givenMultipleProjects_whenGetAllProjectComponents_thenProjectsSortedByKey() {
+        // given
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of("B.json", "A.json"));
+
+        var comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+
+        when(provisionerActionsService.getProjectComponents("A"))
+                .thenReturn(ProjectComponentsMother.of(Map.of("k1", comp)));
+        when(provisionerActionsService.getProjectComponents("B"))
+                .thenReturn(ProjectComponentsMother.of(Map.of("k1", comp)));
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), any()))
+                .thenReturn(Optional.of(ProjectComponentMetrics.builder().build()));
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+
+        // then
+        assertThat(result.getData()).isNotNull();
+    }
+
+
+
 }
 
 

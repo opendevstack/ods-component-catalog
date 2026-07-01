@@ -31,7 +31,7 @@ class CacheSchedulingTest {
 
         var inOrder = inOrder(cache, cacheWarmupService);
         inOrder.verify(cache).clear();
-        inOrder.verify(cacheWarmupService).warmup();
+        inOrder.verify(cacheWarmupService).warmupCatalogsBitbucketServiceCache();
     }
 
     @Test
@@ -40,7 +40,7 @@ class CacheSchedulingTest {
 
         cacheScheduling.scheduledCacheEvictionAndWarmup();
 
-        verify(cacheWarmupService).warmup();
+        verify(cacheWarmupService).warmupCatalogsBitbucketServiceCache();
     }
 }
 

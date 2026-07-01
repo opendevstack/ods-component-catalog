@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.text.StringSubstitutor;
+import org.apache.tika.utils.StringUtils;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -96,6 +97,17 @@ public class BitbucketPathAt implements Serializable {
 
     public BitbucketPathAt copy() {
         return this.toBuilder().build();
+    }
+
+    public String getProjectKeyFromSubPath() {
+        if (this.subPath == null || this.subPath.isBlank()) {
+            return StringUtils.EMPTY;
+        }
+
+        String fileName = this.subPath.substring(this.subPath.lastIndexOf('/') + 1);
+
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex > 0) ? fileName.substring(0, dotIndex) : fileName;
     }
 
     private void fromFullUrl(String fullUrl) {

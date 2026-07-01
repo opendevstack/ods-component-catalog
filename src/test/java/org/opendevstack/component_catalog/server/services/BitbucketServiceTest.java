@@ -208,4 +208,82 @@ class BitbucketServiceTest {
         // then
         assertFalse(exists);
     }
+
+    @Test
+    void givenSinglePageResponse_whenGetFilenames_thenAllReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(List.of("file1.json", "file2.json"));
+        response.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+
+        // then
+        assertThat(result).containsExactly("file1.json", "file2.json");
+    }
+
+    @Test
+    void givenMultiplePages_whenGetFilenames_thenAllPagesAreAggregated() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response page1 = new StreamFiles200Response();
+        page1.setValues(List.of("file1.json", "file2.json"));
+        page1.setIsLastPage(false);
+        page1.setNextPageStart(2);
+
+        StreamFiles200Response page2 = new StreamFiles200Response();
+        page2.setValues(List.of("file3.json"));
+        page2.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(),
+                pathAt.getAt(), BigDecimal.ZERO, null
+        )).thenReturn(page1);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(),
+                pathAt.getAt(), new BigDecimal(2), null
+        )).thenReturn(page2);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+
+        // then
+        assertThat(result).containsExactly("file1.json", "file2.json", "file3.json");
+    }
+
+    @Test
+    void givenNextPageStartNull_whenNotLastPage_thenStopsLoop() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(List.of("file1.json"));
+        response.setIsLastPage(false);
+        response.setNextPageStart(null);
+
+        when(repositoryApi.streamFiles1(
+                any(), any(), any(), any(), any(), any()
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+
+        // then
+        assertThat(result).containsExactly("file1.json");
+    }
+
 }

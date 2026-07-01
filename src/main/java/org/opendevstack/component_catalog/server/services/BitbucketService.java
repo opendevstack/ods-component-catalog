@@ -1,21 +1,5 @@
 package org.opendevstack.component_catalog.server.services;
 
-import org.opendevstack.component_catalog.client.bitbucket.v89.ApiClient;
-import org.opendevstack.component_catalog.client.bitbucket.v89.api.PermissionManagementApi;
-import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
-import org.opendevstack.component_catalog.client.bitbucket.v89.api.RepositoryApi;
-import org.opendevstack.component_catalog.client.bitbucket.v89.auth.HttpBearerAuth;
-import org.opendevstack.component_catalog.client.bitbucket.v89.model.GetCommits200Response;
-import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestCommit;
-import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestDetailedUser;
-import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser;
-import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketIOException;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketInvalidEntityException;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.util.FileFormatUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -23,6 +7,19 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opendevstack.component_catalog.client.bitbucket.v89.ApiClient;
+import org.opendevstack.component_catalog.client.bitbucket.v89.api.PermissionManagementApi;
+import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
+import org.opendevstack.component_catalog.client.bitbucket.v89.api.RepositoryApi;
+import org.opendevstack.component_catalog.client.bitbucket.v89.auth.HttpBearerAuth;
+import org.opendevstack.component_catalog.client.bitbucket.v89.model.*;
+import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketIOException;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketInvalidEntityException;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.util.FileFormatUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
@@ -121,6 +118,37 @@ public class BitbucketService {
                 .map(GetCommits200Response::getValues)
                 .filter(values -> !values.isEmpty())
                 .map(values -> values.get(0).getId());
+    }
+
+    public List<String> getFilenamesFromRemoteDirectory(BitbucketPathAt pathAt) {
+        List<String> result = new ArrayList<>();
+        BigDecimal start = BigDecimal.ZERO;
+        boolean keepFetching = true;
+
+        while (keepFetching) {
+            StreamFiles200Response response = repositoryApi.streamFiles1(
+                    pathAt.getSubPath(),
+                    pathAt.getProjectKey(),
+                    pathAt.getRepoSlug(),
+                    pathAt.getAt(),
+                    start,
+                    null
+            );
+
+            if (response != null && response.getValues() != null) {
+                result.addAll(response.getValues().stream()
+                        .map(Object::toString)
+                        .toList());
+
+                start = Optional.ofNullable(response.getNextPageStart())
+                        .map(BigDecimal::valueOf)
+                        .orElse(null);
+            }
+
+            keepFetching = !result.isEmpty() && start != null;
+        }
+
+        return result;
     }
 
     public void pushFile(BitbucketPathAt pathAt, String sourceCommitId, String content) {

@@ -69,7 +69,7 @@ public class CacheScheduling {
             cache.clear();
             log.debug("Bitbucket Service cache evicted.");
         }
-        cacheWarmupService.warmup();
+        cacheWarmupService.warmupCatalogsBitbucketServiceCache();
     }
 }
 
