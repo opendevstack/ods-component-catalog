@@ -59,6 +59,9 @@ component-catalog:
   projects-info-service:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
+  ods-api-service:
+    service:
+      oid: ${ODS_API_SERVICE_OID}
 
 catalog:
   project-components:

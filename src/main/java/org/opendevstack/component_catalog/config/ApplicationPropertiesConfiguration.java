@@ -46,6 +46,12 @@ public class ApplicationPropertiesConfiguration {
         return ExternalServiceProps.builder().build();
     }
 
+    @Bean("odsApiServerServiceConfig")
+    @ConfigurationProperties(prefix = "component-catalog.ods-api-service.service")
+    public OdsApiServerServiceProps odsApiServerServiceProps() {
+        return OdsApiServerServiceProps.builder().build();
+    }
+
     @Bean("catalogProjectComponentsGroupsRestrictionConfig")
     @ConfigurationProperties(prefix = "catalog.project-components.groups-restriction")
     public CatalogProjectComponentsGroupsRestrictionProps catalogProjectComponentsGroupsRestrictionConfig() {
@@ -91,6 +97,12 @@ public class ApplicationPropertiesConfiguration {
     }
 
     @Builder // useful for unit testing
+    @Data
+    public static class OdsApiServerServiceProps {
+        private String oid;
+    }
+
+    @Builder
     @Data
     public static class ProjectsInfoServiceCacheProps {
         public static final String CACHE_NAME = "projects-info-service-cache";

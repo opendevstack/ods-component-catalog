@@ -33,13 +33,14 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     private final AuthenticationFacade authenticationFacade;
 
     @Override
-    public ResponseEntity<List<CatalogItem>> getCatalogItems(String catalogId, SortOrder sortByTitle) {
+    public ResponseEntity<List<CatalogItem>> getCatalogItems(SortOrder sortByTitle, String catalogId) {
         log.debug("User '{}' requested catalog items for catalog id: '{}'",
                 authInfo.getCurrentPrincipalName(), catalogId);
         try {
             var catalogItemRequestParams = CatalogRequestParams.builder()
                     .catalogId(catalogId)
                     .sortOrder(sortByTitle)
+                    .accessToken(authenticationFacade.getAccessToken())
                     .build();
 
             var items = catalogItemsApiFacade.fetchCatalogItems(catalogItemRequestParams);
