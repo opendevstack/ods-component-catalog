@@ -12,9 +12,9 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.*;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
 import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
@@ -30,7 +30,11 @@ import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.opendevstack.component_catalog.util.FunctionalUtils.fieldSorter;
 
@@ -216,7 +220,7 @@ public class CatalogItemsApiFacade {
 
         log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemEntityContext().getId());
 
-        return (int) componentCount;
+        return componentCount;
     }
 
     private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
