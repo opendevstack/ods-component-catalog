@@ -80,6 +80,11 @@ public class CatalogItemsApiFacade {
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         if (catalogRequestParams.getCatalogId() != null) {
+            // No need to check for clusters or userGroups when mapping the catalog items
+            CatalogRequestParams catalogRequestParamsWithoutToken =
+                    catalogRequestParams.toBuilder()
+                            .accessToken(null)
+                            .build();
             return fetchCatalogItemsByCatalogId(catalogRequestParams);
         }
 

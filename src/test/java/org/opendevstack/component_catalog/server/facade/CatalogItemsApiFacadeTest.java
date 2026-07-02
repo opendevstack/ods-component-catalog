@@ -13,12 +13,14 @@ import org.opendevstack.component_catalog.config.ApplicationPropertiesConfigurat
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.mappers.CatalogItemMother;
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.services.*;
 import org.opendevstack.component_catalog.server.services.catalog.*;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
@@ -595,6 +597,49 @@ class CatalogItemsApiFacadeTest {
         // no validation is performed upon the access token
     }
 
+    @Test
+    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvidedWithinTheRequestParams_thenNoAccessTokenIsUsedToMapCatalogItems() throws InvalidIdException {
+        // given
+        var catalogId = "catalog-1";
+        var accessToken = "token";
+
+        var params = CatalogRequestParams.builder()
+                .catalogId(catalogId)
+                .accessToken(accessToken)
+                .sortOrder(SortOrder.ASC)
+                .build();
+
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of(
+                CatalogItemEntityRestrictions.builder()
+                        .projects(List.of("PRJ-X"))
+                        .build()
+        );
+
+        when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                .thenReturn(List.of(catalogItemEntityContext));
+
+        when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                .thenReturn(mock(UserActionsEntity.class));
+
+        when(catalogApiAdapter.asCatalogItem(any(), any(), any()))
+                .thenReturn(CatalogItemMother.of());
+
+        doReturn(Set.of()).when(catalogItemsApiFacade)
+                .currentPrincipalCatalogPermissions(catalogId);
+
+        doReturn(true).when(catalogItemsApiFacade)
+                .filterByContributingFileExists(catalogId);
+
+        // when
+        catalogItemsApiFacade.fetchCatalogItems(params);
+
+        // then
+        verify(catalogApiAdapter).asCatalogItem(
+                argThat(catalogRequestParams -> catalogRequestParams.getAccessToken() == null),
+                any(),
+                any()
+        );
+    }
 
     @Test
     void fetchCatalogItem_whenEntityFoundAndPassesFilters_returnsOk()
