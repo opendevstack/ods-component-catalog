@@ -105,7 +105,9 @@ public class CatalogItemsApiFacade {
             );
         }
 
-        return allCatalogItems;
+        return allCatalogItems.stream()
+                .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
+                .toList();
     }
 
     private void validateTokenFromOds(String accessToken) throws ForbiddenException {
