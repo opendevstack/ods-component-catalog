@@ -85,7 +85,7 @@ public class CatalogItemsApiFacade {
                     catalogRequestParams.toBuilder()
                             .accessToken(null)
                             .build();
-            return fetchCatalogItemsByCatalogId(catalogRequestParams);
+            return fetchCatalogItemsByCatalogId(catalogRequestParamsWithoutToken);
         }
 
         validateTokenFromOds(catalogRequestParams.getAccessToken());
