@@ -482,9 +482,11 @@ class CatalogItemsApiFacadeTest {
 
             CatalogItem item1 = new CatalogItem();
             item1.setId("item-1");
+            item1.setTitle("item-1-title");
 
             CatalogItem item2 = new CatalogItem();
             item2.setId("item-2");
+            item2.setTitle("item-2-title");
 
             doAnswer(inv -> {
                 CatalogRequestParams p = inv.getArgument(0);
