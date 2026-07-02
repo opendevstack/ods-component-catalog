@@ -642,6 +642,73 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
+    void fetchCatalogItems_whenNoCatalogIdProvided_sortsAllCatalogItemsAscendingByTitle() throws Exception {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
+                    .thenReturn(Optional.of("expectedOid"));
+
+            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+
+            var params = CatalogRequestParams.builder()
+                    .catalogId(null)
+                    .accessToken("validToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            var catalogsCollection = mock(CatalogsCollectionsEntity.class);
+            when(catalogsCollectionService.getCatalogsCollection())
+                    .thenReturn(Optional.of(catalogsCollection));
+
+            var descriptor1 = mock(CatalogDescriptor.class);
+            var descriptor2 = mock(CatalogDescriptor.class);
+
+            when(descriptor1.getId()).thenReturn("catalog-1");
+            when(descriptor2.getId()).thenReturn("catalog-2");
+
+            when(catalogApiAdapter.asCatalogDescriptors(catalogsCollection))
+                    .thenReturn(List.of(descriptor1, descriptor2));
+
+            when(catalogEntitiesService.getCatalogItemsEntities("catalog-1"))
+                    .thenReturn(List.of(mock(CatalogItemEntityContext.class)));
+
+            when(catalogEntitiesService.getCatalogItemsEntities("catalog-2"))
+                    .thenReturn(List.of(mock(CatalogItemEntityContext.class)));
+
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
+
+            doReturn(Set.of()).when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(anyString());
+
+            doReturn(true).when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(anyString());
+
+            CatalogItem zItem = CatalogItem.builder()
+                    .id("item-z")
+                    .title("Z-title")
+                    .build();
+            CatalogItem aItem = CatalogItem.builder()
+                    .id("item-a")
+                    .title("A-title")
+                    .build();
+
+            doAnswer(inv -> {
+                CatalogRequestParams p = inv.getArgument(0);
+                return "catalog-1".equals(p.getCatalogId()) ? zItem : aItem;
+            }).when(catalogItemsApiFacade).asCatalogItem(any());
+
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            assertThat(result)
+                    .extracting(CatalogItem::getTitle)
+                    .containsExactly("A-title", "Z-title");
+        }
+    }
+
+    @Test
     void fetchCatalogItem_whenEntityFoundAndPassesFilters_returnsOk()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
