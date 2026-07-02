@@ -19,6 +19,8 @@ import org.opendevstack.component_catalog.server.services.ProjectComponentsServi
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
@@ -59,7 +61,7 @@ public class CatalogItemsApiFacade {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        var componentCount = calculateComponentCount(catalogRequestParams);
+        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
         return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
@@ -68,7 +70,7 @@ public class CatalogItemsApiFacade {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        var componentCount = calculateComponentCount(catalogRequestParams);
+        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
         return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, componentCount);
     }
@@ -188,6 +190,22 @@ public class CatalogItemsApiFacade {
         } catch (InvalidIdException e) {
             log.error("Unable to get permissions for: '{}' and resource with id: {}", principalName, id, e);
             return Set.of();
+        }
+    }
+
+    private Integer calculateComponentCountForCatalogOwners(CatalogRequestParams catalogRequestParams, List<String> userGroups) {
+        var catalogEntity = catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(catalogRequestParams.getCatalogItemEntityContext());
+        var catalogOwnerGroups = catalogEntity
+                .map(CatalogEntity::getMetadata)
+                .map(CatalogEntityMetadata::getOwners)
+                .orElse(Collections.emptyList());
+
+        if (userGroups.stream().noneMatch(catalogOwnerGroups::contains)) {
+            log.debug("User groups {} do not match any catalog owner groups {} for catalog item {}", userGroups, catalogOwnerGroups, catalogRequestParams.getCatalogItemEntityContext().getId());
+
+            return null;
+        } else {
+            return calculateComponentCount(catalogRequestParams);
         }
     }
 
