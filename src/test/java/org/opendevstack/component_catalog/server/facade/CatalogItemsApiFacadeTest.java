@@ -12,23 +12,26 @@ import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.mo
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.mappers.CatalogItemMother;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
+import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
-import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
-import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
+import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 
 import java.util.Collections;
 import java.util.List;
@@ -70,8 +73,8 @@ class CatalogItemsApiFacadeTest {
     @Test
     void asCatalogItem_returnsCatalogItemUsingClustersFromProjectsApi() {
         // given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -81,7 +84,7 @@ class CatalogItemsApiFacadeTest {
         var projectInfo = new ProjectInfo();
         projectInfo.setClusters(clusters);
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
                 .catalogItemEntityContext(itemEntityCtx)
@@ -91,13 +94,11 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        var componentCount = 5; // Example component count for testing
+        var componentCount = 0;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -111,8 +112,8 @@ class CatalogItemsApiFacadeTest {
     @Test
     void asCatalogItem_whenProjectInfoHasNullClusters_usesEmptyList() {
         // given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -125,7 +126,7 @@ class CatalogItemsApiFacadeTest {
 
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
                 .catalogItemEntityContext(itemEntityCtx)
@@ -135,11 +136,9 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        var componentCount = 5; // Example component count for testing
+        var componentCount = 0;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -153,16 +152,16 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenANullAccessToken_whenAsCatalogItem_thenNoRequestToProjectsInfoService_AndEmptyClusters() {
         // Given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         String accessToken = null;
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
-                .catalogItemEntityContext(itemEntityCtx)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -172,11 +171,9 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
-        var componentCount = 5; // Example component count for testing
+        var componentCount = 0;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -190,8 +187,8 @@ class CatalogItemsApiFacadeTest {
     void catalogItemFiltersFrom_withProjectKeyAndToken_returnsFiltersUsingClustersFromProjectsApi() {
         // given
         var catalogEntity = mock(CatalogEntity.class);
-        var itemEntitiesCtxs = List.of(mock(CatalogItemEntityContext.class));
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -203,7 +200,7 @@ class CatalogItemsApiFacadeTest {
 
         var catalogItemRequestParams = CatalogRequestParams.builder()
                 .catalogEntity(catalogEntity)
-                .catalogItemEntityContextList(itemEntitiesCtxs)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -215,11 +212,9 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        var componentCount = 5; // Example component count for testing
+        var componentCount = 0; // Example component count for testing
 
         when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
@@ -234,18 +229,20 @@ class CatalogItemsApiFacadeTest {
     @Test
     void catalogItemFiltersFrom_withoutProjectKeyAndToken_usesEmptyClusters() {
         // given
-        var catalogEntity = mock(CatalogEntity.class);
-        var itemEntitiesCtxs = List.of(mock(CatalogItemEntityContext.class));
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogEntity = CatalogEntityMother.of();
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
 
         var projectKey = StringUtils.EMPTY;
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
+
+        // catalogRequestParams.getCatalogItemEntityContext()
         var catalogItemRequestParams = CatalogRequestParams.builder()
                 .catalogEntity(catalogEntity)
-                .catalogItemEntityContextList(itemEntitiesCtxs)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -253,12 +250,8 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        var componentCount = 5; // Example component count for testing
+        var componentCount = 0;
         when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
-
-        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
