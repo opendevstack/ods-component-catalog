@@ -91,7 +91,16 @@ public class CatalogEntitiesService {
     }
 
     public Optional<CatalogEntity> getCatalogEntityByCatalogItemEntityContext(CatalogItemEntityContext catalogItemEntityContext) {
-        var catalogPathAt = catalogItemEntityContext.getRepoCatalogItemPathAt().getParent();
+        var catalogItemPathAt = catalogItemEntityContext.getRepoCatalogItemPathAt();
+
+        var catalogPathAt = BitbucketPathAt.builder()
+                .baseRawUrl(catalogItemPathAt.getBaseRawUrl())
+                .baseRestUrl(catalogItemPathAt.getBaseRestUrl())
+                .projectKey(catalogItemPathAt.getProjectKey())
+                .repoSlug("catalog")
+                .subPath("Catalog.yaml")
+                .at(catalogItemPathAt.getAt())
+                .build();
 
         var catalogEntity = getCatalogEntity(catalogPathAt);
 
