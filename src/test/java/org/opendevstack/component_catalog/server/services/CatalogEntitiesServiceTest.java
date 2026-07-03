@@ -6,8 +6,14 @@ import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadat
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.mockito.ArgumentCaptor;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -115,5 +121,57 @@ class CatalogEntitiesServiceTest {
         assertThat(codeowners).isNotEmpty();
         assertThat(codeowners.get()).hasSize(3);
         assertThat(codeowners.get()).containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+    }
+
+    @Test
+    void GivenCatalogItemEntityContext_whenCatalogExists_ThenReturnCatalogEntity() {
+        //given
+        var originalPathAt = BitbucketPathAtMother.of();
+
+        var ctx = CatalogItemEntityContext.builder()
+                .id("some-id")
+                .repoCatalogItemPathAt(originalPathAt)
+                .build();
+
+        var expectedCatalog = CatalogEntityMother.of();
+
+        when(catalogServiceAdapter.getYamlEntity(any(BitbucketPathAt.class), eq(CatalogEntity.class)))
+                .thenReturn(Optional.of(expectedCatalog));
+
+        //when
+        var maybeCatalog = catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(ctx);
+
+        //then
+        assertThat(maybeCatalog).isPresent();
+        assertThat(maybeCatalog.get()).isEqualTo(expectedCatalog);
+
+        ArgumentCaptor<BitbucketPathAt> captor = ArgumentCaptor.forClass(BitbucketPathAt.class);
+        verify(catalogServiceAdapter).getYamlEntity(captor.capture(), eq(CatalogEntity.class));
+        var captured = captor.getValue();
+
+        assertThat(captured.getBaseRawUrl()).isEqualTo(originalPathAt.getBaseRawUrl());
+        assertThat(captured.getBaseRestUrl()).isEqualTo(originalPathAt.getBaseRestUrl());
+        assertThat(captured.getProjectKey()).isEqualTo(originalPathAt.getProjectKey());
+        assertThat(captured.getAt()).isEqualTo(originalPathAt.getAt());
+        assertThat(captured.getRepoSlug()).isEqualTo("catalog");
+        assertThat(captured.getSubPath()).isEqualTo("Catalog.yaml");
+    }
+
+    @Test
+    void GivenCatalogItemEntityContext_whenCatalogParsingFails_ThenThrowInvalidCatalogEntityException() {
+        //given
+        var originalPathAt = BitbucketPathAtMother.of();
+
+        var ctx = CatalogItemEntityContext.builder()
+                .id("some-id")
+                .repoCatalogItemPathAt(originalPathAt)
+                .build();
+
+        when(catalogServiceAdapter.getYamlEntity(any(BitbucketPathAt.class), eq(CatalogEntity.class)))
+                .thenThrow(new InvalidEntityException("parse error"));
+
+        //when //then
+        assertThatThrownBy(() -> catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(ctx))
+                .isInstanceOf(org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException.class);
     }
 }

@@ -656,7 +656,7 @@ class CatalogItemsApiFacadeTest {
         when(userActionsEntitiesService.getDefaultUserActionsEntity())
                 .thenReturn(mock(UserActionsEntity.class));
 
-        when(catalogApiAdapter.asCatalogItem(any(), any(), any()))
+        when(catalogApiAdapter.asCatalogItem(any(), any(), any(), anyInt()))
                 .thenReturn(CatalogItemMother.of());
 
         doReturn(Set.of()).when(catalogItemsApiFacade)
@@ -672,7 +672,8 @@ class CatalogItemsApiFacadeTest {
         verify(catalogApiAdapter).asCatalogItem(
                 argThat(catalogRequestParams -> catalogRequestParams.getAccessToken() == null),
                 any(),
-                any()
+                any(),
+                anyInt()
         );
     }
 
