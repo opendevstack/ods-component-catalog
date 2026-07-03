@@ -158,6 +158,7 @@ public class ProvisionerActionsService {
             String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
             bitbucketService.pushFile(pathAt, sourceCommitId, jsonUpdatedProjectComponents);
             projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
+            projectComponentsCacheService.evict("allProjectKeys");
         } catch (HttpClientErrorException httpClientErrorException) {
             log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
 
@@ -246,7 +247,7 @@ public class ProvisionerActionsService {
                 .build();
     }
 
-    // FIXME: Add a cache here also
+    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "allProjectKeys")
     public List<String> getAllProjectComponentsProjectKeys() {
         var projectComponentFiles = listAllProjectsJsons();
 
