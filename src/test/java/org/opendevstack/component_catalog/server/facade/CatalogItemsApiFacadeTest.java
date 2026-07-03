@@ -18,10 +18,6 @@ import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
-import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
-import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
-import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
@@ -32,6 +28,7 @@ import org.opendevstack.component_catalog.server.services.ProvisionerActionsServ
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityRestrictions;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -115,7 +112,7 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        var componentCount = 0;
+        Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
@@ -157,7 +154,7 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        var componentCount = 0;
+        Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
 
@@ -192,7 +189,7 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
-        var componentCount = 0;
+        Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
 
@@ -233,7 +230,7 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        var componentCount = 0; // Example component count for testing
+        Integer componentCount = null;
 
         when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
 
@@ -271,7 +268,7 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        var componentCount = 0;
+        Integer componentCount = null;
         when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
 
         // when
@@ -632,6 +629,8 @@ class CatalogItemsApiFacadeTest {
         // no validation is performed upon the access token
     }
 
+    // NOTE: As there is no token provided, there is no way to get groups from projectsInfoServices, so there will never a match
+    // between itemgroups and usergroups, so componentCount will be always null
     @Test
     void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvidedWithinTheRequestParams_thenNoAccessTokenIsUsedToMapCatalogItems() throws InvalidIdException {
         // given
@@ -656,7 +655,7 @@ class CatalogItemsApiFacadeTest {
         when(userActionsEntitiesService.getDefaultUserActionsEntity())
                 .thenReturn(mock(UserActionsEntity.class));
 
-        when(catalogApiAdapter.asCatalogItem(any(), any(), any(), anyInt()))
+        when(catalogApiAdapter.asCatalogItem(any(), any(), any(), any()))
                 .thenReturn(CatalogItemMother.of());
 
         doReturn(Set.of()).when(catalogItemsApiFacade)
@@ -673,7 +672,7 @@ class CatalogItemsApiFacadeTest {
                 argThat(catalogRequestParams -> catalogRequestParams.getAccessToken() == null),
                 any(),
                 any(),
-                anyInt()
+                any()
         );
     }
 
@@ -826,6 +825,9 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenCatalogRequestWithMatchingComponents_whenAsCatalogItem_thenCalculatesComponentCountCorrectly() {
         // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var catalogItemId = itemEntityCtx.getId();
 
@@ -836,7 +838,7 @@ class CatalogItemsApiFacadeTest {
                 .catalogItemEntityContext(itemEntityCtx)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
-                .accessToken(null)
+                .accessToken("any-access-token")
                 .projectKey("PRJ-COMP")
                 .build();
 
@@ -860,12 +862,15 @@ class CatalogItemsApiFacadeTest {
                 ))
                 .build();
 
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-1"));
         when(provisionerActionsService.getProjectComponents("PRJ-1")).thenReturn(projectComponents);
         when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn("catalog-item-repo");
 
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
-        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(1))).thenReturn(expectedCatalogItem);
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(1))).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -879,6 +884,9 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenCatalogRequestWithNoMatchingComponents_whenAsCatalogItem_thenComponentCountIsZero() {
         // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var catalogItemId = itemEntityCtx.getId();
 
@@ -889,7 +897,7 @@ class CatalogItemsApiFacadeTest {
                 .catalogItemEntityContext(itemEntityCtx)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
-                .accessToken(null)
+                .accessToken("any-access-token")
                 .build();
 
         // Create components that don't match
@@ -912,12 +920,16 @@ class CatalogItemsApiFacadeTest {
                 ))
                 .build();
 
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-X"));
         when(provisionerActionsService.getProjectComponents("PRJ-X")).thenReturn(projectComponents);
         when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn("catalog-item-no-match");
 
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
-        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(0))).thenReturn(expectedCatalogItem);
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -930,6 +942,9 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenCatalogRequestWithInvalidEntityException_whenAsCatalogItem_thenHandlesExceptionAndContinues() {
         // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var catalogItemId = itemEntityCtx.getId();
 
@@ -940,7 +955,7 @@ class CatalogItemsApiFacadeTest {
                 .catalogItemEntityContext(itemEntityCtx)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
-                .accessToken(null)
+                .accessToken("any-access-token")
                 .build();
 
         var component = ProjectComponent.builder()
@@ -953,13 +968,17 @@ class CatalogItemsApiFacadeTest {
                 .components(Map.of("comp-err", component))
                 .build();
 
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-ERR"));
         when(provisionerActionsService.getProjectComponents("PRJ-ERR")).thenReturn(projectComponents);
         when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId))
                 .thenThrow(new InvalidEntityException("Invalid entity"));
 
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
-        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(0))).thenReturn(expectedCatalogItem);
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -972,6 +991,9 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenEmptyProjectComponentsList_whenAsCatalogItem_thenComponentCountIsZero() {
         // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
         var itemEntityCtx = CatalogItemEntityContextMother.of();
 
         var userActionsEntity = UserActionsEntityMother.of();
@@ -981,13 +1003,16 @@ class CatalogItemsApiFacadeTest {
                 .catalogItemEntityContext(itemEntityCtx)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
-                .accessToken(null)
+                .accessToken("any-access-token")
                 .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
 
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(Collections.emptyList());
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
-        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(0))).thenReturn(expectedCatalogItem);
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -1000,6 +1025,9 @@ class CatalogItemsApiFacadeTest {
     @Test
     void givenMultipleProjectsWithMultipleComponents_whenAsCatalogItem_thenCountsMatchingComponentsAcrossAllProjects() {
         // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var catalogItemId = itemEntityCtx.getId();
 
@@ -1010,7 +1038,7 @@ class CatalogItemsApiFacadeTest {
                 .catalogItemEntityContext(itemEntityCtx)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
-                .accessToken(null)
+                .accessToken("any-access-token")
                 .build();
 
         // First project with matching component
@@ -1035,13 +1063,16 @@ class CatalogItemsApiFacadeTest {
                 .components(Map.of("comp-match-2", matchingComponent2))
                 .build();
 
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-1", "PRJ-2"));
         when(provisionerActionsService.getProjectComponents("PRJ-1")).thenReturn(projectComponents1);
         when(provisionerActionsService.getProjectComponents("PRJ-2")).thenReturn(projectComponents2);
         when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn(catalogItemId);
 
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
-        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(2))).thenReturn(expectedCatalogItem);
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(2))).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
