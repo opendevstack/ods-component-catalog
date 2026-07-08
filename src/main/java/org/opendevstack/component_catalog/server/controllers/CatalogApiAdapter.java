@@ -47,7 +47,8 @@ public class CatalogApiAdapter {
 
     public  CatalogItem asCatalogItem(CatalogRequestParams  catalogRequestParams,
                                         List<String> clusters,
-                                        List<String> userGroups) {
+                                        List<String> userGroups,
+                                        Integer componentCount) {
         log.debug("asCatalogItem. params: {}, clusters: {}, userGroups: {}",
                 catalogRequestParams, clusters, userGroups);
 
@@ -55,7 +56,7 @@ public class CatalogApiAdapter {
         // If the principal has *any* permissions, it has access to the repo
         var hasRepoAccess = !catalogRequestParams.getPermissions().isEmpty();
 
-        var mappedItem = entitiesMapper.asCatalogItem(catalogRequestParams.getCatalogItemEntityContext(), clusters, userGroups, catalogRequestParams.getProjectKey());
+        var mappedItem = entitiesMapper.asCatalogItem(catalogRequestParams.getCatalogItemEntityContext(), clusters, userGroups, catalogRequestParams.getProjectKey(), componentCount);
 
         var item = updateItemIfNoRepoAccess(mappedItem, hasRepoAccess);
 
@@ -128,7 +129,10 @@ public class CatalogApiAdapter {
         return item;
     }
 
-    public  List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams, List<String> clusters, List<String> userGroups) {
+    public  List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams,
+                                                           List<String> clusters,
+                                                           List<String> userGroups,
+                                                           Integer componentCount) {
         log.debug("catalogItemFiltersFrom. params: {}", catalogRequestParams);
 
         // Group all tags from all items and group them by label, in order to
@@ -142,7 +146,8 @@ public class CatalogApiAdapter {
                                 .projectKey(catalogRequestParams.getProjectKey())
                                 .build(),
                         clusters,
-                        userGroups
+                        userGroups,
+                        componentCount
                 ))
                 .flatMap(item -> item.getTags().stream())
                 .collect(Collectors.groupingBy(CatalogItemTag::getLabel));

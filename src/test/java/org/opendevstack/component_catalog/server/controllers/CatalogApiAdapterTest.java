@@ -94,7 +94,9 @@ class CatalogApiAdapterTest {
                 .projectKey(projectKey)
                 .build();
 
-        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+        var componentCount = 5; // Example component count for testing
+
+        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set from CatalogItemEntityContext.lastCommitDateUTC (milliseconds since epoch)
         assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
@@ -164,7 +166,9 @@ class CatalogApiAdapterTest {
                 .projectKey(projectKey)
                 .build();
 
-        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+        var componentCount = 5; // Example component count for testing
+
+        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set even when the principal has no repo permissions
         assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
@@ -208,8 +212,10 @@ class CatalogApiAdapterTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
+        var componentCount = 5; // Example component count for testing
+
         // when
-        var catalogItem = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+        var catalogItem = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // then
         assertThat(catalogItem.getRestrictions().getProjects()).isEqualTo(new HashSet<>(projects));
@@ -252,7 +258,9 @@ class CatalogApiAdapterTest {
                 .projectKey(projectKey)
                 .build();
 
-        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        var componentCount = 5; // Example component count for testing
+
+        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
 
         assertEquals(3, filters.size());
 
@@ -309,7 +317,9 @@ class CatalogApiAdapterTest {
                 .projectKey(projectKey)
                 .build();
 
-        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        var componentCount = 5; // Example component count for testing
+
+        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
 
         assertEquals(1, filters.size());
 

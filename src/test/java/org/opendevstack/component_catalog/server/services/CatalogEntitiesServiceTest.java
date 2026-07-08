@@ -1,24 +1,28 @@
 package org.opendevstack.component_catalog.server.services;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadataMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +43,7 @@ class CatalogEntitiesServiceTest {
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(id)).thenReturn(bitbucketPathAt);
 
-        when(catalogServiceAdapter.getCatalogEntity(bitbucketPathAt, CatalogEntity.class))
+        when(catalogServiceAdapter.getCatalogEntity(bitbucketPathAt))
                 .thenReturn(Optional.of(catalogEntity));
 
         // When
@@ -59,7 +63,7 @@ class CatalogEntitiesServiceTest {
         var repoCatalog = CatalogEntityMother.of();
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(catalogIdPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class)).thenReturn(Optional.of(repoCatalog));
+        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt)).thenReturn(Optional.of(repoCatalog));
 
         // when
         var result = catalogEntitiesService.getCatalogItemsEntities("aSdFam...yCg==");
@@ -76,7 +80,7 @@ class CatalogEntitiesServiceTest {
         var catalogItemEntity = CatalogEntityMother.of();
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(catalogIdPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class)).thenReturn(Optional.of(catalogItemEntity));
+        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt)).thenReturn(Optional.of(catalogItemEntity));
 
         // when
         var result = catalogEntitiesService.getCatalogEntityContext(catalogId);
@@ -115,5 +119,57 @@ class CatalogEntitiesServiceTest {
         assertThat(codeowners).isNotEmpty();
         assertThat(codeowners.get()).hasSize(3);
         assertThat(codeowners.get()).containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+    }
+
+    @Test
+    void GivenCatalogItemEntityContext_whenCatalogExists_ThenReturnCatalogEntity() {
+        //given
+        var originalPathAt = BitbucketPathAtMother.of();
+
+        var ctx = CatalogItemEntityContext.builder()
+                .id("some-id")
+                .repoCatalogItemPathAt(originalPathAt)
+                .build();
+
+        var expectedCatalog = CatalogEntityMother.of();
+
+        when(catalogServiceAdapter.getCatalogEntity(any(BitbucketPathAt.class)))
+                .thenReturn(Optional.of(expectedCatalog));
+
+        //when
+        var maybeCatalog = catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(ctx);
+
+        //then
+        assertThat(maybeCatalog).isPresent();
+        assertThat(maybeCatalog.get()).isEqualTo(expectedCatalog);
+
+        ArgumentCaptor<BitbucketPathAt> captor = ArgumentCaptor.forClass(BitbucketPathAt.class);
+        verify(catalogServiceAdapter).getCatalogEntity(captor.capture());
+        var captured = captor.getValue();
+
+        assertThat(captured.getBaseRawUrl()).isEqualTo(originalPathAt.getBaseRawUrl());
+        assertThat(captured.getBaseRestUrl()).isEqualTo(originalPathAt.getBaseRestUrl());
+        assertThat(captured.getProjectKey()).isEqualTo(originalPathAt.getProjectKey());
+        assertThat(captured.getAt()).isEqualTo(originalPathAt.getAt());
+        assertThat(captured.getRepoSlug()).isEqualTo("catalog");
+        assertThat(captured.getSubPath()).isEqualTo("Catalog.yaml");
+    }
+
+    @Test
+    void GivenCatalogItemEntityContext_whenCatalogParsingFails_ThenThrowInvalidCatalogEntityException() {
+        //given
+        var originalPathAt = BitbucketPathAtMother.of();
+
+        var ctx = CatalogItemEntityContext.builder()
+                .id("some-id")
+                .repoCatalogItemPathAt(originalPathAt)
+                .build();
+
+        when(catalogServiceAdapter.getCatalogEntity(any(BitbucketPathAt.class)))
+                .thenThrow(new InvalidEntityException("parse error"));
+
+        //when //then
+        assertThatThrownBy(() -> catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(ctx))
+                .isInstanceOf(org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException.class);
     }
 }

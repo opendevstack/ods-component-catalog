@@ -49,7 +49,7 @@ public class CatalogEntitiesService {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(id);
 
         try {
-            return catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+            return catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
         } catch (InvalidCatalogEntityException e) {
             throw new InvalidIdException(id, e);
         }
@@ -58,7 +58,7 @@ public class CatalogEntitiesService {
     public Optional<CatalogEntityContext> getCatalogEntityContext(String id) throws InvalidIdException, InvalidCatalogEntityException {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(id);
 
-        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
 
         return catalogEntity.map(entity -> {
             var communityPagePathAt = ofNullable(entity.getMetadata().getCommunityPage())
@@ -76,7 +76,7 @@ public class CatalogEntitiesService {
         // In order to return a valid list of RepoCatalogItemContexts, we need a valid RepoCatalog, that's
         // an existing file, a valid yaml file and also a valid RepoCatalog object
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogId);
-        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
 
         if(catalogEntity.isEmpty()) {
             throw new InvalidCatalogEntityException(catalogId);
@@ -88,6 +88,25 @@ public class CatalogEntitiesService {
     public Optional<CatalogItemEntityContext> getCatalogItemEntity(String id)
             throws InvalidIdException, InvalidCatalogItemEntityException {
         return this.buildCatalogItemEntityCtx(catalogServiceAdapter.bitbucketPathAtFromId(id));
+    }
+
+    public Optional<CatalogEntity> getCatalogEntityByCatalogItemEntityContext(CatalogItemEntityContext catalogItemEntityContext) {
+        var catalogItemPathAt = catalogItemEntityContext.getRepoCatalogItemPathAt();
+
+        var catalogPathAt = BitbucketPathAt.builder()
+                .baseRawUrl(catalogItemPathAt.getBaseRawUrl())
+                .baseRestUrl(catalogItemPathAt.getBaseRestUrl())
+                .projectKey(catalogItemPathAt.getProjectKey())
+                .repoSlug("catalog")
+                .subPath("Catalog.yaml")
+                .at(catalogItemPathAt.getAt())
+                .build();
+
+        var catalogEntity = getCatalogEntity(catalogPathAt);
+
+        log.debug("Catalog entity for catalog item entity '{}' is: '{}'", catalogItemEntityContext.getId(), catalogEntity);
+
+        return catalogEntity;
     }
 
     public Set<CatalogEntityPermissionEnum> catalogPrincipalPermissions(String catalogId, String principalName) throws InvalidIdException {
@@ -112,6 +131,16 @@ public class CatalogEntitiesService {
                 .map(CodeownersCommentStripper::strip)
                 .flatMap(maybeValueFrom(this::parseContributors));
     }
+
+    private Optional<CatalogEntity> getCatalogEntity(BitbucketPathAt catalogPathAt) {
+        try {
+            return catalogServiceAdapter.getCatalogEntity(catalogPathAt);
+        } catch (InvalidEntityException e) {
+            log.error("Error while parsing catalog entity contents from Bitbucket for catalog entity: '{}'", catalogPathAt.getRawUrl(), e);
+            throw new InvalidCatalogEntityException(catalogPathAt.getPathAt());
+        }
+    }
+
 
     private Optional<CatalogItemEntity> getCatalogItemEntity(BitbucketPathAt catalogItemPathAt)
             throws InvalidCatalogItemEntityException {

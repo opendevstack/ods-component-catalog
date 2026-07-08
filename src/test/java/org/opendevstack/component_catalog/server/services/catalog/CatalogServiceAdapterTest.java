@@ -1,9 +1,5 @@
 package org.opendevstack.component_catalog.server.services.catalog;
 
-import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
-import org.opendevstack.component_catalog.server.services.BitbucketService;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,29 +7,32 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.services.BitbucketService;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.springframework.http.MediaType;
 
 import java.util.Base64;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class CatalogServiceAdapterTest {
+class CatalogServiceAdapterTest {
 
     @Mock
     private BitbucketService bitbucketService;
-
-    @Mock
-    private ProjectApi projectApi;
 
     @Spy
     @InjectMocks
     private CatalogServiceAdapter catalogServiceAdapter;
 
     @Test
-    public void givenAnId_WhenBitbucketAt_thenBitbucketPathIsReturned() throws InvalidIdException {
+    void givenAnId_WhenBitbucketAt_thenBitbucketPathIsReturned() throws InvalidIdException {
         // Given
         var path = "/path/to/resource";
         var id = Base64.getUrlEncoder().encodeToString(path.getBytes());
@@ -52,24 +51,24 @@ public class CatalogServiceAdapterTest {
     }
 
     @Test
-    public void givenABitbucketPath_whenGetCatalogEntity_ThenObjectIsReturned() {
+    void givenABitbucketPath_whenGetCatalogEntity_ThenObjectIsReturned() {
         // given
         var catalogPathAt = mock(BitbucketPathAt.class);
-        var yamlContent = "yaml content";
+        var yamlContent = "{\"kind\":\"Catalog\"}";
         Pair<MediaType, String> text = Pair.of(MediaType.APPLICATION_JSON, yamlContent);
 
         when(bitbucketService.getCachedTextFileContents(catalogPathAt)).thenReturn(Optional.of(text));
 
         // when
-        Optional<String> catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogPathAt, String.class);
+        Optional<CatalogEntity> catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogPathAt);
 
         // then
         assertThat(catalogEntity).isPresent();
-        assertThat(catalogEntity.get()).isEqualTo(yamlContent);
+        assertThat(catalogEntity.get().getKind()).isEqualTo("Catalog");
     }
 
     @Test
-    public void givenValidId_whenContributingReturns2xx_thenTrue() throws InvalidIdException {
+    void givenValidId_whenContributingReturns2xx_thenTrue() throws InvalidIdException {
         // given
         var id = "valid-id";
         var pathAt = mock(BitbucketPathAt.class);
@@ -86,7 +85,7 @@ public class CatalogServiceAdapterTest {
     }
 
     @Test
-    public void givenValidId_whenContributingReturnsNon2xx_thenFalse() throws InvalidIdException {
+    void givenValidId_whenContributingReturnsNon2xx_thenFalse() throws InvalidIdException {
         // given
         var id = "valid-id";
         var pathAt = mock(BitbucketPathAt.class);
@@ -103,7 +102,7 @@ public class CatalogServiceAdapterTest {
     }
 
     @Test
-    public void givenInvalidId_whenBitbucketPathAtThrows_thenFalse() throws InvalidIdException {
+    void givenInvalidId_whenBitbucketPathAtThrows_thenFalse() throws InvalidIdException {
         // given
         var id = "invalid-id";
         doThrow(new InvalidIdException("bad id"))
@@ -114,7 +113,6 @@ public class CatalogServiceAdapterTest {
 
         // then
         assertThat(exists).isFalse();
-        verifyNoInteractions(projectApi);
     }
 
 }

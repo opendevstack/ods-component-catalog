@@ -9,6 +9,8 @@ logging:
     org.opendevstack.component_catalog.server.controllers: INFO
     org.opendevstack.component_catalog.server.api: INFO
     org.opendevstack.component_catalog.server.mappers: INFO
+    org.opendevstack.component_catalog.server.facade: DEBUG
+    org.opendevstack.component_catalog.server.services: DEBUG
     org.opendevstack.component_catalog.server.services.org.opendevstack.component_catalog.server.services.BitbucketService: INFO
     org.opendevstack.component_catalog.util: INFO
     org.opendevstack.component_catalog.server.services.restrictions.evaluators: DEBUG

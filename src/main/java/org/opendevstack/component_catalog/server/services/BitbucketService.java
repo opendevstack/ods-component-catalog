@@ -117,7 +117,7 @@ public class BitbucketService {
         return responseBody
                 .map(GetCommits200Response::getValues)
                 .filter(values -> !values.isEmpty())
-                .map(values -> values.get(0).getId());
+                .map(values -> values.getFirst().getId());
     }
 
     public List<String> getFilenamesFromRemoteDirectory(BitbucketPathAt pathAt) {
