@@ -429,6 +429,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
+  /catalog-activity/{id}:
+    get:
+      tags:
+        - CatalogActivity
+      summary: Returns the CatalogActivity associated to the provided id.
+      description: >
+        Returns the CatalogActivity associated to the provided id, unless:
+        <ul>
+        <li> The id is not associated to any Catalog. </li>
+        <li> Or the associated Catalog is invalid and can't be processed to create a response. </li>
+        </ul>
+      operationId: getCatalogActivityById
+      parameters:
+        - name: id
+          in: path
+          description: id for the Catalog.
+          required: true
+          schema:
+            type: string
+            example: 'aSdFam...yCg=='
+      responses:
+        "200":
+          description: The CatalogActivity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogActivity'
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "404":
+          description: No Catalog associated to the provided id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "422":
+          description: Invalid Catalog associated to the provided id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
   /{projectKey}/catalog-items:
     get:
       tags:
@@ -1284,6 +1341,24 @@ components:
           example:
             - 'project-key-1'
             - 'project-key-2'
+    CatalogActivity:
+      properties:
+        catalogItemSlug:
+          type: string
+          example: 'item-slug'
+        componentId:
+          type: string
+          example: 'component-id'
+        projectKey:
+          type: string
+          example: 'MYSAMPLEPROJECT'
+        status:
+          type: string
+          example: 'CREATING'
+        createdAt:
+          description: The timestamp of the provision action.
+          example: 1707043200000
+          type: number
     SortOrder:
       type: string
       enum:
