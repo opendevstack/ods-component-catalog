@@ -451,11 +451,13 @@ paths:
             example: 'aSdFam...yCg=='
       responses:
         "200":
-          description: The CatalogActivity.
+          description: A list of valid CatalogActivities.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CatalogActivity'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogActivity'
         "401":
           description: Invalid client token on the request.
           content:
@@ -1354,7 +1356,7 @@ components:
           example: 'MYSAMPLEPROJECT'
         status:
           type: string
-          example: 'CREATING'
+          enum: [ CREATING, CREATED, FAILED, DELETING, UNKNOWN ]
         createdAt:
           description: The timestamp of the provision action.
           example: 1707043200000
