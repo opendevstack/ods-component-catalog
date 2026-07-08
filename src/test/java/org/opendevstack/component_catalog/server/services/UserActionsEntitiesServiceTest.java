@@ -67,7 +67,7 @@ class UserActionsEntitiesServiceTest {
         UserActionsEntity entity = mock(UserActionsEntity.class);
         var userActionsPathAt = mock(BitbucketPathAt.class);
         when(catalogServiceAdapter.bitbucketPathAtFromId(entityId)).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         assertEquals(entity, userActionsEntitiesService.getUserActionsEntity(entityId));
     }
@@ -87,7 +87,7 @@ class UserActionsEntitiesServiceTest {
 
         var userActionsPathAt = mock(BitbucketPathAt.class);
         when(catalogServiceAdapter.bitbucketPathAtFromId("testId")).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.empty());
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> userActionsEntitiesService.getUserActionsEntity(entityId));
     }
@@ -113,7 +113,7 @@ class UserActionsEntitiesServiceTest {
 
         when(catalogServiceAdapter.bitbucketPathAtFromId("actionBbId")).thenReturn(userActionsPathAt);
 
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         when(title.getId()).thenReturn(UserActionEntityMessageType.SUCCESS);
 
@@ -144,7 +144,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId("actionBbId")).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         Optional<Pair<UserActionEntityMessageTitle, UserActionEntityMessageDefinition>> result =
                 userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle("actionBbId", "actionId", "defId");
@@ -175,7 +175,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId("actionBbId")).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         Optional<Pair<UserActionEntityMessageTitle, UserActionEntityMessageDefinition>> result =
                 userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle("actionBbId", "actionId", "nonexistentId");
@@ -202,7 +202,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         List<UserActionEntityMessageTitle> result = userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId");
         assertEquals(1, result.size());
@@ -224,7 +224,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         assertThrows(IllegalStateException.class, () -> userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId"));
     }
@@ -246,7 +246,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         List<UserActionEntityMessageDefinition> result = userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId");
         assertEquals(1, result.size());
@@ -268,7 +268,7 @@ class UserActionsEntitiesServiceTest {
         when(entity.getSpec()).thenReturn(spec);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(userActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(entity));
+        when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         assertThrows(IllegalStateException.class, () -> userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId"));
     }
@@ -335,7 +335,7 @@ class UserActionsEntitiesServiceTest {
         BitbucketPathAt bitbucketIdUserActionsPathAt = mock(BitbucketPathAt.class);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(bitbucketIdUserActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(bitbucketIdUserActionsPathAt, UserActionsEntity.class)).thenReturn(Optional.of(defaultUserActionsEntity));
+        when(catalogServiceAdapter.getUserActionsEntity(bitbucketIdUserActionsPathAt)).thenReturn(Optional.of(defaultUserActionsEntity));
     }
 
     private void buildAndInitializeMocksForCustomUserActionsEntity(String catalogItemId, String userActionId, String messageDefinitionId, String messageDefinitionMessage) throws InvalidIdException {
@@ -375,7 +375,7 @@ class UserActionsEntitiesServiceTest {
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId))
                 .thenReturn(catalogItemIdUserActionsPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(catalogItemIdUserActionsPathAt, CatalogItemEntity.class))
+        when(catalogServiceAdapter.getCatalogItemEntity(catalogItemIdUserActionsPathAt))
                 .thenReturn(Optional.of(customUserActionsEntity));
 
     }

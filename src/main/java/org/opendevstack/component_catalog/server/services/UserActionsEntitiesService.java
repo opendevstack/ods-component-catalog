@@ -1,17 +1,16 @@
 package org.opendevstack.component_catalog.server.services;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.server.mappers.EntitiesMapper;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
-import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageDefinition;
-import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageTitle;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntitySpec;
-import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;
+import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageDefinition;
+import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageTitle;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntitySpec;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -42,7 +41,7 @@ public class UserActionsEntitiesService {
         try {
             var userActionsIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(userActionsId);
 
-            var catalogEntity = catalogServiceAdapter.getCatalogEntity(userActionsIdPathAt, CatalogItemEntity.class)
+            var catalogEntity = catalogServiceAdapter.getCatalogItemEntity(userActionsIdPathAt)
                     .orElseThrow(() -> new IllegalStateException("Catalog entity not found, userActionsId: %s"
                             .formatted(userActionsId)));
 
@@ -79,7 +78,7 @@ public class UserActionsEntitiesService {
         try {
             var userActionsIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(userActionsId);
 
-            return catalogServiceAdapter.getCatalogEntity(userActionsIdPathAt, UserActionsEntity.class)
+            return catalogServiceAdapter.getUserActionsEntity(userActionsIdPathAt)
                     .orElseThrow(() -> new IllegalStateException("User actions entity not found, userActionsId: %s"
                             .formatted(userActionsId)));
         } catch (InvalidIdException | IllegalStateException e) {

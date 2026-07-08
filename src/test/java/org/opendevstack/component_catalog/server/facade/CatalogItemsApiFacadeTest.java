@@ -579,7 +579,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() throws Exception {
+    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("badToken", "oid"))
@@ -878,7 +878,7 @@ class CatalogItemsApiFacadeTest {
         // Then
         assertThat(result).isSameAs(expectedCatalogItem);
         verify(provisionerActionsService).getAllProjectComponentsProjectKeys();
-        verify(projectComponentsService, times(2)).getRepoPathFromCatalogItemId(catalogItemId);
+        verify(projectComponentsService).getRepoPathFromCatalogItemId(catalogItemId);
     }
 
     @Test
@@ -972,8 +972,7 @@ class CatalogItemsApiFacadeTest {
 
         when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-ERR"));
         when(provisionerActionsService.getProjectComponents("PRJ-ERR")).thenReturn(projectComponents);
-        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId))
-                .thenThrow(new InvalidEntityException("Invalid entity"));
+        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenThrow(new InvalidEntityException("Invalid entity"));
 
         when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
 

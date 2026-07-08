@@ -1,16 +1,14 @@
 package org.opendevstack.component_catalog.server.services;
 
-import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityMother;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.server.services.catalog.*;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityMother;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -39,14 +37,15 @@ public class CatalogsCollectionServiceTest {
         var repoCatalog = CatalogsCollectionsEntityMother.of();
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(catalogOfCatalogsId)).thenReturn(catalogIdPathAt);
-        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogsCollectionsEntity.class)).thenReturn(Optional.of(repoCatalog));
+        when(catalogServiceAdapter.getCatalogsCollectionEntity(catalogIdPathAt)).thenReturn(Optional.of(repoCatalog));
 
         // when
         var catalogsCollection = catalogsCollectionService.getCatalogsCollection();
 
         // then
-        assertThat(catalogsCollection).isPresent();
-        assertThat(catalogsCollection.get()).isEqualTo(repoCatalog);
+        assertThat(catalogsCollection)
+                .isPresent()
+                .contains(repoCatalog);
     }
 
 }

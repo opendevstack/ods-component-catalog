@@ -24,7 +24,8 @@ public class CatalogsCollectionService {
 
     public Optional<CatalogsCollectionsEntity> getCatalogsCollection() throws InvalidIdException {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogOfCatalogsId);
-        return catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogsCollectionsEntity.class);
+        
+        return catalogServiceAdapter.getCatalogsCollectionEntity(catalogIdPathAt);
     }
 
 }

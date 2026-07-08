@@ -220,23 +220,27 @@ public class CatalogItemsApiFacade {
         log.debug("Calculating component count for catalog item {} and projectComponents: {}", catalogRequestParams.getCatalogItemEntityContext().getId(), projectComponentsList);
 
         var componentCount = 0;
+        var catalogItemId = catalogRequestParams.getCatalogItemEntityContext().getId();
+        String catalogItemIdWithoutRef = null;
 
-        for (ProjectComponents projectComponents : projectComponentsList) {
-            var catalogItemId = catalogRequestParams.getCatalogItemEntityContext().getId();
+        try {
+            catalogItemIdWithoutRef = projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId);
+        } catch (InvalidEntityException e) {
+            log.error("Error decoding catalogItemId {}: {}", catalogItemId, e.getMessage());
+        }
 
-            for (var component : projectComponents.getComponents().values()) {
-                try {
-                    var catalogItemIdWithoutRef = projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId);
+        if (catalogItemIdWithoutRef != null) {
+            for (ProjectComponents projectComponents : projectComponentsList) {
+
+                for (var component : projectComponents.getComponents().values()) {
 
                     log.debug("Checking if Component {} with catalogItemId {} relates to catalog item {}", component, catalogItemIdWithoutRef, catalogItemId);
 
-                    if (catalogItemIdWithoutRef != null && catalogItemIdWithoutRef.equals(component.getCatalogItemId())) {
+                    if (catalogItemIdWithoutRef.equals(component.getCatalogItemId())) {
                         log.debug("Component {} relates to catalog item {}", component, catalogItemId);
 
                         componentCount++;
                     }
-                } catch (InvalidEntityException e) {
-                    log.error("Error decoding catalogItemId for component {}: {}", component, e.getMessage());
                 }
             }
         }

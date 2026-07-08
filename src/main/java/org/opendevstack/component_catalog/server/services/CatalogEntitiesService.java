@@ -49,7 +49,7 @@ public class CatalogEntitiesService {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(id);
 
         try {
-            return catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+            return catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
         } catch (InvalidCatalogEntityException e) {
             throw new InvalidIdException(id, e);
         }
@@ -58,7 +58,7 @@ public class CatalogEntitiesService {
     public Optional<CatalogEntityContext> getCatalogEntityContext(String id) throws InvalidIdException, InvalidCatalogEntityException {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(id);
 
-        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
 
         return catalogEntity.map(entity -> {
             var communityPagePathAt = ofNullable(entity.getMetadata().getCommunityPage())
@@ -76,7 +76,7 @@ public class CatalogEntitiesService {
         // In order to return a valid list of RepoCatalogItemContexts, we need a valid RepoCatalog, that's
         // an existing file, a valid yaml file and also a valid RepoCatalog object
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogId);
-        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt, CatalogEntity.class);
+        var catalogEntity = catalogServiceAdapter.getCatalogEntity(catalogIdPathAt);
 
         if(catalogEntity.isEmpty()) {
             throw new InvalidCatalogEntityException(catalogId);
@@ -134,7 +134,7 @@ public class CatalogEntitiesService {
 
     private Optional<CatalogEntity> getCatalogEntity(BitbucketPathAt catalogPathAt) {
         try {
-            return catalogServiceAdapter.getYamlEntity(catalogPathAt, CatalogEntity.class);
+            return catalogServiceAdapter.getCatalogEntity(catalogPathAt);
         } catch (InvalidEntityException e) {
             log.error("Error while parsing catalog entity contents from Bitbucket for catalog entity: '{}'", catalogPathAt.getRawUrl(), e);
             throw new InvalidCatalogEntityException(catalogPathAt.getPathAt());

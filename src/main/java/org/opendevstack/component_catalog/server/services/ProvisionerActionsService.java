@@ -23,16 +23,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class ProvisionerActionsService {
 
+    public static final String JSON_FILE_EXTENSION = ".json";
     private final BitbucketService bitbucketService;
     private final ObjectMapper objectMapper;
     private final ProjectComponentsService projectComponentsService;
@@ -252,7 +251,8 @@ public class ProvisionerActionsService {
         var projectComponentFiles = listAllProjectsJsons();
 
         var projectKeys = projectComponentFiles.stream()
-                .map(fileName -> fileName.split(".json")[0])
+                .filter(filename -> filename.endsWith(JSON_FILE_EXTENSION))
+                .map(fileName -> fileName.split(JSON_FILE_EXTENSION)[0])
                 .toList();
 
         log.debug("Project keys found: {}", projectKeys);
