@@ -23,7 +23,7 @@ public class CatalogItemSlug {
     private final String projectKey;
     private final String repoName;
 
-    private CatalogItemSlug(String projectKey, String repoName) {
+    public CatalogItemSlug(String projectKey, String repoName) {
         this.projectKey = projectKey;
         this.repoName = repoName;
     }
