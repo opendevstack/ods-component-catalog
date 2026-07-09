@@ -37,10 +37,6 @@ public class CatalogServiceAdapter {
                 .orElseThrow(() -> new InvalidIdException(id));
     }
 
-    public Optional<CatalogEntity> getCatalogEntity(String catalogId) throws InvalidCatalogEntityException {
-        return Optional.empty();
-    }
-
     public Optional<CatalogEntity> getCatalogEntity(BitbucketPathAt catalogPathAt) throws InvalidCatalogEntityException {
         try {
             return getYamlEntity(catalogPathAt, CatalogEntity.class);

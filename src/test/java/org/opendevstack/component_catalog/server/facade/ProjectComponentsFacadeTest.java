@@ -493,37 +493,37 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenTokenWithInvalidOid_whenGetAllProjectComponents_thenThrowForbidden() {
+    void givenTokenWithInvalidOid_whenGetAllProjectComponents_Metrics_thenThrowForbidden() {
         // given
         String token = "invalid-token";
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(token, 0, 10, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(token, 0, 10, "url")
         ).isInstanceOf(ForbiddenException.class);
     }
 
     @Test
-    void givenInvalidPageOrSize_whenGetAllProjectComponents_thenThrowIllegalArgument() {
+    void givenInvalidPageOrSize_whenGetAllProjectComponents_Metrics_thenThrowIllegalArgument() {
         // given
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, -1, 10, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, -1, 10, "url")
         ).isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, 0, -1, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, -1, "url")
         ).isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, 0, 101, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 101, "url")
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void givenOneProjectWithComponents_whenGetAllProjectComponents_thenReturnPaginatedResult() {
+    void givenOneProjectWithComponents_whenGetAllProjectComponents_Metrics_thenReturnPaginatedResult() {
         // given
         String projectKey = "PRJ-1";
 
@@ -546,7 +546,7 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).hasSize(1);
@@ -555,7 +555,7 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenMapperReturnsEmpty_whenGetAllProjectComponents_thenElementIsSkipped() {
+    void givenMapperReturnsEmpty_whenGetAllProjectComponents_Metrics_thenElementIsSkipped() {
         // given
         String projectKey = "PRJ-1";
 
@@ -574,7 +574,7 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).isEmpty();
@@ -615,14 +615,14 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 1, 1, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 1, 1, "url");
 
         // then
         assertThat(result.getData()).hasSize(1);
     }
 
     @Test
-    void givenMultipleProjects_whenGetAllProjectComponents_thenProjectsSortedByKey() {
+    void givenMultipleProjects_whenGetAllProjectComponents_Metrics_thenProjectsSortedByKey() {
         // given
         when(provisionerActionsService.listAllProjectsJsons())
                 .thenReturn(List.of("B.json", "A.json"));
@@ -640,7 +640,7 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).isNotNull();

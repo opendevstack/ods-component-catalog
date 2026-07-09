@@ -429,18 +429,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
-  /catalog-activity/{id}:
+  /catalog-activities/{id}:
     get:
       tags:
         - CatalogActivity
-      summary: Returns the CatalogActivity associated to the provided id.
+      summary: Returns the collection of CatalogActivities associated to the provided Catalog Id.
       description: >
-        Returns the CatalogActivity associated to the provided id, unless:
+        Returns the collection of CatalogActivities associated to the provided Catalog Id, unless:
         <ul>
         <li> The id is not associated to any Catalog. </li>
         <li> Or the associated Catalog is invalid and can't be processed to create a response. </li>
         </ul>
-      operationId: getCatalogActivityById
+      operationId: getCatalogActivitiesById
       parameters:
         - name: id
           in: path

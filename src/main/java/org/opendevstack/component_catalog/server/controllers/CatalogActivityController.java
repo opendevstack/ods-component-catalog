@@ -20,8 +20,8 @@ public class CatalogActivityController implements CatalogActivityApi {
     private final CatalogActivityFacade catalogActivityFacade;
 
     @Override
-    public ResponseEntity<List<CatalogActivity>> getCatalogActivityById(String id) {
-        var activities = catalogActivityFacade.getCatalogActivityById(id);
+    public ResponseEntity<List<CatalogActivity>> getCatalogActivitiesById(String id) {
+        var activities = catalogActivityFacade.getCatalogActivities(id);
 
         return ResponseEntity.ok(activities);
     }

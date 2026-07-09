@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -92,22 +93,33 @@ public class ProjectComponentsFacade {
                 );
     }
 
-    public ProjectComponentsMetrics getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
+    public ProjectComponentsMetrics getAllProjectComponentsMetrics(String accessToken, int page, int size, String paginationBaseUrl) {
         validateTokenPermittedOids(accessToken);
         PaginationUtils.validatePagination(page, size, 100);
 
-        var allProjectsJsons = provisionerActionsService.listAllProjectsJsons().stream()
-                .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
-                .sorted()
-                .toList();
+        var allProjectKeys = getAllProjectComponentsProjectKeys();
 
         Pair<List<ProjectComponentMetrics>, Pagination> paginatedProjectComponentsMetrics =
-                buildProjectComponentMetricsPaginatedResults(allProjectsJsons, page, size, paginationBaseUrl);
+                buildProjectComponentMetricsPaginatedResults(allProjectKeys, page, size, paginationBaseUrl);
 
         return ProjectComponentsMetrics.builder()
                 .data(paginatedProjectComponentsMetrics.getLeft())
                 .pagination(paginatedProjectComponentsMetrics.getRight())
                 .build();
+    }
+
+    // It is supposed there will not be many project components, so we do not need to care about memory limits and pagination
+    public List<ProjectComponents> getAllProjectComponents() {
+        return provisionerActionsService.getAllProjectComponentsProjectKeys().stream()
+                .map(provisionerActionsService::getProjectComponents)
+                .toList();
+    }
+
+    private @NonNull List<String> getAllProjectComponentsProjectKeys() {
+        return provisionerActionsService.listAllProjectsJsons().stream()
+                .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
+                .sorted()
+                .toList();
     }
 
     private boolean notValid(ProjectComponents projectComponents, String projectKey, String accessToken) {

@@ -1,14 +1,17 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,25 +21,60 @@ import java.util.Optional;
 @Slf4j
 public class CatalogActivityFacade {
     private final ProjectComponentsFacade projectComponentsFacade;
-    private final CatalogServiceAdapter catalogServiceAdapter;
+    private final CatalogEntitiesService catalogEntitiesService;
+    private final ProjectsInfoService projectsInfoService;
+    private final AuthenticationFacade authenticationFacade;
+    private final CatalogActivityMapper catalogActivityMapper;
 
-    public List<CatalogActivity> getCatalogActivityById(String id) {
-        var catalogEntity = catalogServiceAdapter.getCatalogEntity(id)
-                .orElseThrow(() -> new ElementNotFoundException("Catalog entity not found for id: " + id));
+    @SneakyThrows
+    public List<CatalogActivity> getCatalogActivities(String catalogId) {
+        var catalogEntity = catalogEntitiesService.getCatalogEntity(catalogId)
+                .orElseThrow(() -> new ElementNotFoundException("Catalog entity not found for catalogId: " + catalogId));
 
         var catalogOwnerGroups = Optional.ofNullable(catalogEntity.getMetadata())
                 .map(CatalogEntityMetadata::getOwners)
                 .orElse(Collections.emptyList());
 
-        if (userGroups.stream().noneMatch(catalogOwnerGroups::contains)) {
-            log.debug("User groups {} do not match any catalog owner groups {} for catalog item {}", userGroups, catalogOwnerGroups, catalogRequestParams.getCatalogItemEntityContext().getId());
+        var userGroups = getProjectGroups();
 
-            return null;
+        if (userGroups.stream().noneMatch(catalogOwnerGroups::contains)) {
+            log.debug("User groups {} do not match any catalog owner groups {} for catalog catalogId {}", userGroups, catalogOwnerGroups, catalogId);
+
+            return Collections.emptyList();
         } else {
-            return calculateComponentCount(catalogRequestParams);
+            var catalogActivities = getCatalogActivities();
+
+            log.debug("User groups {} match catalog owner groups {} for catalog catalogId {}. Returning catalog activities: {}", userGroups, catalogOwnerGroups, catalogId, catalogActivities);
+
+            return catalogActivities;
+        }
+    }
+
+    private List<CatalogActivity> getCatalogActivities() {
+        var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
+
+        List<CatalogActivity> catalogActivities = new ArrayList<>();
+
+        for (var projectComponents : allProjectComponents) {
+
+            var catalogActivitiesByProject = projectComponents.getComponents().entrySet().stream()
+                    // FIXME: Calculate proper slug
+                    .map(entry -> catalogActivityMapper.asCatalogActivity(entry.getKey(), "anySlugToBeCalculatedLater", entry.getValue()))
+                    .toList();
+
+            catalogActivities.addAll(catalogActivitiesByProject);
         }
 
-        // Implementation would go here
-        return null;
+        var immutableCatalogActivities = List.copyOf(catalogActivities);
+
+        log.debug("Returning catalog activities: {}", immutableCatalogActivities);
+
+        return immutableCatalogActivities;
+    }
+
+    private List<String> getProjectGroups() {
+        var accessToken = authenticationFacade.getAccessToken();
+
+        return projectsInfoService.getProjectGroups(accessToken);
     }
 }
