@@ -12,17 +12,31 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.*;
+import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
+import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.opendevstack.component_catalog.util.FunctionalUtils.fieldSorter;
 
@@ -39,42 +53,26 @@ public class CatalogItemsApiFacade {
     private final CatalogItemBySlugService catalogItemBySlugService;
     private final CatalogsCollectionService catalogsCollectionService;
     private final OdsApiServerServiceProps odsApiServerServiceProps;
+    private final ProjectComponentsService projectComponentsService;
+
+    private final ProvisionerActionsService provisionerActionsService;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups);
+        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
+
+        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups);
-    }
+        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
-    private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
-        if (catalogRequestParams.getAccessToken() == null) {
-            return Collections.emptyList();
-        } else {
-            return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
-        }
-    }
-
-    private List<String> getClusters(CatalogRequestParams catalogRequestParams) {
-        if (catalogRequestParams.getAccessToken() == null) {
-            return Collections.emptyList();
-        } else {
-            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
-            var clusters = Optional.ofNullable(projectInfo)
-                    .map(ProjectInfo::getClusters)
-                    .orElse(Collections.emptyList());
-
-            log.debug("Clusters {} for the project {}", clusters, catalogRequestParams.getProjectKey());
-
-            return clusters;
-        }
+        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
@@ -200,5 +198,93 @@ public class CatalogItemsApiFacade {
             log.error("Unable to get permissions for: '{}' and resource with id: {}", principalName, id, e);
             return Set.of();
         }
+    }
+
+    private Integer calculateComponentCountForCatalogOwners(CatalogRequestParams catalogRequestParams, List<String> userGroups) {
+        var catalogEntity = catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(catalogRequestParams.getCatalogItemEntityContext());
+        var catalogOwnerGroups = catalogEntity
+                .map(CatalogEntity::getMetadata)
+                .map(CatalogEntityMetadata::getOwners)
+                .orElse(Collections.emptyList());
+
+        if (userGroups.stream().noneMatch(catalogOwnerGroups::contains)) {
+            log.debug("User groups {} do not match any catalog owner groups {} for catalog item {}", userGroups, catalogOwnerGroups, catalogRequestParams.getCatalogItemEntityContext().getId());
+
+            return null;
+        } else {
+            return calculateComponentCount(catalogRequestParams);
+        }
+    }
+
+    private Integer calculateComponentCount(CatalogRequestParams catalogRequestParams) {
+        var projectComponentsList = getAllProjectComponents();
+
+        log.debug("Calculating component count for catalog item {} and projectComponents: {}", catalogRequestParams.getCatalogItemEntityContext().getId(), projectComponentsList);
+
+        var componentCount = 0;
+        var catalogItemId = catalogRequestParams.getCatalogItemEntityContext().getId();
+        String catalogItemIdWithoutRef = null;
+
+        try {
+            catalogItemIdWithoutRef = projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId);
+        } catch (InvalidEntityException e) {
+            log.error("Error decoding catalogItemId {}: {}", catalogItemId, e.getMessage());
+        }
+
+        if (catalogItemIdWithoutRef != null) {
+            for (ProjectComponents projectComponents : projectComponentsList) {
+
+                for (var component : projectComponents.getComponents().values()) {
+
+                    log.debug("Checking if Component {} with catalogItemId {} relates to catalog item {}", component, catalogItemIdWithoutRef, catalogItemId);
+
+                    if (catalogItemIdWithoutRef.equals(component.getCatalogItemId())) {
+                        log.debug("Component {} relates to catalog item {}", component, catalogItemId);
+
+                        componentCount++;
+                    }
+                }
+            }
+        }
+
+        log.debug("Component count {} for the project {} and catalog item {}", componentCount, catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemEntityContext().getId());
+
+        return componentCount;
+    }
+
+    private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
+        if (catalogRequestParams.getAccessToken() == null) {
+            return Collections.emptyList();
+        } else {
+            return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
+        }
+    }
+
+    private List<String> getClusters(CatalogRequestParams catalogRequestParams) {
+        if (catalogRequestParams.getAccessToken() == null) {
+            return Collections.emptyList();
+        } else {
+            var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
+            var clusters = Optional.ofNullable(projectInfo)
+                    .map(ProjectInfo::getClusters)
+                    .orElse(Collections.emptyList());
+
+            log.debug("Clusters {} for the project {}", clusters, catalogRequestParams.getProjectKey());
+
+            return clusters;
+        }
+    }
+
+    private List<ProjectComponents> getAllProjectComponents() {
+        log.debug("Retrieving all project components");
+        var projectComponentsProjectKeys = provisionerActionsService.getAllProjectComponentsProjectKeys();
+
+        var projectComponentsList = projectComponentsProjectKeys.stream()
+                .map(provisionerActionsService::getProjectComponents)
+                .toList();
+
+        log.debug("Project components retrieved: {}", projectComponentsList);
+
+        return projectComponentsList;
     }
 }

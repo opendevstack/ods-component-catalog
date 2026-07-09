@@ -31,6 +31,7 @@ import java.util.Optional;
 @Slf4j
 public class ProvisionerActionsService {
 
+    public static final String JSON_FILE_EXTENSION = ".json";
     private final BitbucketService bitbucketService;
     private final ObjectMapper objectMapper;
     private final ProjectComponentsService projectComponentsService;
@@ -156,6 +157,7 @@ public class ProvisionerActionsService {
             String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
             bitbucketService.pushFile(pathAt, sourceCommitId, jsonUpdatedProjectComponents);
             projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
+            projectComponentsCacheService.evict("allProjectKeys");
         } catch (HttpClientErrorException httpClientErrorException) {
             log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
 
@@ -202,7 +204,12 @@ public class ProvisionerActionsService {
                 .at(provisionerActionsConfiguration.getBranchName())
                 .subPath(provisionerActionsConfiguration.getProjectsPath())
                 .build();
-        return bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+
+        log.debug("Listing all project JSONs from path: {}", bitbucketProjectsDirectoryPathAt);
+        var projectJsonFiles = bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+
+        log.debug("Project JSON files retrieved: {}", projectJsonFiles);
+        return projectJsonFiles;
     }
 
     // We need to block the method to get the project components from bitbucket, not the methods that work on them (not only I mean)
@@ -237,6 +244,20 @@ public class ProvisionerActionsService {
                 .subPath(provisionerActionsConfiguration.getSubPath().replace(provisionerActionsConfiguration.getSubPathToken(), projectKey))
                 .at(provisionerActionsConfiguration.getBranchName())
                 .build();
+    }
+
+    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "allProjectKeys")
+    public List<String> getAllProjectComponentsProjectKeys() {
+        var projectComponentFiles = listAllProjectsJsons();
+
+        var projectKeys = projectComponentFiles.stream()
+                .filter(filename -> filename.endsWith(JSON_FILE_EXTENSION))
+                .map(fileName -> fileName.split(JSON_FILE_EXTENSION)[0])
+                .toList();
+
+        log.debug("Project keys found: {}", projectKeys);
+
+        return projectKeys;
     }
 
 }

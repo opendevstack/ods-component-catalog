@@ -18,17 +18,35 @@ import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
-import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
-import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
-import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
+import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
+import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
+import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityRestrictions;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
+import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -55,7 +73,10 @@ class CatalogItemsApiFacadeTest {
     private CatalogItemBySlugService catalogItemBySlugService;
 
     @Mock
-    private AuthenticationFacade authenticationFacade;
+    private ProvisionerActionsService provisionerActionsService;
+
+    @Mock
+    private ProjectComponentsService projectComponentsService;
 
     @Mock
     private CatalogsCollectionService catalogsCollectionService;
@@ -70,8 +91,8 @@ class CatalogItemsApiFacadeTest {
     @Test
     void asCatalogItem_returnsCatalogItemUsingClustersFromProjectsApi() {
         // given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -81,7 +102,7 @@ class CatalogItemsApiFacadeTest {
         var projectInfo = new ProjectInfo();
         projectInfo.setClusters(clusters);
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
                 .catalogItemEntityContext(itemEntityCtx)
@@ -91,7 +112,9 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        Integer componentCount = null;
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
 
@@ -101,14 +124,14 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
-        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
     void asCatalogItem_whenProjectInfoHasNullClusters_usesEmptyList() {
         // given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -121,7 +144,7 @@ class CatalogItemsApiFacadeTest {
 
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
                 .catalogItemEntityContext(itemEntityCtx)
@@ -131,7 +154,9 @@ class CatalogItemsApiFacadeTest {
                 .accessToken(accessToken)
                 .build();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        Integer componentCount = null;
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -139,22 +164,22 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isSameAs(expectedCatalogItem);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
-        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
     void givenANullAccessToken_whenAsCatalogItem_thenNoRequestToProjectsInfoService_AndEmptyClusters() {
         // Given
-        var itemEntityCtx = mock(CatalogItemEntityContext.class);
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         String accessToken = null;
 
-        CatalogItem expectedCatalogItem = mock(CatalogItem.class);
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
         var catalogRequestParams = CatalogRequestParams.builder()
-                .catalogItemEntityContext(itemEntityCtx)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -164,7 +189,9 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
-        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups)).thenReturn(expectedCatalogItem);
+        Integer componentCount = null;
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedCatalogItem);
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -178,8 +205,8 @@ class CatalogItemsApiFacadeTest {
     void catalogItemFiltersFrom_withProjectKeyAndToken_returnsFiltersUsingClustersFromProjectsApi() {
         // given
         var catalogEntity = mock(CatalogEntity.class);
-        var itemEntitiesCtxs = List.of(mock(CatalogItemEntityContext.class));
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
         var accessToken = "accessToken";
@@ -191,7 +218,7 @@ class CatalogItemsApiFacadeTest {
 
         var catalogItemRequestParams = CatalogRequestParams.builder()
                 .catalogEntity(catalogEntity)
-                .catalogItemEntityContextList(itemEntitiesCtxs)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -203,7 +230,9 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups)).thenReturn(expectedFilters);
+        Integer componentCount = null;
+
+        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
@@ -212,24 +241,26 @@ class CatalogItemsApiFacadeTest {
         assertThat(result).isSameAs(expectedFilters);
         verify(projectsInfoService, times(1)).getProjectClusters(projectKey, accessToken);
 
-        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
     }
 
     @Test
     void catalogItemFiltersFrom_withoutProjectKeyAndToken_usesEmptyClusters() {
         // given
-        var catalogEntity = mock(CatalogEntity.class);
-        var itemEntitiesCtxs = List.of(mock(CatalogItemEntityContext.class));
-        var userActionsEntity = mock(UserActionsEntity.class);
+        var catalogEntity = CatalogEntityMother.of();
+        var catalogItemEntityContext = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
 
         var projectKey = StringUtils.EMPTY;
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
+
+        // catalogRequestParams.getCatalogItemEntityContext()
         var catalogItemRequestParams = CatalogRequestParams.builder()
                 .catalogEntity(catalogEntity)
-                .catalogItemEntityContextList(itemEntitiesCtxs)
+                .catalogItemEntityContext(catalogItemEntityContext)
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
@@ -237,7 +268,8 @@ class CatalogItemsApiFacadeTest {
 
         List<CatalogItemFilter> expectedFilters = List.of(mock(CatalogItemFilter.class));
 
-        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups)).thenReturn(expectedFilters);
+        Integer componentCount = null;
+        when(catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount)).thenReturn(expectedFilters);
 
         // when
         var result = catalogItemsApiFacade.catalogItemFiltersFrom(catalogItemRequestParams);
@@ -247,7 +279,7 @@ class CatalogItemsApiFacadeTest {
         verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
         verify(projectsInfoService, times(0)).getProjectGroups(catalogItemRequestParams.getAccessToken());
 
-        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups);
+        verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
     }
 
 
@@ -549,7 +581,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() throws Exception {
+    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("badToken", "oid"))
@@ -599,6 +631,8 @@ class CatalogItemsApiFacadeTest {
         // no validation is performed upon the access token
     }
 
+    // NOTE: As there is no token provided, there is no way to get groups from projectsInfoServices, so there will never a match
+    // between itemgroups and usergroups, so componentCount will be always null
     @Test
     void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvidedWithinTheRequestParams_thenNoAccessTokenIsUsedToMapCatalogItems() throws InvalidIdException {
         // given
@@ -623,7 +657,7 @@ class CatalogItemsApiFacadeTest {
         when(userActionsEntitiesService.getDefaultUserActionsEntity())
                 .thenReturn(mock(UserActionsEntity.class));
 
-        when(catalogApiAdapter.asCatalogItem(any(), any(), any()))
+        when(catalogApiAdapter.asCatalogItem(any(), any(), any(), any()))
                 .thenReturn(CatalogItemMother.of());
 
         doReturn(Set.of()).when(catalogItemsApiFacade)
@@ -638,6 +672,7 @@ class CatalogItemsApiFacadeTest {
         // then
         verify(catalogApiAdapter).asCatalogItem(
                 argThat(catalogRequestParams -> catalogRequestParams.getAccessToken() == null),
+                any(),
                 any(),
                 any()
         );
@@ -819,17 +854,6 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void getAccessToken_whenAuthIsNull_throwsForbiddenException() {
-        // given
-        when(authenticationFacade.getAccessToken()).thenThrow(new ForbiddenException("User not authenticated"));
-
-        // when / then
-        assertThatThrownBy(() -> authenticationFacade.getAccessToken())
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("User not authenticated");
-    }
-
-    @Test
     void fetchCatalogItemBySlug_whenItemFound_returnsMappedCatalogItem()
             throws Exception {
         // given
@@ -865,6 +889,267 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isNull();
         verify(userActionsEntitiesService, never()).getDefaultUserActionsEntity();
+    }
+
+    @Test
+    void givenCatalogRequestWithMatchingComponents_whenAsCatalogItem_thenCalculatesComponentCountCorrectly() {
+        // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var catalogItemId = itemEntityCtx.getId();
+
+        var userActionsEntity = UserActionsEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .accessToken("any-access-token")
+                .projectKey("PRJ-COMP")
+                .build();
+
+        // Create components with matching and non-matching catalog item IDs
+        var matchingComponent = ProjectComponent.builder()
+                .componentId("comp-1")
+                .catalogItemId("catalog-item-repo")
+                .status(Status.CREATED)
+                .build();
+
+        var nonMatchingComponent = ProjectComponent.builder()
+                .componentId("comp-2")
+                .catalogItemId("other-catalog-item")
+                .status(Status.CREATED)
+                .build();
+
+        var projectComponents = ProjectComponents.builder()
+                .components(Map.of(
+                        "comp-1", matchingComponent,
+                        "comp-2", nonMatchingComponent
+                ))
+                .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-1"));
+        when(provisionerActionsService.getProjectComponents("PRJ-1")).thenReturn(projectComponents);
+        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn("catalog-item-repo");
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(1))).thenReturn(expectedCatalogItem);
+
+        // When
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
+
+        // Then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(provisionerActionsService).getAllProjectComponentsProjectKeys();
+        verify(projectComponentsService).getRepoPathFromCatalogItemId(catalogItemId);
+    }
+
+    @Test
+    void givenCatalogRequestWithNoMatchingComponents_whenAsCatalogItem_thenComponentCountIsZero() {
+        // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var catalogItemId = itemEntityCtx.getId();
+
+        var userActionsEntity = UserActionsEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .accessToken("any-access-token")
+                .build();
+
+        // Create components that don't match
+        var nonMatchingComponent1 = ProjectComponent.builder()
+                .componentId("comp-x")
+                .catalogItemId("other-item-1")
+                .status(Status.CREATED)
+                .build();
+
+        var nonMatchingComponent2 = ProjectComponent.builder()
+                .componentId("comp-y")
+                .catalogItemId("other-item-2")
+                .status(Status.CREATED)
+                .build();
+
+        var projectComponents = ProjectComponents.builder()
+                .components(Map.of(
+                        "comp-x", nonMatchingComponent1,
+                        "comp-y", nonMatchingComponent2
+                ))
+                .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-X"));
+        when(provisionerActionsService.getProjectComponents("PRJ-X")).thenReturn(projectComponents);
+        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn("catalog-item-no-match");
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
+
+        // When
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
+
+        // Then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(catalogApiAdapter).asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(0));
+    }
+
+    @Test
+    void givenCatalogRequestWithInvalidEntityException_whenAsCatalogItem_thenHandlesExceptionAndContinues() {
+        // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var catalogItemId = itemEntityCtx.getId();
+
+        var userActionsEntity = UserActionsEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .accessToken("any-access-token")
+                .build();
+
+        var component = ProjectComponent.builder()
+                .componentId("comp-err")
+                .catalogItemId("catalog-item")
+                .status(Status.CREATED)
+                .build();
+
+        var projectComponents = ProjectComponents.builder()
+                .components(Map.of("comp-err", component))
+                .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-ERR"));
+        when(provisionerActionsService.getProjectComponents("PRJ-ERR")).thenReturn(projectComponents);
+        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenThrow(new InvalidEntityException("Invalid entity"));
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
+
+        // When
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
+
+        // Then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(projectComponentsService).getRepoPathFromCatalogItemId(catalogItemId);
+    }
+
+    @Test
+    void givenEmptyProjectComponentsList_whenAsCatalogItem_thenComponentCountIsZero() {
+        // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+
+        var userActionsEntity = UserActionsEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .accessToken("any-access-token")
+                .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(Collections.emptyList());
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0))).thenReturn(expectedCatalogItem);
+
+        // When
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
+
+        // Then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(catalogApiAdapter).asCatalogItem(eq(catalogRequestParams), anyList(), anyList(), eq(0));
+    }
+
+    @Test
+    void givenMultipleProjectsWithMultipleComponents_whenAsCatalogItem_thenCountsMatchingComponentsAcrossAllProjects() {
+        // Given
+        var catalogEntity = CatalogEntityMother.of();
+        var userGroups = List.of("owner1", "group1");
+
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var catalogItemId = itemEntityCtx.getId();
+
+        var userActionsEntity = UserActionsEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .accessToken("any-access-token")
+                .build();
+
+        // First project with matching component
+        var matchingComponent1 = ProjectComponent.builder()
+                .componentId("comp-match-1")
+                .catalogItemId(catalogItemId)
+                .status(Status.CREATED)
+                .build();
+
+        var projectComponents1 = ProjectComponents.builder()
+                .components(Map.of("comp-match-1", matchingComponent1))
+                .build();
+
+        // Second project with matching component
+        var matchingComponent2 = ProjectComponent.builder()
+                .componentId("comp-match-2")
+                .catalogItemId(catalogItemId)
+                .status(Status.CREATED)
+                .build();
+
+        var projectComponents2 = ProjectComponents.builder()
+                .components(Map.of("comp-match-2", matchingComponent2))
+                .build();
+
+        when(projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken())).thenReturn(userGroups);
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("PRJ-1", "PRJ-2"));
+        when(provisionerActionsService.getProjectComponents("PRJ-1")).thenReturn(projectComponents1);
+        when(provisionerActionsService.getProjectComponents("PRJ-2")).thenReturn(projectComponents2);
+        when(projectComponentsService.getRepoPathFromCatalogItemId(catalogItemId)).thenReturn(catalogItemId);
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(2))).thenReturn(expectedCatalogItem);
+
+        // When
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
+
+        // Then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(provisionerActionsService, times(1)).getAllProjectComponentsProjectKeys();
+        verify(provisionerActionsService).getProjectComponents("PRJ-1");
+        verify(provisionerActionsService).getProjectComponents("PRJ-2");
     }
 
 }

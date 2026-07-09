@@ -55,7 +55,7 @@ public class EntitiesMapper {
                 .build();
     }
 
-    public CatalogItem asCatalogItem(CatalogItemEntityContext catalogItemEntityCtx, List<String> clusters, List<String> userGroups, String projectKey) {
+    public CatalogItem asCatalogItem(CatalogItemEntityContext catalogItemEntityCtx, List<String> clusters, List<String> userGroups, String projectKey, Integer componentCount) {
         log.debug("Mapping CatalogItemEntityContext to CatalogItem: {}", catalogItemEntityCtx);
 
         var catalogItemEntity = catalogItemEntityCtx.getCatalogItemEntity();
@@ -98,6 +98,7 @@ public class EntitiesMapper {
                 .date(catalogItemEntityCtx.getLastCommitDateUTC())
                 .userActions(catalogItemUserActions)
                 .restrictions(catalogItemRestrictions)
+                .componentCount(componentCount)
                 .build();
 
         log.debug("Resulting CatalogItem: {}", catalogItem);

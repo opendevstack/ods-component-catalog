@@ -1,15 +1,16 @@
 package org.opendevstack.component_catalog.server.services.catalog;
 
-import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
-import org.opendevstack.component_catalog.server.services.BitbucketService;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketInvalidEntityException;
-import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.opendevstack.component_catalog.util.YamlSchemaValidator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opendevstack.component_catalog.server.services.BitbucketService;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketInvalidEntityException;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.util.YamlSchemaValidator;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.introspector.BeanAccess;
@@ -26,7 +27,6 @@ import static org.opendevstack.component_catalog.util.EitherUtils.maybeValueFrom
 public class CatalogServiceAdapter {
 
     private final BitbucketService bitbucketService;
-    private final ProjectApi projectApi;
 
     public BitbucketPathAt bitbucketPathAtFromId(String id) throws InvalidIdException {
         var builder = bitbucketService.pathAtBuilder();
@@ -37,12 +37,43 @@ public class CatalogServiceAdapter {
                 .orElseThrow(() -> new InvalidIdException(id));
     }
 
-    public <T> Optional<T> getCatalogEntity(BitbucketPathAt catalogPathAt, Class<T> clazz) throws InvalidCatalogEntityException {
+    public Optional<CatalogEntity> getCatalogEntity(String catalogId) throws InvalidCatalogEntityException {
+        return Optional.empty();
+    }
+
+    public Optional<CatalogEntity> getCatalogEntity(BitbucketPathAt catalogPathAt) throws InvalidCatalogEntityException {
         try {
-            return getYamlEntity(catalogPathAt, clazz);
+            return getYamlEntity(catalogPathAt, CatalogEntity.class);
         } catch (InvalidEntityException e) {
             log.error("Error while parsing catalog contents from Bitbucket for catalog: '{}'", catalogPathAt.getRawUrl(), e);
             throw new InvalidCatalogEntityException(catalogPathAt.getPathAt());
+        }
+    }
+
+    public Optional<UserActionsEntity> getUserActionsEntity(BitbucketPathAt userActionsPathAt) throws InvalidCatalogEntityException {
+        try {
+            return getYamlEntity(userActionsPathAt, UserActionsEntity.class);
+        } catch (InvalidEntityException e) {
+            log.error("Error while parsing user actions contents from Bitbucket for user actions: '{}'", userActionsPathAt.getRawUrl(), e);
+            throw new InvalidCatalogEntityException(userActionsPathAt.getPathAt());
+        }
+    }
+
+    public Optional<CatalogsCollectionsEntity> getCatalogsCollectionEntity(BitbucketPathAt catalogsCollectionPathAt) throws InvalidCatalogEntityException {
+        try {
+            return getYamlEntity(catalogsCollectionPathAt, CatalogsCollectionsEntity.class);
+        } catch (InvalidEntityException e) {
+            log.error("Error while parsing catalog collections contents from Bitbucket for catalog: '{}'", catalogsCollectionPathAt.getRawUrl(), e);
+            throw new InvalidCatalogEntityException(catalogsCollectionPathAt.getPathAt());
+        }
+    }
+
+    public Optional<CatalogItemEntity> getCatalogItemEntity(BitbucketPathAt catalogItemPathAt) throws InvalidCatalogItemEntityException {
+        try {
+            return getYamlEntity(catalogItemPathAt, CatalogItemEntity.class);
+        } catch (InvalidEntityException e) {
+            log.error("Error while parsing catalog item contents from Bitbucket for catalog item: '{}'", catalogItemPathAt.getRawUrl(), e);
+            throw new InvalidCatalogItemEntityException(catalogItemPathAt.getPathAt());
         }
     }
 
