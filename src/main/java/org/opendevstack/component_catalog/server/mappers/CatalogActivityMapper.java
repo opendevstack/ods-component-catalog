@@ -15,12 +15,22 @@ import java.math.BigDecimal;
 public class CatalogActivityMapper {
 
     public CatalogActivity asCatalogActivity(String projectKey, String catalogItemSlug, ProjectComponent projectComponent) {
+        BigDecimal createdAt = null;
+
+        if (projectComponent.getCreatedAt() != null) {
+            try {
+                createdAt = new BigDecimal(projectComponent.getCreatedAt());
+            } catch (NumberFormatException e) {
+                log.warn("Invalid createdAt format for project component: {}", projectComponent.getComponentId());
+            }
+        }
+
         return CatalogActivity.builder()
                 .catalogItemSlug(catalogItemSlug)
                 .componentId(projectComponent.getComponentId())
                 .projectKey(projectKey)
                 .status(asStatusEnum(projectComponent.getStatus()))
-                .createdAt(new BigDecimal(projectComponent.getCreatedAt()))
+                .createdAt(createdAt)
                 .build();
     }
 

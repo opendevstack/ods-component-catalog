@@ -37,17 +37,20 @@ public class CatalogActivityFacade {
 
         var userGroups = getProjectGroups();
 
-        if (userGroups.stream().noneMatch(catalogOwnerGroups::contains)) {
-            log.debug("User groups {} do not match any catalog owner groups {} for catalog catalogId {}", userGroups, catalogOwnerGroups, catalogId);
+        var userIsAdminForCatalog = userGroups.stream().anyMatch(catalogOwnerGroups::contains);
 
-            return Collections.emptyList();
-        } else {
+        if (userIsAdminForCatalog) {
             var catalogActivities = getCatalogActivities();
 
             log.debug("User groups {} match catalog owner groups {} for catalog catalogId {}. Returning catalog activities: {}", userGroups, catalogOwnerGroups, catalogId, catalogActivities);
 
             return catalogActivities;
+        } else {
+            log.debug("User groups {} do not match any catalog owner groups {} for catalog catalogId {}", userGroups, catalogOwnerGroups, catalogId);
+
+            return Collections.emptyList();
         }
+
     }
 
     private List<CatalogActivity> getCatalogActivities() {
@@ -55,11 +58,11 @@ public class CatalogActivityFacade {
 
         List<CatalogActivity> catalogActivities = new ArrayList<>();
 
-        for (var projectComponents : allProjectComponents) {
+        for (var projectComponentsByProjectKey : allProjectComponents.entrySet()) {
 
-            var catalogActivitiesByProject = projectComponents.getComponents().entrySet().stream()
+            var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().entrySet().stream()
                     // FIXME: Calculate proper slug
-                    .map(entry -> catalogActivityMapper.asCatalogActivity(entry.getKey(), "anySlugToBeCalculatedLater", entry.getValue()))
+                    .map(entry -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), "anySlugToBeCalculatedLater", entry.getValue()))
                     .toList();
 
             catalogActivities.addAll(catalogActivitiesByProject);

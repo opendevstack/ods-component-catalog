@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @AllArgsConstructor
@@ -108,11 +109,33 @@ public class ProjectComponentsFacade {
                 .build();
     }
 
-    // It is supposed there will not be many project components, so we do not need to care about memory limits and pagination
-    public List<ProjectComponents> getAllProjectComponents() {
-        return provisionerActionsService.getAllProjectComponentsProjectKeys().stream()
-                .map(provisionerActionsService::getProjectComponents)
-                .toList();
+    /**
+     * Return a Map of ProjectKey -> ProjectComponents. ProjectComponents is a Map of ComponentId -> ProjectComponent
+     * It is supposed there will not be many project components, so we do not need to care about memory limits and pagination
+     *
+     * @return Map of ProjectKey -> ProjectComponents
+     */
+    public Map<String, ProjectComponents> getAllProjectComponents() {
+        var projectComponentsProjectKeys = provisionerActionsService.getAllProjectComponentsProjectKeys();
+
+        Map<String, ProjectComponents> projectComponentsByProjectKey = new HashMap<>();
+
+        for (String projectKey : projectComponentsProjectKeys) {
+            var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+            if (projectComponents.getComponents() == null) {
+                log.warn("Project components for project key {} are null", projectKey);
+            } else {
+                projectComponentsByProjectKey.put(projectKey, projectComponents);
+            }
+        }
+
+        var immutableProjectComponentsByProjectKey = Collections.unmodifiableMap(projectComponentsByProjectKey);
+
+        log.debug("Project components: {}", immutableProjectComponentsByProjectKey);
+
+        return immutableProjectComponentsByProjectKey;
+
     }
 
     private @NonNull List<String> getAllProjectComponentsProjectKeys() {

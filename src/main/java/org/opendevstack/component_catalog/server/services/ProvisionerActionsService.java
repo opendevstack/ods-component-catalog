@@ -246,7 +246,7 @@ public class ProvisionerActionsService {
                 .build();
     }
 
-    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "allProjectKeys")
+    @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME)
     public List<String> getAllProjectComponentsProjectKeys() {
         var projectComponentFiles = listAllProjectsJsons();
 
