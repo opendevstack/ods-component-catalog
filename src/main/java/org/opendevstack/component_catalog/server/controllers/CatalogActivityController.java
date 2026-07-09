@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.controllers;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.CatalogActivityApi;
+import org.opendevstack.component_catalog.server.facade.CatalogActivityFacade;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -16,8 +17,12 @@ import java.util.List;
 @Slf4j
 public class CatalogActivityController implements CatalogActivityApi {
 
+    private final CatalogActivityFacade catalogActivityFacade;
+
     @Override
     public ResponseEntity<List<CatalogActivity>> getCatalogActivityById(String id) {
-        return CatalogActivityApi.super.getCatalogActivityById(id);
+        var activities = catalogActivityFacade.getCatalogActivityById(id);
+
+        return ResponseEntity.ok(activities);
     }
 }
