@@ -646,7 +646,47 @@ class ProjectComponentsFacadeTest {
         assertThat(result.getData()).isNotNull();
     }
 
+    @Test
+    void givenProjectsWithSomeNullComponents_whenGetAllProjectComponents_thenSkipNullEntriesAndReturnUnmodifiableMap() {
+        // given
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("A", "B"));
 
+        var comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var pcA = ProjectComponentsMother.of(Map.of("k1", comp));
+        var pcB = new org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents(); // components == null
+
+        when(provisionerActionsService.getProjectComponents("A")).thenReturn(pcA);
+        when(provisionerActionsService.getProjectComponents("B")).thenReturn(pcB);
+
+        // when
+        Map<String, org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents> result
+                = projectComponentsFacade.getAllProjectComponents();
+
+        // then
+        assertThat(result)
+                .hasSize(1)
+                .containsKey("A");
+        assertThat(result.get("A")).isSameAs(pcA);
+        verify(provisionerActionsService, times(1)).getAllProjectComponentsProjectKeys();
+
+        // returned map should be unmodifiable
+        assertThatThrownBy(() -> result.put("X", pcB)).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void givenListAllProjectsJsons_whenGetAllProjectComponentsProjectKeys_thenReturnSortedKeysWithoutJsonExtension() throws Exception {
+        // given
+        when(provisionerActionsService.listAllProjectsJsons()).thenReturn(List.of("B.json", "A.json", "c.json"));
+
+        // invoke private method
+        var method = ProjectComponentsFacade.class.getDeclaredMethod("getAllProjectComponentsProjectKeys");
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<String> keys = (List<String>) method.invoke(projectComponentsFacade);
+
+        // then
+        assertThat(keys).containsExactly("A", "B", "c");
+    }
 
 }
 
