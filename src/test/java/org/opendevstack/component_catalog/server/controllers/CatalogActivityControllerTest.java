@@ -20,6 +20,10 @@ import static org.mockito.Mockito.when;
 class CatalogActivityControllerTest {
 
     private final String catalogId = "catalog-1";
+    private final String projectKey = "project-1";
+    private final String status = "component-1";
+    private final Long startDate = 1L;
+    private final Long endDate = 2L;
 
     @Mock
     private CatalogActivityFacade catalogActivityFacade;
@@ -34,7 +38,7 @@ class CatalogActivityControllerTest {
         when(catalogActivityFacade.getCatalogActivities(catalogId)).thenReturn(List.of(activity));
 
         // When
-        var response = catalogActivityController.getCatalogActivitiesById(catalogId);
+        var response = catalogActivityController.getCatalogActivitiesById(catalogId, projectKey, status, startDate, endDate);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -49,7 +53,7 @@ class CatalogActivityControllerTest {
         when(catalogActivityFacade.getCatalogActivities(catalogId)).thenReturn(List.of());
 
         // When
-        var response = catalogActivityController.getCatalogActivitiesById(catalogId);
+        var response = catalogActivityController.getCatalogActivitiesById(catalogId, projectKey, status, startDate, endDate);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -63,7 +67,7 @@ class CatalogActivityControllerTest {
         when(catalogActivityFacade.getCatalogActivities(catalogId)).thenThrow(new ElementNotFoundException("not found"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(catalogId))
+        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(catalogId, projectKey, status, startDate, endDate))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("not found");
     }
