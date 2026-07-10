@@ -490,9 +490,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CatalogActivity'
+                $ref: '#/components/schemas/PaginatedCatalogActivities'
         "401":
           description: Invalid client token on the request.
           content:
@@ -1387,6 +1385,34 @@ components:
           example:
             - 'project-key-1'
             - 'project-key-2'
+    PaginatedCatalogActivities:
+      type: object
+      example:
+        data:
+          - projectKey: SOMEPROJECT
+            componentId: any-component-id-from-backend
+            status: CREATING
+            catalogItemSlug: some_technology-name
+            createdAt: 1707043200000
+          - projectKey: ANOTHERPROJECT
+            componentId: another-component-id-from-backend
+            status: UNKNOWN
+            catalogItemSlug: another_technology-name
+            createdAt: 1707043200001
+        pagination:
+          page: 0
+          size: 20
+          totalElements: 117
+          totalPages: 6
+          next: https://api.example.com/resources?page=1&size=20
+          previous: null
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogActivity'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
     CatalogActivity:
       properties:
         catalogItemSlug:

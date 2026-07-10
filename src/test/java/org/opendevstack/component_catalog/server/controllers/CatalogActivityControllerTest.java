@@ -43,8 +43,9 @@ class CatalogActivityControllerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody().getFirst().getCatalogItemSlug()).isEqualTo("project/repo");
+        assertThat(response.getBody().getData()).isNotNull();
+        assertThat(response.getBody().getData()).hasSize(1);
+        assertThat(response.getBody().getData().getFirst().getCatalogItemSlug()).isEqualTo("project/repo");
     }
 
     @Test
@@ -58,7 +59,7 @@ class CatalogActivityControllerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getBody().getData()).isEmpty();
     }
 
     @Test
