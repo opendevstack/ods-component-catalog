@@ -12,14 +12,12 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityM
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -65,9 +63,8 @@ public class CatalogActivityFacade {
         List<CatalogActivity> catalogActivities = new ArrayList<>();
 
         for (var projectComponentsByProjectKey : allProjectComponents.entrySet()) {
-            var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().entrySet().stream()
-                    // FIXME: Calculate proper slug
-                    .map(entry -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponentsByProjectKey.getKey(), entry.getValue()), entry.getValue()))
+            var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().values().stream()
+                    .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponentsByProjectKey.getKey(), projectComponent), projectComponent))
                     .toList();
 
             catalogActivities.addAll(catalogActivitiesByProject);
@@ -99,7 +96,7 @@ public class CatalogActivityFacade {
         try {
             return path.split("/repos/")[1].split("/raw/")[0];
         } catch (Exception e) {
-            log.warn("Invalid catalog item path: " + path, e);
+            log.warn("Invalid catalog item path: {}", path, e);
 
             return "n/a";
         }
