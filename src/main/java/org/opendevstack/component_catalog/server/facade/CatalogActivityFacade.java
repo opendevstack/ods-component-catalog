@@ -64,7 +64,7 @@ public class CatalogActivityFacade {
 
         for (var projectComponentsByProjectKey : allProjectComponents.entrySet()) {
             var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().values().stream()
-                    .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponentsByProjectKey.getKey(), projectComponent), projectComponent))
+                    .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponent), projectComponent))
                     .toList();
 
             catalogActivities.addAll(catalogActivitiesByProject);
@@ -78,12 +78,14 @@ public class CatalogActivityFacade {
     }
 
     @SneakyThrows
-    private String calculateCatalogItemSlug(String projectKey, ProjectComponent projectComponent) {
+    private String calculateCatalogItemSlug(ProjectComponent projectComponent) {
         if (!StringUtils.isBlank(projectComponent.getCatalogItemId())) {
             var catalogItemPath = IdEncoderDecoder.idDecode(projectComponent.getCatalogItemId());
+            var projectKey = extractProjectName(catalogItemPath);
             var repoName = extractRepoName(catalogItemPath);
 
-            var catalogItemSlug = new CatalogItemSlug(projectKey, repoName);
+
+            var catalogItemSlug = new CatalogItemSlug(projectKey.toLowerCase(), repoName.toLowerCase());
 
             return catalogItemSlug.toString();
         } else {
@@ -103,6 +105,15 @@ public class CatalogActivityFacade {
 
     }
 
+    public static String extractProjectName(String path) {
+        try {
+            return path.split("projects/")[1].split("/repos/")[0];
+        } catch (Exception e) {
+            log.warn("Invalid catalog item path: {}", path, e);
+
+            return "n/a";
+        }
+    }
 
     private List<String> getProjectGroups() {
         var accessToken = authenticationFacade.getAccessToken();
