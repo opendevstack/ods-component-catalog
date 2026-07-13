@@ -6,6 +6,7 @@ import org.opendevstack.component_catalog.server.model.Pagination;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PaginationUtilsTest {
 
@@ -147,4 +148,39 @@ class PaginationUtilsTest {
         assertThat(pagination.getPagination().getPrevious().get())
                 .hasToString("https://component-catalog.myserver.com/project/paginations?page=0&size=2");
     }
+
+    @Test
+    void givenInvalidPage_whenPaginate_thenThrowsException() {
+        // given
+        int page = -1;
+        int size = 2;
+
+        List<String> elements = List.of("a", "b", "c", "d", "e");
+
+        String basePath = "https://component-catalog.myserver.com/project/paginations";
+
+        // when
+        var exception = assertThrows(IllegalArgumentException.class, () -> PaginationUtils.buildPagination(page, size, elements, basePath));
+
+        // then
+        assertThat(exception.getMessage()).isEqualTo("Page must be greater than or equal to 0");
+    }
+
+    @Test
+    void givenInvalidSize_whenPaginate_thenThrowsException() {
+        // given
+        int page = 0;
+        int size = -1;
+
+        List<String> elements = List.of("a", "b", "c", "d", "e");
+
+        String basePath = "https://component-catalog.myserver.com/project/paginations";
+
+        // when
+        var exception = assertThrows(IllegalArgumentException.class, () -> PaginationUtils.buildPagination(page, size, elements, basePath));
+
+        // then
+        assertThat(exception.getMessage()).isEqualTo("Size must be greater than 0");
+    }
+
 }
