@@ -3,6 +3,8 @@ package org.opendevstack.component_catalog.server.services.common;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.server.model.Pagination;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PaginationUtilsTest {
@@ -19,14 +21,14 @@ class PaginationUtilsTest {
         Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, basePath);
 
         // then
-        assertThat(pagination.getPage()).isEqualTo(0);
+        assertThat(pagination.getPage()).isZero();
         assertThat(pagination.getSize()).isEqualTo(10);
         assertThat(pagination.getTotalElements()).isEqualTo(25);
         assertThat(pagination.getTotalPages()).isEqualTo(3);
 
         assertThat(pagination.getNext().isPresent()).isTrue();
-        assertThat(pagination.getNext().get().toString())
-                .isEqualTo("https://component-catalog.myserver.com/project/components?page=1&size=10");
+        assertThat(pagination.getNext().get())
+                .hasToString("https://component-catalog.myserver.com/project/components?page=1&size=10");
 
         assertThat(pagination.getPrevious().isPresent()).isTrue();
         assertThat(pagination.getPrevious().get()).isNull();
@@ -47,12 +49,12 @@ class PaginationUtilsTest {
         assertThat(pagination.getTotalPages()).isEqualTo(3);
 
         assertThat(pagination.getNext().isPresent()).isTrue();
-        assertThat(pagination.getNext().get().toString())
-                .isEqualTo("https://component-catalog.myserver.com/project/components?page=2&size=10");
+        assertThat(pagination.getNext().get())
+                .hasToString("https://component-catalog.myserver.com/project/components?page=2&size=10");
 
         assertThat(pagination.getPrevious().isPresent()).isTrue();
-        assertThat(pagination.getPrevious().get().toString())
-                .isEqualTo("https://component-catalog.myserver.com/project/components?page=0&size=10");
+        assertThat(pagination.getPrevious().get())
+                .hasToString("https://component-catalog.myserver.com/project/components?page=0&size=10");
     }
 
     @Test
@@ -73,8 +75,8 @@ class PaginationUtilsTest {
         assertThat(pagination.getNext().get()).isNull();
 
         assertThat(pagination.getPrevious().isPresent()).isTrue();
-        assertThat(pagination.getPrevious().get().toString())
-                .isEqualTo("https://component-catalog.myserver.com/project/components?page=1&size=10");
+        assertThat(pagination.getPrevious().get())
+                .hasToString("https://component-catalog.myserver.com/project/components?page=1&size=10");
     }
 
 
@@ -90,7 +92,7 @@ class PaginationUtilsTest {
         Pagination pagination = PaginationUtils.buildPagination(page, size, totalElements, basePath);
 
         // then
-        assertThat(pagination.getTotalPages()).isEqualTo(0);
+        assertThat(pagination.getTotalPages()).isZero();
 
         assertThat(pagination.getNext().isPresent()).isTrue();
         assertThat(pagination.getNext().get()).isNull();
@@ -118,5 +120,31 @@ class PaginationUtilsTest {
 
         assertThat(pagination.getPrevious().isPresent()).isTrue();
         assertThat(pagination.getPrevious().get()).isNull();
+    }
+
+    @Test
+    void givenAListOfElements_whenPaginate_thenReturnProperPage() {
+        // given
+        int page = 1;
+        int size = 2;
+
+        List<String> elements = List.of("a", "b", "c", "d", "e");
+
+        String basePath = "https://component-catalog.myserver.com/project/paginations";
+
+        // when
+        var pagination = PaginationUtils.buildPagination(page, size, elements, basePath);
+
+        // then
+        assertThat(pagination.getData()).hasSize(2);
+        assertThat(pagination.getData()).containsExactly("c", "d");
+        assertThat(pagination.getPagination().getTotalElements()).isEqualTo(5);
+        assertThat(pagination.getPagination().getTotalPages()).isEqualTo(3);
+        assertThat(pagination.getPagination().getNext().isPresent()).isTrue();
+        assertThat(pagination.getPagination().getNext().get())
+                .hasToString("https://component-catalog.myserver.com/project/paginations?page=2&size=2");
+        assertThat(pagination.getPagination().getPrevious().isPresent()).isTrue();
+        assertThat(pagination.getPagination().getPrevious().get())
+                .hasToString("https://component-catalog.myserver.com/project/paginations?page=0&size=2");
     }
 }
