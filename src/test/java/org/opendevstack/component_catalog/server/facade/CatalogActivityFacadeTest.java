@@ -50,10 +50,14 @@ class CatalogActivityFacadeTest {
     private CatalogActivityFacade catalogActivityFacade;
 
     private final String catalogId = "catalog-id";
+    private final String sort = "creationDate";
+    private final String project = null;
+    private final String status = null;
+    private final Long startDate = null;
+    private final Long endDate = null;
 
     @BeforeEach
     void setUp() {
-        // default lenient auth token
         lenient().when(authenticationFacade.getAccessToken()).thenReturn("token");
     }
 
@@ -61,11 +65,9 @@ class CatalogActivityFacadeTest {
     void givenValidCatalogId_whenGetCatalogActivitiesById_ThenReturnActivitiesList() throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
-
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
         when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
 
-        // prepare a project component with an encoded catalog item id
         String rawPath = "projects/PROJ/repos/my-repo/raw/CatalogItem.yaml";
         String encodedId = IdEncoderDecoder.idEncode(rawPath);
         ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
@@ -73,7 +75,6 @@ class CatalogActivityFacadeTest {
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
 
-        // the mapper will be called for each component; return a distinct CatalogActivity
         CatalogActivity activity = CatalogActivity.builder()
                 .componentId("C1")
                 .projectKey("PROJ")
@@ -84,7 +85,7 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate);
 
         // then
         assertThat(result).hasSize(1);
@@ -101,12 +102,11 @@ class CatalogActivityFacadeTest {
     void givenEmptyResult_whenGetCatalogActivitiesById_ThenReturnEmptyList() throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
-
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
         when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("OTHER-GROUP"));
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate);
 
         // then
         assertThat(result).isEmpty();
@@ -122,12 +122,106 @@ class CatalogActivityFacadeTest {
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(catalogId))
+        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("Catalog entity not found");
 
         verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
         verifyNoInteractions(projectComponentsFacade);
     }
+
+    @Test
+    void givenSortByCreationDate_whenGetCatalogActivities_ThenApplySorting() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
+        String encodedId = IdEncoderDecoder.idEncode(rawPath);
+        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        CatalogActivity activity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
+
+        // when - filter by sort parameter "creationDate"
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "creationDate", null, null, null, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+    }
+
+    @Test
+    void givenSortByProject_whenGetCatalogActivities_ThenApplySorting() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
+        String encodedId = IdEncoderDecoder.idEncode(rawPath);
+        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        CatalogActivity activity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
+
+        // when - filter by sort parameter "project"
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "project", null, null, null, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+    }
+
+    @Test
+    void givenSortByStatus_whenGetCatalogActivities_ThenApplySorting() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
+        String encodedId = IdEncoderDecoder.idEncode(rawPath);
+        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        CatalogActivity activity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
+
+        // when - filter by sort parameter "status"
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "status", null, null, null, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+    }
 }
+
 
