@@ -12,11 +12,13 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityM
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +33,7 @@ public class CatalogActivityFacade {
     private final CatalogActivityMapper catalogActivityMapper;
 
     @SneakyThrows
-    public List<CatalogActivity> getCatalogActivities(String catalogId) {
+    public List<CatalogActivity> getCatalogActivities(String catalogId, String project, String status, Long startDate, Long endDate) {
         var catalogEntity = catalogEntitiesService.getCatalogEntity(catalogId)
                 .orElseThrow(() -> new ElementNotFoundException("Catalog entity not found for catalogId: " + catalogId));
 
@@ -44,7 +46,7 @@ public class CatalogActivityFacade {
         var userIsAdminForCatalog = userGroups.stream().anyMatch(catalogOwnerGroups::contains);
 
         if (userIsAdminForCatalog) {
-            var catalogActivities = getCatalogActivities();
+            var catalogActivities = getCatalogActivities(project, status, startDate, endDate);
 
             log.debug("User groups {} match catalog owner groups {} for catalog catalogId {}. Returning catalog activities: {}", userGroups, catalogOwnerGroups, catalogId, catalogActivities);
 
@@ -57,12 +59,21 @@ public class CatalogActivityFacade {
 
     }
 
-    private List<CatalogActivity> getCatalogActivities() {
+    private List<CatalogActivity> getCatalogActivities(String project, String status, Long startDate, Long endDate) {
         var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
+
+        var allProjectComponentsByProjectKey = new HashMap<String, ProjectComponents>();
+
+        // Filter out by projectKey (if present)
+        if (project != null && !project.isBlank()) {
+            allProjectComponentsByProjectKey.put(project, allProjectComponents.get(project));
+        } else {
+            allProjectComponentsByProjectKey.putAll(allProjectComponents);
+        }
 
         List<CatalogActivity> catalogActivities = new ArrayList<>();
 
-        for (var projectComponentsByProjectKey : allProjectComponents.entrySet()) {
+        for (var projectComponentsByProjectKey : allProjectComponentsByProjectKey.entrySet()) {
             var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().values().stream()
                     .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponent), projectComponent))
                     .toList();
@@ -70,11 +81,31 @@ public class CatalogActivityFacade {
             catalogActivities.addAll(catalogActivitiesByProject);
         }
 
-        var immutableCatalogActivities = List.copyOf(catalogActivities);
+        var immutableCatalogActivities = filterOutCatalogActivities(catalogActivities, status, startDate, endDate);
 
         log.debug("Returning catalog activities: {}", immutableCatalogActivities);
 
         return immutableCatalogActivities;
+    }
+
+    private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, String status, Long startDate, Long endDate) {
+        if (status != null && !status.isBlank()) {
+            return List.copyOf(filterOutByStatus(catalogActivities, status));
+        } else if (startDate != null && endDate != null) {
+            return List.copyOf(filterOutByDateRange(catalogActivities, startDate, endDate));
+        } else {
+            return List.copyOf(catalogActivities);
+        }
+    }
+
+    private List<CatalogActivity> filterOutByStatus(List<CatalogActivity> catalogActivities, String status) {
+        return catalogActivities.stream().filter(activity -> status.equals(activity.getStatus().getValue())).toList();
+    }
+
+    private List<CatalogActivity> filterOutByDateRange(List<CatalogActivity> catalogActivities, Long startDate, Long endDate) {
+        return catalogActivities.stream()
+                .filter(activity -> activity.getCreatedAt().longValue() >= startDate
+                        && activity.getCreatedAt().longValue() <= endDate).toList();
     }
 
     @SneakyThrows
