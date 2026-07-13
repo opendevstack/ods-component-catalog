@@ -6,10 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.utils.StringUtils;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
+import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
+import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -33,8 +35,36 @@ public class CatalogActivityFacade {
     private final AuthenticationFacade authenticationFacade;
     private final CatalogActivityMapper catalogActivityMapper;
 
-    @SneakyThrows
     public List<CatalogActivity> getCatalogActivities(String catalogId, String sort, String project, String status, Long startDate, Long endDate) {
+        var userIsAdminForCatalog = isUserAdminForCatalogProjects(catalogId);
+
+        if (userIsAdminForCatalog) {
+            var catalogActivities = getCatalogActivities(sort, project, status, startDate, endDate);
+
+            log.debug("User is admin for catalog owner groups. Returning catalog activities: {}", catalogActivities);
+
+            return catalogActivities;
+        } else {
+            log.debug("User is not admin for catalog owner groups. Returning empty list.");
+
+            return Collections.emptyList();
+        }
+
+    }
+
+    public PaginatedCatalogActivities paginateCatalogActivities(List<CatalogActivity> catalogActivities, int page, int size, String baseUrl) {
+        var paginatedEntity = PaginationUtils.buildPagination(page, size, catalogActivities, baseUrl);
+
+        log.debug("Paginated catalog activities: {} with pagination: {}", paginatedEntity.getData(), paginatedEntity.getPagination());
+
+        return PaginatedCatalogActivities.builder()
+                .data(paginatedEntity.getData())
+                .pagination(paginatedEntity.getPagination())
+                .build();
+    }
+
+    @SneakyThrows
+    private boolean isUserAdminForCatalogProjects(String catalogId) {
         var catalogEntity = catalogEntitiesService.getCatalogEntity(catalogId)
                 .orElseThrow(() -> new ElementNotFoundException("Catalog entity not found for catalogId: " + catalogId));
 
@@ -46,18 +76,9 @@ public class CatalogActivityFacade {
 
         var userIsAdminForCatalog = userGroups.stream().anyMatch(catalogOwnerGroups::contains);
 
-        if (userIsAdminForCatalog) {
-            var catalogActivities = getCatalogActivities(sort, project, status, startDate, endDate);
+        log.debug("User groups {} match catalog owner groups {} for catalogId {}. User is admin for catalog: {}", userGroups, catalogOwnerGroups, catalogId, userIsAdminForCatalog);
 
-            log.debug("User groups {} match catalog owner groups {} for catalog catalogId {}. Returning catalog activities: {}", userGroups, catalogOwnerGroups, catalogId, catalogActivities);
-
-            return catalogActivities;
-        } else {
-            log.debug("User groups {} do not match any catalog owner groups {} for catalog catalogId {}", userGroups, catalogOwnerGroups, catalogId);
-
-            return Collections.emptyList();
-        }
-
+        return userIsAdminForCatalog;
     }
 
     private List<CatalogActivity> getCatalogActivities(String sort, String project, String status, Long startDate, Long endDate) {

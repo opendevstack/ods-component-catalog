@@ -4,6 +4,8 @@ import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.component_catalog.server.model.Pagination;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 
 public class PaginationUtils {
 
@@ -15,6 +17,41 @@ public class PaginationUtils {
                     "Page must be >= 0 and size must be between 0 and " + maxSize
             );
         }
+    }
+
+    public static <T> PaginatedEntity<T> buildPagination(
+            int page,
+            int size,
+            List<T> elements,
+            String basePath) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException("Page must be greater than or equal to 0");
+        }
+
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be greater than 0");
+        }
+
+        int totalElements = elements.size();
+
+        int fromIndex = page * size;
+
+        List<T> pageElements;
+        if (fromIndex >= totalElements) {
+            pageElements = Collections.emptyList();
+        } else {
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            pageElements = elements.subList(fromIndex, toIndex);
+        }
+
+        var pagination = buildPagination(
+                page,
+                size,
+                totalElements,
+                basePath);
+
+        return new PaginatedEntity<>(pageElements, pagination);
     }
 
     public static Pagination buildPagination(int page, int size, int totalElements, String basePath) {
