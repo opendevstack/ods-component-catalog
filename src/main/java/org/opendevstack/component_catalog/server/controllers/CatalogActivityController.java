@@ -18,8 +18,8 @@ public class CatalogActivityController implements CatalogActivityApi {
     private final CatalogActivityFacade catalogActivityFacade;
 
     @Override
-    public ResponseEntity<PaginatedCatalogActivities> getCatalogActivitiesById(String catalogId, String project, String status, Long startDate, Long endDate) {
-        var activities = catalogActivityFacade.getCatalogActivities(catalogId, project, status, startDate, endDate);
+    public ResponseEntity<PaginatedCatalogActivities> getCatalogActivitiesById(String catalogId, String sort, String project, String status, Long startDate, Long endDate) {
+        var activities = catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate);
 
         var paginatedActivities = PaginatedCatalogActivities.builder()
                 .data(activities)

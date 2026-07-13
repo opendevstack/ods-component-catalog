@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,7 @@ public class CatalogActivityFacade {
     private final CatalogActivityMapper catalogActivityMapper;
 
     @SneakyThrows
-    public List<CatalogActivity> getCatalogActivities(String catalogId, String project, String status, Long startDate, Long endDate) {
+    public List<CatalogActivity> getCatalogActivities(String catalogId, String sort, String project, String status, Long startDate, Long endDate) {
         var catalogEntity = catalogEntitiesService.getCatalogEntity(catalogId)
                 .orElseThrow(() -> new ElementNotFoundException("Catalog entity not found for catalogId: " + catalogId));
 
@@ -46,7 +47,7 @@ public class CatalogActivityFacade {
         var userIsAdminForCatalog = userGroups.stream().anyMatch(catalogOwnerGroups::contains);
 
         if (userIsAdminForCatalog) {
-            var catalogActivities = getCatalogActivities(project, status, startDate, endDate);
+            var catalogActivities = getCatalogActivities(sort, project, status, startDate, endDate);
 
             log.debug("User groups {} match catalog owner groups {} for catalog catalogId {}. Returning catalog activities: {}", userGroups, catalogOwnerGroups, catalogId, catalogActivities);
 
@@ -59,7 +60,7 @@ public class CatalogActivityFacade {
 
     }
 
-    private List<CatalogActivity> getCatalogActivities(String project, String status, Long startDate, Long endDate) {
+    private List<CatalogActivity> getCatalogActivities(String sort, String project, String status, Long startDate, Long endDate) {
         var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
 
         var allProjectComponentsByProjectKey = new HashMap<String, ProjectComponents>();
@@ -81,11 +82,34 @@ public class CatalogActivityFacade {
             catalogActivities.addAll(catalogActivitiesByProject);
         }
 
-        var immutableCatalogActivities = filterOutCatalogActivities(catalogActivities, status, startDate, endDate);
+        var filteredOutCatalogActivities = filterOutCatalogActivities(catalogActivities, status, startDate, endDate);
+        var sortedCatalogActivities = sortCatalogActivities(filteredOutCatalogActivities, sort);
 
-        log.debug("Returning catalog activities: {}", immutableCatalogActivities);
+        log.debug("Returning catalog activities: {}", sortedCatalogActivities);
 
-        return immutableCatalogActivities;
+        return sortedCatalogActivities;
+    }
+
+    private List<CatalogActivity> sortCatalogActivities(List<CatalogActivity> catalogActivities, String sort) {
+        Comparator<CatalogActivity> comparator = switch (sort) {
+            case "project" -> Comparator.comparing(
+                    CatalogActivity::getProjectKey,
+                    Comparator.nullsLast(String::compareTo)
+            );
+            case "status" -> Comparator.comparing(
+                    CatalogActivity::getStatus,
+                    Comparator.nullsLast(Enum::compareTo)
+            );
+            case "creationDate" -> Comparator.comparing(
+                    CatalogActivity::getCreatedAt,
+                    Comparator.nullsLast(Comparable::compareTo)
+            );
+            default -> null;
+        };
+
+        return comparator == null
+                ? catalogActivities
+                : catalogActivities.stream().sorted(comparator).toList();
     }
 
     private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, String status, Long startDate, Long endDate) {
