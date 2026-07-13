@@ -3,12 +3,16 @@ package org.opendevstack.component_catalog.server.facade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
+import org.opendevstack.component_catalog.server.model.CatalogActivityMother;
+import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
@@ -130,8 +134,9 @@ class CatalogActivityFacadeTest {
         verifyNoInteractions(projectComponentsFacade);
     }
 
-    @Test
-    void givenSortByCreationDate_whenGetCatalogActivities_ThenApplySorting() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"creationDate", "project", "status"})
+    void givenSortParameter_whenGetCatalogActivities_thenApplySorting(String sort) throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
@@ -140,7 +145,9 @@ class CatalogActivityFacadeTest {
         String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
         String encodedId = IdEncoderDecoder.idEncode(rawPath);
         ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
-        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+        ProjectComponents pcs = ProjectComponents.builder()
+                .components(Map.of("k1", pc))
+                .build();
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
 
@@ -151,10 +158,12 @@ class CatalogActivityFacadeTest {
                 .status(CatalogActivity.StatusEnum.CREATED)
                 .build();
 
-        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc)))
+                .thenReturn(activity);
 
-        // when - filter by sort parameter "creationDate"
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "creationDate", null, null, null, null);
+        // when
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId, sort, null, null, null, null);
 
         // then
         assertThat(result).hasSize(1);
@@ -162,65 +171,26 @@ class CatalogActivityFacadeTest {
     }
 
     @Test
-    void givenSortByProject_whenGetCatalogActivities_ThenApplySorting() throws Exception {
+    void givenAListOfCatalogActivities_whenPaginateCatalogActivities_ThenReturnPaginatedResults() {
         // given
-        CatalogEntity entity = CatalogEntityMother.of();
-        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
-        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+        var activities = List.of(
+                CatalogActivityMother.of(),
+                CatalogActivityMother.of("component-1"),
+                CatalogActivityMother.of("component-2")
+        );
+        var page = 1;
+        var size = 2;
+        var baseUrl = "https://component-catalog.myserver.com";
 
-        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
-        String encodedId = IdEncoderDecoder.idEncode(rawPath);
-        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
-        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
-
-        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
-
-        CatalogActivity activity = CatalogActivity.builder()
-                .componentId("C1")
-                .projectKey("PROJ")
-                .catalogItemSlug("proj/repo")
-                .status(CatalogActivity.StatusEnum.CREATED)
-                .build();
-
-        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
-
-        // when - filter by sort parameter "project"
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "project", null, null, null, null);
+        // when
+        PaginatedCatalogActivities result = catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl);
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
-    }
-
-    @Test
-    void givenSortByStatus_whenGetCatalogActivities_ThenApplySorting() throws Exception {
-        // given
-        CatalogEntity entity = CatalogEntityMother.of();
-        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
-        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
-
-        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
-        String encodedId = IdEncoderDecoder.idEncode(rawPath);
-        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
-        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
-
-        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
-
-        CatalogActivity activity = CatalogActivity.builder()
-                .componentId("C1")
-                .projectKey("PROJ")
-                .catalogItemSlug("proj/repo")
-                .status(CatalogActivity.StatusEnum.CREATED)
-                .build();
-
-        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
-
-        // when - filter by sort parameter "status"
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, "status", null, null, null, null);
-
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+        assertThat(result).isNotNull();
+        assertThat(result.getData()).hasSize(1);
+        assertThat(result.getData().getFirst().getComponentId()).isEqualTo("component-2");
+        assertThat(result.getPagination()).isNotNull();
+        assertThat(result.getPagination().getPage()).isEqualTo(page);
     }
 }
 
