@@ -165,7 +165,7 @@ class ProjectComponentsControllerTest {
 
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        when(projectComponentsFacade.getAllProjectComponents(
+        when(projectComponentsFacade.getAllProjectComponentsMetrics(
                 eq(accessToken),
                 eq(page),
                 eq(size),
@@ -180,7 +180,7 @@ class ProjectComponentsControllerTest {
         assertThat(response.getBody()).isEqualTo(responseBody);
 
         verify(authenticationFacade).getAccessToken();
-        verify(projectComponentsFacade).getAllProjectComponents(
+        verify(projectComponentsFacade).getAllProjectComponentsMetrics(
                 eq(accessToken),
                 eq(page),
                 eq(size),
@@ -201,7 +201,7 @@ class ProjectComponentsControllerTest {
 
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        when(projectComponentsFacade.getAllProjectComponents(
+        when(projectComponentsFacade.getAllProjectComponentsMetrics(
                 eq(accessToken),
                 eq(page),
                 eq(size),

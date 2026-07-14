@@ -50,7 +50,7 @@ public class ProjectComponentsController implements ProjectComponentsApi {
                 .build()
                 .toUriString();
 
-        var response = projectComponentsFacade.getAllProjectComponents(accessToken, page, size, baseUrl);
+        var response = projectComponentsFacade.getAllProjectComponentsMetrics(accessToken, page, size, baseUrl);
         return ResponseEntity.ok(response);
     }
 }

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @AllArgsConstructor
@@ -92,22 +94,55 @@ public class ProjectComponentsFacade {
                 );
     }
 
-    public ProjectComponentsMetrics getAllProjectComponents(String accessToken, int page, int size, String paginationBaseUrl) {
+    public ProjectComponentsMetrics getAllProjectComponentsMetrics(String accessToken, int page, int size, String paginationBaseUrl) {
         validateTokenPermittedOids(accessToken);
         PaginationUtils.validatePagination(page, size, 100);
 
-        var allProjectsJsons = provisionerActionsService.listAllProjectsJsons().stream()
-                .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
-                .sorted()
-                .toList();
+        var allProjectKeys = getAllProjectComponentsProjectKeys();
 
         Pair<List<ProjectComponentMetrics>, Pagination> paginatedProjectComponentsMetrics =
-                buildProjectComponentMetricsPaginatedResults(allProjectsJsons, page, size, paginationBaseUrl);
+                buildProjectComponentMetricsPaginatedResults(allProjectKeys, page, size, paginationBaseUrl);
 
         return ProjectComponentsMetrics.builder()
                 .data(paginatedProjectComponentsMetrics.getLeft())
                 .pagination(paginatedProjectComponentsMetrics.getRight())
                 .build();
+    }
+
+    /**
+     * Return a Map of ProjectKey -> ProjectComponents. ProjectComponents is a Map of ComponentId -> ProjectComponent
+     * It is supposed there will not be many project components, so we do not need to care about memory limits and pagination
+     *
+     * @return Map of ProjectKey -> ProjectComponents
+     */
+    public Map<String, ProjectComponents> getAllProjectComponents() {
+        var projectComponentsProjectKeys = provisionerActionsService.getAllProjectComponentsProjectKeys();
+
+        Map<String, ProjectComponents> projectComponentsByProjectKey = new HashMap<>();
+
+        for (String projectKey : projectComponentsProjectKeys) {
+            var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+            if (projectComponents.getComponents() == null) {
+                log.warn("Project components for project key {} are null", projectKey);
+            } else {
+                projectComponentsByProjectKey.put(projectKey, projectComponents);
+            }
+        }
+
+        var immutableProjectComponentsByProjectKey = Collections.unmodifiableMap(projectComponentsByProjectKey);
+
+        log.debug("Project components: {}", immutableProjectComponentsByProjectKey);
+
+        return immutableProjectComponentsByProjectKey;
+
+    }
+
+    private @NonNull List<String> getAllProjectComponentsProjectKeys() {
+        return provisionerActionsService.listAllProjectsJsons().stream()
+                .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
+                .sorted()
+                .toList();
     }
 
     private boolean notValid(ProjectComponents projectComponents, String projectKey, String accessToken) {

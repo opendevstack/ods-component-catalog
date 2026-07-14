@@ -287,4 +287,5 @@ public class CatalogItemsApiFacade {
 
         return projectComponentsList;
     }
+
 }

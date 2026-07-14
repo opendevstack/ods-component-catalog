@@ -493,37 +493,37 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenTokenWithInvalidOid_whenGetAllProjectComponents_thenThrowForbidden() {
+    void givenTokenWithInvalidOid_whenGetAllProjectComponents_Metrics_thenThrowForbidden() {
         // given
         String token = "invalid-token";
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(token, 0, 10, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(token, 0, 10, "url")
         ).isInstanceOf(ForbiddenException.class);
     }
 
     @Test
-    void givenInvalidPageOrSize_whenGetAllProjectComponents_thenThrowIllegalArgument() {
+    void givenInvalidPageOrSize_whenGetAllProjectComponents_Metrics_thenThrowIllegalArgument() {
         // given
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, -1, 10, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, -1, 10, "url")
         ).isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, 0, -1, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, -1, "url")
         ).isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() ->
-                projectComponentsFacade.getAllProjectComponents(validToken, 0, 101, "url")
+                projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 101, "url")
         ).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void givenOneProjectWithComponents_whenGetAllProjectComponents_thenReturnPaginatedResult() {
+    void givenOneProjectWithComponents_whenGetAllProjectComponents_Metrics_thenReturnPaginatedResult() {
         // given
         String projectKey = "PRJ-1";
 
@@ -546,7 +546,7 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).hasSize(1);
@@ -555,7 +555,7 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenMapperReturnsEmpty_whenGetAllProjectComponents_thenElementIsSkipped() {
+    void givenMapperReturnsEmpty_whenGetAllProjectComponents_Metrics_thenElementIsSkipped() {
         // given
         String projectKey = "PRJ-1";
 
@@ -574,7 +574,7 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).isEmpty();
@@ -615,14 +615,14 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 1, 1, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 1, 1, "url");
 
         // then
         assertThat(result.getData()).hasSize(1);
     }
 
     @Test
-    void givenMultipleProjects_whenGetAllProjectComponents_thenProjectsSortedByKey() {
+    void givenMultipleProjects_whenGetAllProjectComponents_Metrics_thenProjectsSortedByKey() {
         // given
         when(provisionerActionsService.listAllProjectsJsons())
                 .thenReturn(List.of("B.json", "A.json"));
@@ -640,13 +640,53 @@ class ProjectComponentsFacadeTest {
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
 
         // when
-        var result = projectComponentsFacade.getAllProjectComponents(validToken, 0, 10, "url");
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
 
         // then
         assertThat(result.getData()).isNotNull();
     }
 
+    @Test
+    void givenProjectsWithSomeNullComponents_whenGetAllProjectComponents_thenSkipNullEntriesAndReturnUnmodifiableMap() {
+        // given
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("A", "B"));
 
+        var comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var pcA = ProjectComponentsMother.of(Map.of("k1", comp));
+        var pcB = new org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents(); // components == null
+
+        when(provisionerActionsService.getProjectComponents("A")).thenReturn(pcA);
+        when(provisionerActionsService.getProjectComponents("B")).thenReturn(pcB);
+
+        // when
+        Map<String, org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents> result
+                = projectComponentsFacade.getAllProjectComponents();
+
+        // then
+        assertThat(result)
+                .hasSize(1)
+                .containsKey("A");
+        assertThat(result.get("A")).isSameAs(pcA);
+        verify(provisionerActionsService, times(1)).getAllProjectComponentsProjectKeys();
+
+        // returned map should be unmodifiable
+        assertThatThrownBy(() -> result.put("X", pcB)).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void givenListAllProjectsJsons_whenGetAllProjectComponentsProjectKeys_thenReturnSortedKeysWithoutJsonExtension() throws Exception {
+        // given
+        when(provisionerActionsService.listAllProjectsJsons()).thenReturn(List.of("B.json", "A.json", "c.json"));
+
+        // invoke private method
+        var method = ProjectComponentsFacade.class.getDeclaredMethod("getAllProjectComponentsProjectKeys");
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<String> keys = (List<String>) method.invoke(projectComponentsFacade);
+
+        // then
+        assertThat(keys).containsExactly("A", "B", "c");
+    }
 
 }
 
