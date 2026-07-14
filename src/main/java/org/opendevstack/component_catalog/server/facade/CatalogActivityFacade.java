@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.tika.utils.StringUtils;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
@@ -168,7 +169,7 @@ public class CatalogActivityFacade {
 
             return catalogItemSlug.toString();
         } else {
-            return "n/a";
+            return Strings.EMPTY;
         }
 
     }
@@ -179,7 +180,7 @@ public class CatalogActivityFacade {
         } catch (Exception e) {
             log.warn("Invalid catalog item path: {}", path, e);
 
-            return "n/a";
+            return Strings.EMPTY;
         }
 
     }
