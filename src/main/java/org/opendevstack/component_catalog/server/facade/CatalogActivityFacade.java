@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.tika.utils.StringUtils;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
@@ -50,7 +51,7 @@ public class CatalogActivityFacade {
         } else {
             log.debug("User is not admin for catalog owner groups. Returning empty list.");
 
-            return Collections.emptyList();
+            throw new ForbiddenException("User is not admin for catalog owner groups");
         }
 
     }

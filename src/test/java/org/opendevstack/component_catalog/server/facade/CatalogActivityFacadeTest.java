@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
@@ -31,6 +32,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -106,17 +108,19 @@ class CatalogActivityFacadeTest {
     }
 
     @Test
-    void givenEmptyResult_whenGetCatalogActivitiesById_ThenReturnEmptyList() throws Exception {
+    void givenUserNotAdminForCatalog_whenGetCatalogActivitiesById_ThenThrowForbiddenException() throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
         when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("OTHER-GROUP"));
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
+        var exception = assertThrows(ForbiddenException.class, () ->
+                catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)
+        );
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(exception.getMessage()).isEqualTo("User is not admin for catalog owner groups");
 
         verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
         verify(projectsInfoService, times(1)).getProjectGroups("token");
