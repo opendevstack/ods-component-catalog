@@ -26,6 +26,7 @@ import org.opendevstack.component_catalog.server.services.provisioner.ProjectCom
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -178,6 +179,122 @@ class CatalogActivityFacadeTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+    }
+
+    @Test
+    void givenStatus_whenGetCatalogActivities_thenFilterByStatus() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath1 = "projects/PROJ/repos/repo-1/raw/CatalogItem.yaml";
+        String rawPath2 = "projects/PROJ/repos/repo-2/raw/CatalogItem.yaml";
+        String encodedId1 = IdEncoderDecoder.idEncode(rawPath1);
+        String encodedId2 = IdEncoderDecoder.idEncode(rawPath2);
+        ProjectComponent pc1 = ProjectComponentMother.of("C1", encodedId1, "ref", Status.CREATED);
+        ProjectComponent pc2 = ProjectComponentMother.of("C2", encodedId2, "ref", Status.FAILED);
+        ProjectComponents pcs = ProjectComponents.builder()
+                .components(Map.of("k1", pc1, "k2", pc2))
+                .build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        CatalogActivity createdActivity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-1")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("100"))
+                .build();
+        CatalogActivity failedActivity = CatalogActivity.builder()
+                .componentId("C2")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-2")
+                .status(CatalogActivity.StatusEnum.FAILED)
+                .createdAt(new BigDecimal("200"))
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc1))).thenReturn(createdActivity);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(failedActivity);
+
+        // when
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, CatalogActivity.StatusEnum.CREATED.getValue(), startDate, endDate);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+        assertThat(result.getFirst().getStatus()).isEqualTo(CatalogActivity.StatusEnum.CREATED);
+
+        verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
+        verify(projectsInfoService, times(1)).getProjectGroups("token");
+        verify(projectComponentsFacade, times(1)).getAllProjectComponents();
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc1));
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc2));
+    }
+
+    @Test
+    void givenDateRange_whenGetCatalogActivities_thenFilterByDateRange() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath1 = "projects/PROJ/repos/repo-1/raw/CatalogItem.yaml";
+        String rawPath2 = "projects/PROJ/repos/repo-2/raw/CatalogItem.yaml";
+        String rawPath3 = "projects/PROJ/repos/repo-3/raw/CatalogItem.yaml";
+        String encodedId1 = IdEncoderDecoder.idEncode(rawPath1);
+        String encodedId2 = IdEncoderDecoder.idEncode(rawPath2);
+        String encodedId3 = IdEncoderDecoder.idEncode(rawPath3);
+        ProjectComponent pc1 = ProjectComponentMother.of("C1", encodedId1, "ref", Status.CREATED);
+        ProjectComponent pc2 = ProjectComponentMother.of("C2", encodedId2, "ref", Status.CREATED);
+        ProjectComponent pc3 = ProjectComponentMother.of("C3", encodedId3, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder()
+                .components(Map.of("k1", pc1, "k2", pc2, "k3", pc3))
+                .build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        CatalogActivity beforeRangeActivity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-1")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("99"))
+                .build();
+        CatalogActivity startBoundaryActivity = CatalogActivity.builder()
+                .componentId("C2")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-2")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("100"))
+                .build();
+        CatalogActivity endBoundaryActivity = CatalogActivity.builder()
+                .componentId("C3")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-3")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("150"))
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc1))).thenReturn(beforeRangeActivity);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(startBoundaryActivity);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc3))).thenReturn(endBoundaryActivity);
+
+        // when
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, null, 100L, 150L);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(CatalogActivity::getComponentId).containsExactly("C2", "C3");
+        assertThat(result).extracting(CatalogActivity::getCreatedAt).containsExactly(new BigDecimal("100"), new BigDecimal("150"));
+
+        verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
+        verify(projectsInfoService, times(1)).getProjectGroups("token");
+        verify(projectComponentsFacade, times(1)).getAllProjectComponents();
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc1));
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc2));
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc3));
     }
 
     @Test
