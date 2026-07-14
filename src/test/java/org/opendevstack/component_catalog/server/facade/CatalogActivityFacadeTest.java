@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,6 +13,8 @@ import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.CatalogActivityMother;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
+import org.opendevstack.component_catalog.server.model.SortOrder;
+import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
@@ -54,7 +56,8 @@ class CatalogActivityFacadeTest {
     private CatalogActivityFacade catalogActivityFacade;
 
     private final String catalogId = "catalog-id";
-    private final String sort = "creationDate";
+    private final SortParameter sortParameter = SortParameter.CREATION_DATE;
+    private final SortOrder sortOrder = SortOrder.ASC;
     private final String project = null;
     private final String status = null;
     private final Long startDate = null;
@@ -89,7 +92,7 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
 
         // then
         assertThat(result).hasSize(1);
@@ -110,7 +113,7 @@ class CatalogActivityFacadeTest {
         when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("OTHER-GROUP"));
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
 
         // then
         assertThat(result).isEmpty();
@@ -126,7 +129,7 @@ class CatalogActivityFacadeTest {
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate))
+        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("Catalog entity not found");
 
@@ -135,8 +138,11 @@ class CatalogActivityFacadeTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"creationDate", "project", "status"})
-    void givenSortParameter_whenGetCatalogActivities_thenApplySorting(String sort) throws Exception {
+    @EnumSource(
+            value = SortParameter.class,
+            names = {"CREATION_DATE", "PROJECT", "STATUS"}
+    )
+    void givenSortParameter_whenGetCatalogActivities_thenApplySorting(SortParameter sortParameter) throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
@@ -163,7 +169,7 @@ class CatalogActivityFacadeTest {
 
         // when
         List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
-                catalogId, sort, null, null, null, null);
+                catalogId, sortParameter, sortOrder, null, null, null, null);
 
         // then
         assertThat(result).hasSize(1);

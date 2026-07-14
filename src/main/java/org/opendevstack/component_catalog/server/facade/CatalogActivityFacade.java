@@ -7,6 +7,8 @@ import org.apache.tika.utils.StringUtils;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
+import org.opendevstack.component_catalog.server.model.SortOrder;
+import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
@@ -35,11 +37,11 @@ public class CatalogActivityFacade {
     private final AuthenticationFacade authenticationFacade;
     private final CatalogActivityMapper catalogActivityMapper;
 
-    public List<CatalogActivity> getCatalogActivities(String catalogId, String sort, String project, String status, Long startDate, Long endDate) {
+    public List<CatalogActivity> getCatalogActivities(String catalogId, SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
         var userIsAdminForCatalog = isUserAdminForCatalogProjects(catalogId);
 
         if (userIsAdminForCatalog) {
-            var catalogActivities = getCatalogActivities(sort, project, status, startDate, endDate);
+            var catalogActivities = getCatalogActivities(sort, sortOrder, project, status, startDate, endDate);
 
             log.debug("User is admin for catalog owner groups. Returning catalog activities: {}", catalogActivities);
 
@@ -81,7 +83,7 @@ public class CatalogActivityFacade {
         return userIsAdminForCatalog;
     }
 
-    private List<CatalogActivity> getCatalogActivities(String sort, String project, String status, Long startDate, Long endDate) {
+    private List<CatalogActivity> getCatalogActivities(SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
         var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
 
         var allProjectComponentsByProjectKey = new HashMap<String, ProjectComponents>();
@@ -104,33 +106,34 @@ public class CatalogActivityFacade {
         }
 
         var filteredOutCatalogActivities = filterOutCatalogActivities(catalogActivities, status, startDate, endDate);
-        var sortedCatalogActivities = sortCatalogActivities(filteredOutCatalogActivities, sort);
+        var sortedCatalogActivities = sortCatalogActivities(filteredOutCatalogActivities, sort, sortOrder);
 
         log.debug("Returning catalog activities: {}", sortedCatalogActivities);
 
         return sortedCatalogActivities;
     }
 
-    private List<CatalogActivity> sortCatalogActivities(List<CatalogActivity> catalogActivities, String sort) {
+    private List<CatalogActivity> sortCatalogActivities(List<CatalogActivity> catalogActivities, SortParameter sort, SortOrder sortOrder) {
         Comparator<CatalogActivity> comparator = switch (sort) {
-            case "project" -> Comparator.comparing(
+            case PROJECT -> Comparator.comparing(
                     CatalogActivity::getProjectKey,
                     Comparator.nullsLast(String::compareTo)
             );
-            case "status" -> Comparator.comparing(
+            case STATUS -> Comparator.comparing(
                     CatalogActivity::getStatus,
                     Comparator.nullsLast(Enum::compareTo)
             );
-            case "creationDate" -> Comparator.comparing(
+            case CREATION_DATE -> Comparator.comparing(
                     CatalogActivity::getCreatedAt,
                     Comparator.nullsLast(Comparable::compareTo)
             );
-            default -> null;
         };
 
-        return comparator == null
-                ? catalogActivities
-                : catalogActivities.stream().sorted(comparator).toList();
+        if (sortOrder == SortOrder.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        return catalogActivities.stream().sorted(comparator).toList();
     }
 
     private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, String status, Long startDate, Long endDate) {

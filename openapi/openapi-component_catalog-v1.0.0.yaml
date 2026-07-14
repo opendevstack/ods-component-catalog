@@ -449,17 +449,20 @@ paths:
           schema:
             type: string
             example: 'aSdFam...yCg=='
-        - name: sort
+        - name: sortParameter
           in: query
           description: Parameter to sort the returned CatalogActivities.
           required: false
           schema:
-            type: string
-            enum:
-              - project
-              - status
-              - creationDate
+            $ref: '#/components/schemas/SortParameter'
           example: project
+        - name: sortOrder
+          in: query
+          description: Parameter to order the sort of the elements of the returned CatalogActivities, either in ascending or descending order..
+          required: false
+          schema:
+            $ref: '#/components/schemas/SortOrder'
+          example: asc
         - name: project
           in: query
           description: Project key for the component.
@@ -502,7 +505,6 @@ paths:
           schema:
             type: integer
             default: 0
-
         - name: size
           in: query
           description: Page size
@@ -1457,6 +1459,12 @@ components:
           description: The timestamp of the provision action.
           example: 1707043200000
           type: number
+    SortParameter:
+      type: string
+      enum:
+        - project
+        - status
+        - creationDate
     SortOrder:
       type: string
       enum:

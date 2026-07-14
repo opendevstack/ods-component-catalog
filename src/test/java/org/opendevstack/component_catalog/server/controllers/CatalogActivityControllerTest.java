@@ -10,6 +10,8 @@ import org.opendevstack.component_catalog.server.facade.CatalogActivityFacade;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
 import org.opendevstack.component_catalog.server.model.Pagination;
+import org.opendevstack.component_catalog.server.model.SortOrder;
+import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -26,7 +28,8 @@ import static org.mockito.Mockito.when;
 class CatalogActivityControllerTest {
 
     private final String catalogId = "catalog-1";
-    private final String sort = "creationDate";
+    private final SortParameter sortParameter = SortParameter.CREATION_DATE;
+    private final SortOrder sortOrder = SortOrder.ASC;
     private final String project = "PROJECT-1";
     private final String status = "CREATED";
     private final Long startDate = 1L;
@@ -60,11 +63,11 @@ class CatalogActivityControllerTest {
                 .pagination(pagination)
                 .build();
 
-        when(catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate)).thenReturn(activities);
+        when(catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)).thenReturn(activities);
         when(catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl)).thenReturn(paginatedActivities);
 
         // When
-        var response = catalogActivityController.getCatalogActivitiesById(catalogId, sort, project, status, startDate, endDate, page, size);
+        var response = catalogActivityController.getCatalogActivitiesById(catalogId, sortParameter, sortOrder, project, status, startDate, endDate, page, size);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -75,10 +78,10 @@ class CatalogActivityControllerTest {
     @Test
     void givenFacadeThrowsElementNotFound_whenGetCatalogActivitiesById_ThenPropagateException() {
         // Given
-        when(catalogActivityFacade.getCatalogActivities(catalogId, sort, project, status, startDate, endDate)).thenThrow(new ElementNotFoundException("not found"));
+        when(catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)).thenThrow(new ElementNotFoundException("not found"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(catalogId, sort, project, status, startDate, endDate, page, size))
+        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(catalogId, sortParameter, sortOrder, project, status, startDate, endDate, page, size))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("not found");
     }
