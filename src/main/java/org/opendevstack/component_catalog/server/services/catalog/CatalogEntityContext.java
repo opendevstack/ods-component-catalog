@@ -29,6 +29,10 @@ public class CatalogEntityContext {
         return catalogEntity.getMetadata().getDescription();
     }
 
+    public List<String> getOwners() {
+        return catalogEntity.getMetadata().getOwners();
+    }
+
     public List<CatalogEntityLink> getLinks() {
         return List.of(catalogEntity.getMetadata().getSpec().getLinks());
     }
