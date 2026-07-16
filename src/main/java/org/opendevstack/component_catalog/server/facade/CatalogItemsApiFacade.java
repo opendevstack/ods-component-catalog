@@ -70,9 +70,7 @@ public class CatalogItemsApiFacade {
         var clusters = getClusters(catalogRequestParams);
         var userGroups = getProjectGroups(catalogRequestParams);
 
-        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
-
-        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, componentCount);
+        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, null);
     }
 
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
