@@ -40,6 +40,7 @@ public class EntitiesMapper {
         return Catalog.builder()
                 .name(catalogEntityCtx.getName())
                 .description(catalogEntityCtx.getDescription())
+                .owners(catalogEntityCtx.getCatalogEntity().getMetadata().getOwners())
                 .communityPageId(nullableIdEncode(catalogEntityCtx.getCommunityPagePath()))
                 .links(catalogLinks)
                 .tags(catalogEntityCtx.getTags())

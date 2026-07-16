@@ -62,6 +62,7 @@ class EntitiesMapperTest {
         assertEquals("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1NvbWVGaWxlT3JEaXI_YXQ9cmVmcy9oZWFkcy9tYXN0ZXI=", catalog.getCommunityPageId());
         assertEquals(3, catalog.getLinks().size());
         assertEquals(2, catalog.getTags().size());
+        assertEquals(2, catalog.getOwners().size());
     }
 
     @Test
