@@ -84,6 +84,9 @@ class CatalogItemsApiFacadeTest {
     @Mock
     private OdsApiServerServiceProps odsApiServerServiceProps;
 
+    @Mock
+    private AuthenticationFacade authenticationFacade;
+
     @Spy
     @InjectMocks
     private CatalogItemsApiFacade catalogItemsApiFacade;

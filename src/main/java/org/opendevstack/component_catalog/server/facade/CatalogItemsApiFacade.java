@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.OdsApiServerServiceProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
@@ -56,21 +57,26 @@ public class CatalogItemsApiFacade {
     private final ProjectComponentsService projectComponentsService;
 
     private final ProvisionerActionsService provisionerActionsService;
+    private final AuthenticationFacade authenticationFacade;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
-        var clusters = getClusters(catalogRequestParams);
-        var userGroups = getProjectGroups(catalogRequestParams);
+        var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
 
-        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
+        var clusters = getClusters(tokenizedCatalogRequestParams);
+        var userGroups = getProjectGroups(tokenizedCatalogRequestParams);
 
-        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+        var componentCount = calculateComponentCountForCatalogOwners(tokenizedCatalogRequestParams, userGroups);
+
+        return catalogApiAdapter.asCatalogItem(tokenizedCatalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {
-        var clusters = getClusters(catalogRequestParams);
-        var userGroups = getProjectGroups(catalogRequestParams);
+        var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
 
-        return catalogApiAdapter.catalogItemFiltersFrom(catalogRequestParams, clusters, userGroups, null);
+        var clusters = getClusters(tokenizedCatalogRequestParams);
+        var userGroups = getProjectGroups(tokenizedCatalogRequestParams);
+
+        return catalogApiAdapter.catalogItemFiltersFrom(tokenizedCatalogRequestParams, clusters, userGroups, null);
     }
 
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
@@ -104,6 +110,16 @@ public class CatalogItemsApiFacade {
         return allCatalogItems.stream()
                 .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
                 .toList();
+    }
+
+    private CatalogRequestParams tokenize(CatalogRequestParams catalogRequestParams) {
+        CatalogRequestParams tokenizedCatalogRequestParams;
+        if (catalogRequestParams.getAccessToken() == null) {
+            tokenizedCatalogRequestParams = catalogRequestParams.toBuilder().accessToken(authenticationFacade.getAccessToken()).build();
+        } else {
+            tokenizedCatalogRequestParams = catalogRequestParams;
+        }
+        return tokenizedCatalogRequestParams;
     }
 
     private void validateTokenFromOds(String accessToken) throws ForbiddenException {
@@ -252,6 +268,8 @@ public class CatalogItemsApiFacade {
 
     private List<String> getProjectGroups(CatalogRequestParams catalogRequestParams) {
         if (catalogRequestParams.getAccessToken() == null) {
+            log.debug("No access token provided. Returning empty list of user groups");
+
             return Collections.emptyList();
         } else {
             return projectsInfoService.getProjectGroups(catalogRequestParams.getAccessToken());
@@ -259,7 +277,8 @@ public class CatalogItemsApiFacade {
     }
 
     private List<String> getClusters(CatalogRequestParams catalogRequestParams) {
-        if (catalogRequestParams.getAccessToken() == null) {
+        if (catalogRequestParams.getAccessToken() == null ||
+                StringUtils.isBlank(catalogRequestParams.getProjectKey())) {
             return Collections.emptyList();
         } else {
             var projectInfo = projectsInfoService.getProjectClusters(catalogRequestParams.getProjectKey(), catalogRequestParams.getAccessToken());
