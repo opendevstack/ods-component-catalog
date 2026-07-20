@@ -177,7 +177,9 @@ class CatalogItemsApiFacadeTest {
         var userActionsEntity = UserActionsEntityMother.of();
         Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
         var projectKey = "projectKey";
-        String accessToken = null;
+
+        // No token provided in params; authentication facade also has no token (unauthenticated context)
+        when(authenticationFacade.getAccessToken()).thenReturn(null);
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
 
@@ -186,7 +188,6 @@ class CatalogItemsApiFacadeTest {
                 .userActionsEntity(userActionsEntity)
                 .permissions(permissions)
                 .projectKey(projectKey)
-                .accessToken(accessToken)
                 .build();
 
         var clusters = Collections.<String>emptyList();
@@ -201,7 +202,9 @@ class CatalogItemsApiFacadeTest {
 
         // Then
         assertThat(result).isSameAs(expectedCatalogItem);
-        verify(projectsInfoService, times(0)).getProjectClusters(projectKey, accessToken);
+        verify(authenticationFacade, times(1)).getAccessToken();
+        verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
+        verify(projectsInfoService, times(0)).getProjectGroups(any());
     }
 
     @Test
@@ -259,8 +262,9 @@ class CatalogItemsApiFacadeTest {
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
 
+        // No token provided in params; authentication facade also has no token (unauthenticated context)
+        when(authenticationFacade.getAccessToken()).thenReturn(null);
 
-        // catalogRequestParams.getCatalogItemEntityContext()
         var catalogItemRequestParams = CatalogRequestParams.builder()
                 .catalogEntity(catalogEntity)
                 .catalogItemEntityContext(catalogItemEntityContext)
@@ -279,8 +283,9 @@ class CatalogItemsApiFacadeTest {
 
         // then
         assertThat(result).isSameAs(expectedFilters);
+        verify(authenticationFacade, times(1)).getAccessToken();
         verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
-        verify(projectsInfoService, times(0)).getProjectGroups(catalogItemRequestParams.getAccessToken());
+        verify(projectsInfoService, times(0)).getProjectGroups(any());
 
         verify(catalogApiAdapter, times(1)).catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
     }
