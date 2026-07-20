@@ -49,8 +49,8 @@ public class CatalogApiAdapter {
                                         List<String> clusters,
                                         List<String> userGroups,
                                         Integer componentCount) {
-        log.debug("asCatalogItem. params: {}, clusters: {}, userGroups: {}",
-                catalogRequestParams, clusters, userGroups);
+        log.debug("asCatalogItem. params: {}, clusters: {}, userGroups: {}, componentCount: {}",
+                catalogRequestParams, clusters, userGroups, componentCount);
 
 
         // If the principal has *any* permissions, it has access to the repo
@@ -133,7 +133,8 @@ public class CatalogApiAdapter {
                                                            List<String> clusters,
                                                            List<String> userGroups,
                                                            Integer componentCount) {
-        log.debug("catalogItemFiltersFrom. params: {}", catalogRequestParams);
+        log.debug("catalogItemFiltersFrom. params: {}, clusters: {}, userGroups: {}, componentCount: {}",
+                catalogRequestParams, clusters, userGroups, componentCount);
 
         // Group all tags from all items and group them by label, in order to
         // get pairs: (itemLabel, List<CatalogItemTag> itemTags)
