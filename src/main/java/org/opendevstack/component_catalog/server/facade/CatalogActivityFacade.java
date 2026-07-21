@@ -5,9 +5,11 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.tika.utils.StringUtils;
+import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
+import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
@@ -17,6 +19,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityM
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
@@ -27,23 +30,29 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @AllArgsConstructor
 @Slf4j
 public class CatalogActivityFacade {
     private final ProjectComponentsFacade projectComponentsFacade;
+    private final AuthenticationFacade authenticationFacade;
+    private final CatalogItemsApiFacade catalogItemsApiFacade;
     private final CatalogEntitiesService catalogEntitiesService;
     private final ProjectsInfoService projectsInfoService;
-    private final AuthenticationFacade authenticationFacade;
     private final CatalogActivityMapper catalogActivityMapper;
 
     public List<CatalogActivity> getCatalogActivities(String catalogId, SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
         var userIsAdminForCatalog = isUserAdminForCatalogProjects(catalogId);
 
         if (userIsAdminForCatalog) {
-            var catalogActivities = getCatalogActivities(sort, sortOrder, project, status, startDate, endDate);
+            var notNullSortParameter = Optional.ofNullable(sort).orElse(SortParameter.CREATION_DATE);
+            var notNullSortOrder = Optional.ofNullable(sortOrder).orElse(SortOrder.ASC);
+
+            var catalogActivities = getCatalogActivitiesForCatalog(catalogId, notNullSortParameter, notNullSortOrder, project, status, startDate, endDate);
 
             log.debug("User is admin for catalog owner groups. Returning catalog activities: {}", catalogActivities);
 
@@ -85,8 +94,8 @@ public class CatalogActivityFacade {
         return userIsAdminForCatalog;
     }
 
-    private List<CatalogActivity> getCatalogActivities(SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
-        var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
+    private List<CatalogActivity> getCatalogActivitiesForCatalog(String catalogId, SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
+        var allProjectComponents = getAllProjectComponents(catalogId);
 
         var allProjectComponentsByProjectKey = new HashMap<String, ProjectComponents>();
 
@@ -113,6 +122,41 @@ public class CatalogActivityFacade {
         log.debug("Returning catalog activities: {}", sortedCatalogActivities);
 
         return sortedCatalogActivities;
+    }
+
+    private Map<String, ProjectComponents> getAllProjectComponents(String catalogId) {
+        var catalogItemIdsForCatalog = getCatalogItemIds(catalogId);
+
+        var allProjectComponents = projectComponentsFacade.getAllProjectComponents();
+
+        Map<String, ProjectComponents> projectComponentsForCatalog = new HashMap<>();
+
+        for (var projectComponentEntry : allProjectComponents.entrySet()) {
+            var projectKey = projectComponentEntry.getKey();
+            Map<String, ProjectComponent> projectComponentsMap = projectComponentEntry.getValue().getComponents().entrySet().stream()
+                    .filter(entry -> catalogItemIdsForCatalog.contains(entry.getValue().getCatalogItemId()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            projectComponentsForCatalog.put(projectKey, ProjectComponents.builder().components(projectComponentsMap).build());
+        }
+
+        return projectComponentsForCatalog;
+    }
+
+    @SneakyThrows
+    private List<String> getCatalogItemIds(String catalogId) {
+        var catalogItemRequestParams = CatalogRequestParams.builder()
+                .catalogId(catalogId)
+                .sortOrder(SortOrder.ASC)
+                .accessToken(authenticationFacade.getAccessToken())
+                .build();
+
+        var items = catalogItemsApiFacade.fetchCatalogItems(catalogItemRequestParams);
+
+        // fixme, remove "branch" from id
+        // so, cHJvamVjdHMvQ0FURVNUL3JlcG9zL2N1c3RvbS1kZWxldGlvbi13b3JrZmxvdy9yYXcvQ2F0YWxvZ0l0ZW0ueWFtbD9hdD1yZWZzL2hlYWRzL21hc3Rlcg== -> projects/CATEST/repos/custom-deletion-workflow/raw/CatalogItem.yaml?at=refs/heads/master
+        // to  cHJvamVjdHMvQ0FURVNUL3JlcG9zL2N1c3RvbS1kZWxldGlvbi13b3JrZmxvdy9yYXcvQ2F0YWxvZ0l0ZW0ueWFtbA== -> projects/CATEST/repos/custom-deletion-workflow/raw/CatalogItem.yaml
+        return items.stream().map(CatalogItem::getId).toList();
     }
 
     private List<CatalogActivity> sortCatalogActivities(List<CatalogActivity> catalogActivities, SortParameter sort, SortOrder sortOrder) {
