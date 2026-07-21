@@ -85,6 +85,7 @@ public class CatalogItemsApiFacade {
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         if (catalogRequestParams.getCatalogId() != null) {
+            validateTokenFromHumanUser(catalogRequestParams.getAccessToken());
             return fetchCatalogItemsByCatalogId(catalogRequestParams);
         }
 
@@ -124,6 +125,12 @@ public class CatalogItemsApiFacade {
     private void validateTokenFromOds(String accessToken) throws ForbiddenException {
         var oid = JwtUtils.extractClaim(accessToken, "oid");
         if (!oid.orElse("").equals(odsApiServerServiceProps.getOid())) {
+            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
+        }
+    }
+
+    private void validateTokenFromHumanUser(String accessToken) throws ForbiddenException {
+        if (JwtUtils.extractClaim(accessToken, "scp").isEmpty()) {
             throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
         }
     }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
@@ -90,6 +91,8 @@ class CatalogItemsApiFacadeTest {
     @Spy
     @InjectMocks
     private CatalogItemsApiFacade catalogItemsApiFacade;
+
+    private static final String HUMAN_TOKEN = "humanToken";
 
     @Test
     void asCatalogItem_returnsCatalogItemUsingClustersFromProjectsApi() {
@@ -294,179 +297,223 @@ class CatalogItemsApiFacadeTest {
     @Test
     void fetchCatalogItems_whenContributingCheckForCatalogTrue_mapsBuildsFiltersSortsAndReturnsList()
             throws InvalidIdException, InvalidCatalogEntityException {
+        try (var mockedJwt = mockHumanToken()) {
 
-        // given
-        var catalogId = "catalog-1";
-        var projectKey = "PRJ";
-        var sortOrder = SortOrder.ASC;
+            // given
+            var catalogId = "catalog-1";
+            var projectKey = "PRJ";
+            var sortOrder = SortOrder.ASC;
 
-        var ctx1 = mock(CatalogItemEntityContext.class);
-        var ctx2 = mock(CatalogItemEntityContext.class);
-        var itemEntityCtxs = List.of(ctx1, ctx2);
+            var ctx1 = mock(CatalogItemEntityContext.class);
+            var ctx2 = mock(CatalogItemEntityContext.class);
+            var itemEntityCtxs = List.of(ctx1, ctx2);
 
-        var userActionsEntity = mock(UserActionsEntity.class);
-        Set<CatalogEntityPermissionEnum> permissions = Set.of(CatalogEntityPermissionEnum.PROJECT_ADMIN);
+            var userActionsEntity = mock(UserActionsEntity.class);
+            Set<CatalogEntityPermissionEnum> permissions = Set.of(CatalogEntityPermissionEnum.PROJECT_ADMIN);
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(itemEntityCtxs);
-        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(userActionsEntity);
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(itemEntityCtxs);
+            when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(userActionsEntity);
 
-        doReturn(permissions).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
-        doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(anyString());
-        doReturn(true).when(catalogItemsApiFacade).filterByProject(any(), eq(projectKey));
+            doReturn(permissions).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
+            doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(anyString());
+            doReturn(true).when(catalogItemsApiFacade).filterByProject(any(), eq(projectKey));
 
-        CatalogItem itemB = new CatalogItem();
-        itemB.setId("B");
-        itemB.setTitle("B-title");
+            CatalogItem itemB = new CatalogItem();
+            itemB.setId("B");
+            itemB.setTitle("B-title");
 
-        CatalogItem itemA = new CatalogItem();
-        itemA.setId("A");
-        itemA.setTitle("A-title");
+            CatalogItem itemA = new CatalogItem();
+            itemA.setId("A");
+            itemA.setTitle("A-title");
 
-        when(catalogApiAdapter.asCatalogItem(
-                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx1),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(itemB);
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx1),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(itemB);
 
-        when(catalogApiAdapter.asCatalogItem(
-                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx2),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(itemA);
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx2),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(itemA);
 
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .projectKey(projectKey)
-                .sortOrder(sortOrder)
-                .build();
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken(HUMAN_TOKEN)
+                    .projectKey(projectKey)
+                    .sortOrder(sortOrder)
+                    .build();
 
-        // when
-        var result = catalogItemsApiFacade.fetchCatalogItems(params);
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
 
-        // then
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).getId()).isEqualTo("A");
-        assertThat(result.get(1).getId()).isEqualTo("B");
+            // then
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getId()).isEqualTo("A");
+            assertThat(result.get(1).getId()).isEqualTo("B");
 
-        verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
-        verify(catalogItemsApiFacade, times(2)).filterByProject(any(), eq(projectKey));
-        verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+            verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
+            verify(catalogItemsApiFacade, times(2)).filterByProject(any(), eq(projectKey));
+            verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+        }
     }
-
 
     @Test
     void fetchCatalogItems_whenContributingCheckForCatalogFalse_returnsEmptyListAndSkipsMapping()
             throws InvalidIdException, InvalidCatalogEntityException {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            var catalogId = "catalog-2";
 
-        // given
-        var catalogId = "catalog-2";
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .sortOrder(SortOrder.ASC)
-                .build();
+            mockedJwt.when(() -> JwtUtils.extractClaim("humanToken", "scp"))
+                    .thenReturn(Optional.of("Api.Access"));
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(List.of());
-        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken("humanToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
-        doReturn(false).when(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                    .thenReturn(List.of());
 
-        // when
-        var result = catalogItemsApiFacade.fetchCatalogItems(params);
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
 
-        // then
-        assertThat(result).isEmpty();
+            doReturn(Set.of())
+                    .when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(catalogId);
 
-        verify(catalogEntitiesService, times(1)).getCatalogItemsEntities(catalogId);
-        verify(userActionsEntitiesService, times(1)).getDefaultUserActionsEntity();
-        verify(catalogItemsApiFacade, times(1)).currentPrincipalCatalogPermissions(catalogId);
-        verify(catalogItemsApiFacade, times(1)).filterByContributingFileExists(catalogId);
-        verify(catalogItemsApiFacade, times(0)).asCatalogItem(any());
+            doReturn(false)
+                    .when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(catalogId);
+
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            assertThat(result).isEmpty();
+
+            verify(catalogEntitiesService).getCatalogItemsEntities(catalogId);
+            verify(userActionsEntitiesService).getDefaultUserActionsEntity();
+            verify(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
+            verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+            verify(catalogItemsApiFacade, never()).asCatalogItem(any());
+        }
     }
 
     @Test
     void fetchCatalogItems_filtersByProjectAndContributingPerItem_leavesOnlyMatchingOnes()
             throws InvalidIdException, InvalidCatalogEntityException {
-        // given
-        var catalogId = "catalog-3";
-        var projectKey = "PRJ-X";
+        try (var mockedJwt = mockHumanToken()) {
 
-        var ctxKeep = mock(CatalogItemEntityContext.class);
-        var ctxDrop = mock(CatalogItemEntityContext.class);
+            // given
+            var catalogId = "catalog-3";
+            var projectKey = "PRJ-X";
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(List.of(ctxKeep, ctxDrop));
-        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
-        doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
-        doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+            var ctxKeep = mock(CatalogItemEntityContext.class);
+            var ctxDrop = mock(CatalogItemEntityContext.class);
 
-        var keep = new CatalogItem();
-        keep.setId("keep");
-        keep.setTitle("K");
-        var drop = new CatalogItem();
-        drop.setId("drop");
-        drop.setTitle("D");
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(List.of(ctxKeep, ctxDrop));
+            when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
 
-        when(catalogApiAdapter.asCatalogItem(
-                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxKeep),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(keep);
+            doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
+            doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
 
-        when(catalogApiAdapter.asCatalogItem(
-                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxDrop),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(drop);
+            var keep = new CatalogItem();
+            keep.setId("keep");
+            keep.setTitle("K");
 
-        doAnswer(inv -> {
-            CatalogItem it = inv.getArgument(0);
-            return "keep".equals(it.getId());
-        }).when(catalogItemsApiFacade).filterByProject(any(CatalogItem.class), eq(projectKey));
+            var drop = new CatalogItem();
+            drop.setId("drop");
+            drop.setTitle("D");
 
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .projectKey(projectKey)
-                .sortOrder(SortOrder.ASC)
-                .build();
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxKeep),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(keep);
 
-        // when
-        var result = catalogItemsApiFacade.fetchCatalogItems(params);
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxDrop),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(drop);
 
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getId()).isEqualTo("keep");
+            doAnswer(inv -> {
+                CatalogItem it = inv.getArgument(0);
+                return "keep".equals(it.getId());
+            }).when(catalogItemsApiFacade).filterByProject(any(CatalogItem.class), eq(projectKey));
 
-        verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
-        verify(catalogItemsApiFacade, times(2)).filterByProject(any(CatalogItem.class), eq(projectKey));
-        verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists("keep");
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken(HUMAN_TOKEN)
+                    .projectKey(projectKey)
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getId()).isEqualTo("keep");
+
+            verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
+            verify(catalogItemsApiFacade, times(2)).filterByProject(any(CatalogItem.class), eq(projectKey));
+            verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists("keep");
+        }
     }
 
     @Test
-    void fetchCatalogItems_whenAsCatalogItemThrows_propagatesInvalidCatalogEntityException() throws InvalidIdException {
-        // given
-        var catalogId = "catalog-err";
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(List.of(mock(CatalogItemEntityContext.class)));
-        when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
-        doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
-        doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
+    void fetchCatalogItems_whenAsCatalogItemThrows_propagatesInvalidCatalogEntityException()
+            throws InvalidIdException {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() ->
+                            JwtUtils.extractClaim("humanToken", "scp"))
+                    .thenReturn(Optional.of("Api.Access"));
 
-        when(catalogApiAdapter.asCatalogItem(
-                any(),
-                anyList(),
-                anyList(),
-                any()))
-            .thenThrow(new InvalidCatalogEntityException("bad"));
+            var catalogId = "catalog-err";
 
-        var params = CatalogRequestParams.builder().catalogId(catalogId).sortOrder(SortOrder.ASC).build();
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                    .thenReturn(List.of(mock(CatalogItemEntityContext.class)));
 
-        // when / then
-        assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
-                .isInstanceOf(InvalidCatalogEntityException.class)
-                .hasMessageContaining("bad");
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
+
+            doReturn(Set.of())
+                    .when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(catalogId);
+
+            doReturn(true)
+                    .when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(catalogId);
+
+            when(catalogApiAdapter.asCatalogItem(
+                    any(),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenThrow(new InvalidCatalogEntityException("bad"));
+
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken("humanToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            // when / then
+            assertThatThrownBy(() ->
+                    catalogItemsApiFacade.fetchCatalogItems(params))
+                    .isInstanceOf(InvalidCatalogEntityException.class)
+                    .hasMessageContaining("bad");
+        }
     }
 
     @Test
@@ -579,48 +626,55 @@ class CatalogItemsApiFacadeTest {
 
     @Test
     void fetchCatalogItems_whenCatalogIdIsProvidedWithinTheRequestParams_thenFetchesOnlyItsCatalogItems() throws Exception {
-        // given
-        var catalogId = "catalog-123";
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            var catalogId = "catalog-123";
 
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .sortOrder(SortOrder.ASC)
-                .build();
+            mockedJwt.when(() -> JwtUtils.extractClaim("humanToken", "scp"))
+                    .thenReturn(Optional.of("Api.Access"));
 
-        var ctx = mock(CatalogItemEntityContext.class);
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken("humanToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
-                .thenReturn(List.of(ctx));
+            var ctx = mock(CatalogItemEntityContext.class);
 
-        when(userActionsEntitiesService.getDefaultUserActionsEntity())
-                .thenReturn(mock(UserActionsEntity.class));
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                    .thenReturn(List.of(ctx));
 
-        doReturn(Set.of()).when(catalogItemsApiFacade)
-                .currentPrincipalCatalogPermissions(catalogId);
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
 
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByContributingFileExists(catalogId);
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByProject(any(), any());
+            doReturn(Set.of()).when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(catalogId);
 
-        CatalogItem item = new CatalogItem();
-        item.setId("item-1");
+            doReturn(true).when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(catalogId);
 
-        when(catalogApiAdapter.asCatalogItem(
-                any(),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(item);
+            doReturn(true).when(catalogItemsApiFacade)
+                    .filterByProject(any(), any());
 
-        // when
-        var result = catalogItemsApiFacade.fetchCatalogItems(params);
+            CatalogItem item = new CatalogItem();
+            item.setId("item-1");
 
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getId()).isEqualTo("item-1");
+            when(catalogApiAdapter.asCatalogItem(
+                    any(),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(item);
 
-        verify(catalogsCollectionService, never()).getCatalogsCollection();
+            // when
+            var result = catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getId()).isEqualTo("item-1");
+
+            verify(catalogsCollectionService, never()).getCatalogsCollection();
+        }
     }
 
     @Test
@@ -645,72 +699,80 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogIdProvided_doesNotValidateToken() throws Exception {
-        // given
-        var catalogId = "catalog-1";
+    void fetchCatalogItems_whenCatalogIdProvidedAndApplicationToken_thenThrowsForbiddenException() throws InvalidIdException {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+            // given
+            mockedJwt.when(() -> JwtUtils.extractClaim("appToken", "scp"))
+                    .thenReturn(Optional.empty());
 
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .accessToken(null)
-                .sortOrder(SortOrder.ASC)
-                .build();
+            var params = CatalogRequestParams.builder()
+                    .catalogId("catalog-1")
+                    .accessToken("appToken")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
-                .thenReturn(List.of());
+            // when / then
+            assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
+                    .isInstanceOf(ForbiddenException.class);
 
-        when(userActionsEntitiesService.getDefaultUserActionsEntity())
-                .thenReturn(mock(UserActionsEntity.class));
-
-        doReturn(Set.of()).when(catalogItemsApiFacade)
-                .currentPrincipalCatalogPermissions(catalogId);
-
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByContributingFileExists(catalogId);
-
-        // when
-        catalogItemsApiFacade.fetchCatalogItems(params);
-
-        // then
-        // no validation is performed upon the access token
+            verify(catalogEntitiesService, never()).getCatalogItemsEntities(anyString());
+            verify(catalogsCollectionService, never()).getCatalogsCollection();
+        }
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvided_thenSameTokenIsUsedForMapping() throws Exception {
-        // given
-        var catalogId = "catalog-1";
-        var accessToken = "token";
-        var params = CatalogRequestParams.builder()
-                .catalogId(catalogId)
-                .accessToken(accessToken)
-                .sortOrder(SortOrder.ASC)
-                .build();
-        var ctx = CatalogItemEntityContextMother.of();
+    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvided_thenSameTokenIsUsedForMapping()
+            throws Exception {
+        try (var mockedJwt = mockHumanToken()) {
 
-        when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
-                .thenReturn(List.of(ctx));
-        when(userActionsEntitiesService.getDefaultUserActionsEntity())
-                .thenReturn(mock(UserActionsEntity.class));
-        doReturn(Set.of()).when(catalogItemsApiFacade)
-                .currentPrincipalCatalogPermissions(catalogId);
-        doReturn(true).when(catalogItemsApiFacade)
-                .filterByContributingFileExists(catalogId);
-        when(catalogApiAdapter.asCatalogItem(
-                any(),
-                anyList(),
-                anyList(),
-                any()))
-            .thenReturn(CatalogItemMother.of());
+            // given
+            var catalogId = "catalog-123";
 
-        // when
-        catalogItemsApiFacade.fetchCatalogItems(params);
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken(HUMAN_TOKEN)
+                    .sortOrder(SortOrder.ASC)
+                    .build();
 
-        // then
-        verify(catalogApiAdapter).asCatalogItem(
-                argThat(request ->
-                        accessToken.equals(request.getAccessToken())),
-                anyList(),
-                anyList(),
-                any());
+            var catalogItemContext = mock(CatalogItemEntityContext.class);
+
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                    .thenReturn(List.of(catalogItemContext));
+
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
+
+            doReturn(Set.of())
+                    .when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(catalogId);
+
+            doReturn(true)
+                    .when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(catalogId);
+
+            doReturn(true)
+                    .when(catalogItemsApiFacade)
+                    .filterByProject(any(), any());
+
+            when(catalogApiAdapter.asCatalogItem(
+                    any(),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(new CatalogItem());
+
+            // when
+            catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            verify(catalogApiAdapter).asCatalogItem(
+                    argThat(request ->
+                            request != null
+                                    && HUMAN_TOKEN.equals(request.getAccessToken())),
+                    anyList(),
+                    anyList(),
+                    any());
+        }
     }
 
     @Test
@@ -1194,6 +1256,16 @@ class CatalogItemsApiFacadeTest {
         verify(provisionerActionsService, times(1)).getAllProjectComponentsProjectKeys();
         verify(provisionerActionsService).getProjectComponents("PRJ-1");
         verify(provisionerActionsService).getProjectComponents("PRJ-2");
+    }
+
+    private MockedStatic<JwtUtils> mockHumanToken() {
+        var mockedJwt = mockStatic(JwtUtils.class);
+
+        mockedJwt.when(() ->
+                        JwtUtils.extractClaim(HUMAN_TOKEN, "scp"))
+                .thenReturn(Optional.of("Api.Access"));
+
+        return mockedJwt;
     }
 
 }
