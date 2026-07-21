@@ -322,10 +322,19 @@ class CatalogItemsApiFacadeTest {
         itemA.setId("A");
         itemA.setTitle("A-title");
 
-        doAnswer(invocation -> {
-            CatalogRequestParams p = invocation.getArgument(0);
-            return p.getCatalogItemEntityContext() == ctx1 ? itemB : itemA;
-        }).when(catalogItemsApiFacade).asCatalogItem(any());
+        when(catalogApiAdapter.asCatalogItem(
+                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx1),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(itemB);
+
+        when(catalogApiAdapter.asCatalogItem(
+                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx2),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(itemA);
 
         var params = CatalogRequestParams.builder()
                 .catalogId(catalogId)
@@ -341,7 +350,7 @@ class CatalogItemsApiFacadeTest {
         assertThat(result.get(0).getId()).isEqualTo("A");
         assertThat(result.get(1).getId()).isEqualTo("B");
 
-        verify(catalogItemsApiFacade, times(2)).asCatalogItem(any());
+        verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
         verify(catalogItemsApiFacade, times(2)).filterByProject(any(), eq(projectKey));
         verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
     }
@@ -399,12 +408,19 @@ class CatalogItemsApiFacadeTest {
         drop.setId("drop");
         drop.setTitle("D");
 
-        doAnswer(inv -> {
-            CatalogRequestParams p = inv.getArgument(0);
-            if (p.getCatalogItemEntityContext() == ctxKeep) return keep;
-            if (p.getCatalogItemEntityContext() == ctxDrop) return drop;
-            return null;
-        }).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
+        when(catalogApiAdapter.asCatalogItem(
+                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxKeep),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(keep);
+
+        when(catalogApiAdapter.asCatalogItem(
+                argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxDrop),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(drop);
 
         doAnswer(inv -> {
             CatalogItem it = inv.getArgument(0);
@@ -424,7 +440,7 @@ class CatalogItemsApiFacadeTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("keep");
 
-        verify(catalogItemsApiFacade, times(2)).asCatalogItem(any(CatalogRequestParams.class));
+        verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
         verify(catalogItemsApiFacade, times(2)).filterByProject(any(CatalogItem.class), eq(projectKey));
         verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists("keep");
     }
@@ -438,7 +454,12 @@ class CatalogItemsApiFacadeTest {
         doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
         doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
 
-        doThrow(new InvalidCatalogEntityException("bad")).when(catalogItemsApiFacade).asCatalogItem(any());
+        when(catalogApiAdapter.asCatalogItem(
+                any(),
+                anyList(),
+                anyList(),
+                any()))
+            .thenThrow(new InvalidCatalogEntityException("bad"));
 
         var params = CatalogRequestParams.builder().catalogId(catalogId).sortOrder(SortOrder.ASC).build();
 
@@ -528,10 +549,19 @@ class CatalogItemsApiFacadeTest {
             item2.setId("item-2");
             item2.setTitle("item-2-title");
 
-            doAnswer(inv -> {
-                CatalogRequestParams p = inv.getArgument(0);
-                return "catalog-1".equals(p.getCatalogId()) ? item1 : item2;
-            }).when(catalogItemsApiFacade).asCatalogItem(any());
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && "catalog-1".equals(p.getCatalogId())),
+                    anyList(),
+                    anyList(),
+                    any()))
+                .thenReturn(item1);
+
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && "catalog-2".equals(p.getCatalogId())),
+                    anyList(),
+                    anyList(),
+                    any()))
+                .thenReturn(item2);
 
             // when
             var result = catalogItemsApiFacade.fetchCatalogItems(params);
@@ -576,7 +606,12 @@ class CatalogItemsApiFacadeTest {
         CatalogItem item = new CatalogItem();
         item.setId("item-1");
 
-        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any());
+        when(catalogApiAdapter.asCatalogItem(
+                any(),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(item);
 
         // when
         var result = catalogItemsApiFacade.fetchCatalogItems(params);
@@ -639,51 +674,43 @@ class CatalogItemsApiFacadeTest {
         // no validation is performed upon the access token
     }
 
-    // NOTE: As there is no token provided, there is no way to get groups from projectsInfoServices, so there will never a match
-    // between itemgroups and usergroups, so componentCount will be always null
     @Test
-    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvidedWithinTheRequestParams_thenNoAccessTokenIsUsedToMapCatalogItems() throws InvalidIdException {
+    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvided_thenSameTokenIsUsedForMapping() throws Exception {
         // given
         var catalogId = "catalog-1";
         var accessToken = "token";
-
         var params = CatalogRequestParams.builder()
                 .catalogId(catalogId)
                 .accessToken(accessToken)
                 .sortOrder(SortOrder.ASC)
                 .build();
-
-        var catalogItemEntityContext = CatalogItemEntityContextMother.of(
-                CatalogItemEntityRestrictions.builder()
-                        .projects(List.of("PRJ-X"))
-                        .build()
-        );
+        var ctx = CatalogItemEntityContextMother.of();
 
         when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
-                .thenReturn(List.of(catalogItemEntityContext));
-
+                .thenReturn(List.of(ctx));
         when(userActionsEntitiesService.getDefaultUserActionsEntity())
                 .thenReturn(mock(UserActionsEntity.class));
-
-        when(catalogApiAdapter.asCatalogItem(any(), any(), any(), any()))
-                .thenReturn(CatalogItemMother.of());
-
         doReturn(Set.of()).when(catalogItemsApiFacade)
                 .currentPrincipalCatalogPermissions(catalogId);
-
         doReturn(true).when(catalogItemsApiFacade)
                 .filterByContributingFileExists(catalogId);
+        when(catalogApiAdapter.asCatalogItem(
+                any(),
+                anyList(),
+                anyList(),
+                any()))
+            .thenReturn(CatalogItemMother.of());
 
         // when
         catalogItemsApiFacade.fetchCatalogItems(params);
 
         // then
         verify(catalogApiAdapter).asCatalogItem(
-                argThat(catalogRequestParams -> catalogRequestParams.getAccessToken() == null),
-                any(),
-                any(),
-                any()
-        );
+                argThat(request ->
+                        accessToken.equals(request.getAccessToken())),
+                anyList(),
+                anyList(),
+                any());
     }
 
     @Test
@@ -738,10 +765,19 @@ class CatalogItemsApiFacadeTest {
                     .title("A-title")
                     .build();
 
-            doAnswer(inv -> {
-                CatalogRequestParams p = inv.getArgument(0);
-                return "catalog-1".equals(p.getCatalogId()) ? zItem : aItem;
-            }).when(catalogItemsApiFacade).asCatalogItem(any());
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && "catalog-1".equals(p.getCatalogId())),
+                    anyList(),
+                    anyList(),
+                    any()))
+                .thenReturn(zItem);
+
+            when(catalogApiAdapter.asCatalogItem(
+                    argThat(p -> p != null && "catalog-2".equals(p.getCatalogId())),
+                    anyList(),
+                    anyList(),
+                    any()))
+                .thenReturn(aItem);
 
             // when
             var result = catalogItemsApiFacade.fetchCatalogItems(params);

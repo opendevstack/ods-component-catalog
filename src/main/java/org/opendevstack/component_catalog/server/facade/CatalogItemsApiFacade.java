@@ -61,13 +61,16 @@ public class CatalogItemsApiFacade {
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
+        return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams);
+    }
 
-        var clusters = getClusters(tokenizedCatalogRequestParams);
-        var userGroups = getProjectGroups(tokenizedCatalogRequestParams);
+    private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams) {
+        var clusters = getClusters(catalogRequestParams);
+        var userGroups = getProjectGroups(catalogRequestParams);
 
-        var componentCount = calculateComponentCountForCatalogOwners(tokenizedCatalogRequestParams, userGroups);
+        var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
-        return catalogApiAdapter.asCatalogItem(tokenizedCatalogRequestParams, clusters, userGroups, componentCount);
+        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {
@@ -82,12 +85,7 @@ public class CatalogItemsApiFacade {
     public List<CatalogItem> fetchCatalogItems(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         if (catalogRequestParams.getCatalogId() != null) {
-            // No need to check for clusters or userGroups when mapping the catalog items
-            CatalogRequestParams catalogRequestParamsWithoutToken =
-                    catalogRequestParams.toBuilder()
-                            .accessToken(null)
-                            .build();
-            return fetchCatalogItemsByCatalogId(catalogRequestParamsWithoutToken);
+            return fetchCatalogItemsByCatalogId(catalogRequestParams);
         }
 
         validateTokenFromOds(catalogRequestParams.getAccessToken());
@@ -101,6 +99,7 @@ public class CatalogItemsApiFacade {
         for (String catalogId : allCatalogsIds) {
             allCatalogItems.addAll(fetchCatalogItemsByCatalogId(
                     CatalogRequestParams.builder()
+                        .accessToken(null) // For better readability, but no accessToken is expected for this use case
                         .catalogId(catalogId)
                         .sortOrder(catalogRequestParams.getSortOrder())
                         .build())
@@ -136,11 +135,12 @@ public class CatalogItemsApiFacade {
         var userActionsEntity = userActionsEntitiesService.getDefaultUserActionsEntity();
         if (filterByContributingFileExists(catalogRequestParams.getCatalogId()))
             return itemsEntitiesCtxs.stream()
-                    .map(ctx -> asCatalogItem(
+                    .map(ctx -> asCatalogItemWithoutMandatoryToken(
                                     catalogRequestParams.toBuilder()
                                             .catalogItemEntityContext(ctx)
                                             .userActionsEntity(userActionsEntity)
                                             .permissions(principalPermissions)
+                                            .accessToken(catalogRequestParams.getAccessToken()) // Leave the same token within the request (valid or not)
                                             .build()
                             )
                     )
