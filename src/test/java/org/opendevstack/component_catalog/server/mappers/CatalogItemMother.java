@@ -7,7 +7,14 @@ import java.util.List;
 
 public class CatalogItemMother {
     public static CatalogItem of() {
-        return of("catalogItemId1", "Logo1.png");
+        return of("catalogItemId1");
+    }
+
+    public static CatalogItem of(String id) {
+        var item = new CatalogItem();
+        item.setId(id);
+        item.setImageFileId("Logo1.png");
+        return item;
     }
 
     public static CatalogItem of(String id, String imageFileId) {
