@@ -19,7 +19,6 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityM
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
@@ -153,10 +152,26 @@ public class CatalogActivityFacade {
 
         var items = catalogItemsApiFacade.fetchCatalogItems(catalogItemRequestParams);
 
-        // fixme, remove "branch" from id
-        // so, cHJvamVjdHMvQ0FURVNUL3JlcG9zL2N1c3RvbS1kZWxldGlvbi13b3JrZmxvdy9yYXcvQ2F0YWxvZ0l0ZW0ueWFtbD9hdD1yZWZzL2hlYWRzL21hc3Rlcg== -> projects/CATEST/repos/custom-deletion-workflow/raw/CatalogItem.yaml?at=refs/heads/master
-        // to  cHJvamVjdHMvQ0FURVNUL3JlcG9zL2N1c3RvbS1kZWxldGlvbi13b3JrZmxvdy9yYXcvQ2F0YWxvZ0l0ZW0ueWFtbA== -> projects/CATEST/repos/custom-deletion-workflow/raw/CatalogItem.yaml
-        return items.stream().map(CatalogItem::getId).toList();
+        return items.stream()
+                .map(CatalogItem::getId)
+                .map(this::removeRefFromId)
+                .toList();
+    }
+
+    @SneakyThrows
+    private String removeRefFromId(String id) {
+        log.debug("Removing ref from catalog item id: {}", id);
+
+        var decodedId = IdEncoderDecoder.idDecode(id);
+        var idWithoutRef = decodedId.split("\\?at=")[0];
+
+        log.debug("Decoded catalog item id: {}. Id without ref: {}", decodedId, idWithoutRef);
+
+        var encodedIdWithoutRef = IdEncoderDecoder.idEncode(idWithoutRef);
+
+        log.debug("Encoded catalog item id now without ref: {}", encodedIdWithoutRef);
+
+        return encodedIdWithoutRef;
     }
 
     private List<CatalogActivity> sortCatalogActivities(List<CatalogActivity> catalogActivities, SortParameter sort, SortOrder sortOrder) {
@@ -198,8 +213,11 @@ public class CatalogActivityFacade {
 
     private List<CatalogActivity> filterOutByDateRange(List<CatalogActivity> catalogActivities, Long startDate, Long endDate) {
         return catalogActivities.stream()
-                .filter(activity -> activity.getCreatedAt().longValue() >= startDate
-                        && activity.getCreatedAt().longValue() <= endDate).toList();
+                .filter(activity ->
+                            activity.getCreatedAt() != null &&
+                            activity.getCreatedAt().longValue() >= startDate &&
+                            activity.getCreatedAt().longValue() <= endDate)
+                .toList();
     }
 
     @SneakyThrows
