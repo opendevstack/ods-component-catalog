@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
+import org.opendevstack.component_catalog.server.mappers.CatalogItemMother;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.CatalogActivityMother;
@@ -17,6 +18,7 @@ import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivitie
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
+import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
@@ -55,6 +57,9 @@ class CatalogActivityFacadeTest {
     @Mock
     private CatalogActivityMapper catalogActivityMapper;
 
+    @Mock
+    private CatalogItemsApiFacade catalogItemsApiFacade;
+
     @InjectMocks
     private CatalogActivityFacade catalogActivityFacade;
 
@@ -84,6 +89,10 @@ class CatalogActivityFacadeTest {
         ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        // Mock catalog items API to return CatalogItem with the encoded ID
+        CatalogItem catalogItem = CatalogItemMother.of(encodedId);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem));
 
         CatalogActivity activity = CatalogActivity.builder()
                 .componentId("C1")
@@ -162,6 +171,10 @@ class CatalogActivityFacadeTest {
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
 
+        // Mock catalog items API
+        CatalogItem catalogItem = CatalogItemMother.of(encodedId);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem));
+
         CatalogActivity activity = CatalogActivity.builder()
                 .componentId("C1")
                 .projectKey("PROJ")
@@ -199,6 +212,11 @@ class CatalogActivityFacadeTest {
                 .build();
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        // Mock catalog items API
+        CatalogItem catalogItem1 = CatalogItemMother.of(encodedId1);
+        CatalogItem catalogItem2 = CatalogItemMother.of(encodedId2);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem1, catalogItem2));
 
         CatalogActivity createdActivity = CatalogActivity.builder()
                 .componentId("C1")
@@ -255,6 +273,12 @@ class CatalogActivityFacadeTest {
 
         when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
 
+        // Mock catalog items API
+        CatalogItem catalogItem1 = CatalogItemMother.of(encodedId1);
+        CatalogItem catalogItem2 = CatalogItemMother.of(encodedId2);
+        CatalogItem catalogItem3 = CatalogItemMother.of(encodedId3);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem1, catalogItem2, catalogItem3));
+
         CatalogActivity beforeRangeActivity = CatalogActivity.builder()
                 .componentId("C1")
                 .projectKey("PROJ")
@@ -297,27 +321,132 @@ class CatalogActivityFacadeTest {
         verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc3));
     }
 
+     @Test
+     void givenAListOfCatalogActivities_whenPaginateCatalogActivities_ThenReturnPaginatedResults() {
+         // given
+         var activities = List.of(
+                 CatalogActivityMother.of(),
+                 CatalogActivityMother.of("component-1"),
+                 CatalogActivityMother.of("component-2")
+         );
+         var page = 1;
+         var size = 2;
+         var baseUrl = "https://component-catalog.myserver.com";
+
+         // when
+         PaginatedCatalogActivities result = catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl);
+
+         // then
+         assertThat(result).isNotNull();
+         assertThat(result.getData()).hasSize(1);
+         assertThat(result.getData().getFirst().getComponentId()).isEqualTo("component-2");
+         assertThat(result.getPagination()).isNotNull();
+         assertThat(result.getPagination().getPage()).isEqualTo(page);
+     }
+
     @Test
-    void givenAListOfCatalogActivities_whenPaginateCatalogActivities_ThenReturnPaginatedResults() {
+    void givenDateRangeWithNullCreatedAt_whenGetCatalogActivities_thenFilterOutActivitiesWithNullCreatedAt() throws Exception {
         // given
-        var activities = List.of(
-                CatalogActivityMother.of(),
-                CatalogActivityMother.of("component-1"),
-                CatalogActivityMother.of("component-2")
-        );
-        var page = 1;
-        var size = 2;
-        var baseUrl = "https://component-catalog.myserver.com";
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath1 = "projects/PROJ/repos/repo-1/raw/CatalogItem.yaml";
+        String rawPath2 = "projects/PROJ/repos/repo-2/raw/CatalogItem.yaml";
+        String encodedId1 = IdEncoderDecoder.idEncode(rawPath1);
+        String encodedId2 = IdEncoderDecoder.idEncode(rawPath2);
+        ProjectComponent pc1 = ProjectComponentMother.of("C1", encodedId1, "ref", Status.CREATED);
+        ProjectComponent pc2 = ProjectComponentMother.of("C2", encodedId2, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder()
+                .components(Map.of("k1", pc1, "k2", pc2))
+                .build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        // Mock catalog items API
+        CatalogItem catalogItem1 = new CatalogItem();
+        catalogItem1.setId(encodedId1);
+        CatalogItem catalogItem2 = new CatalogItem();
+        catalogItem2.setId(encodedId2);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem1, catalogItem2));
+
+        CatalogActivity activityWithoutDate = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-1")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(null)
+                .build();
+        CatalogActivity activityWithDate = CatalogActivity.builder()
+                .componentId("C2")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-2")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("125"))
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc1))).thenReturn(activityWithoutDate);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(activityWithDate);
 
         // when
-        PaginatedCatalogActivities result = catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, null, 100L, 150L);
 
         // then
-        assertThat(result).isNotNull();
-        assertThat(result.getData()).hasSize(1);
-        assertThat(result.getData().getFirst().getComponentId()).isEqualTo("component-2");
-        assertThat(result.getPagination()).isNotNull();
-        assertThat(result.getPagination().getPage()).isEqualTo(page);
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C2");
+        assertThat(result.getFirst().getCreatedAt()).isEqualTo(new BigDecimal("125"));
+
+        verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
+        verify(projectsInfoService, times(1)).getProjectGroups("token");
+        verify(projectComponentsFacade, times(1)).getAllProjectComponents();
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc1));
+        verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc2));
+    }
+
+    @Test
+    void givenCatalogItemIdWithRef_whenGetCatalogItemIds_thenRemoveRefFromEncodedId() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        // Create an ID with ref part from API
+        String rawPathWithRef = "projects/PROJ/repos/my-repo/raw/CatalogItem.yaml?at=refs/heads/master";
+        String rawPathWithoutRef = "projects/PROJ/repos/my-repo/raw/CatalogItem.yaml";
+        String encodedIdWithRef = IdEncoderDecoder.idEncode(rawPathWithRef);
+        String encodedIdWithoutRef = IdEncoderDecoder.idEncode(rawPathWithoutRef);
+
+        // The component will be created with the ID without ref (after removeRefFromId processing)
+        ProjectComponent pc = ProjectComponentMother.of("C1", encodedIdWithoutRef, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+
+        // Mock catalog items API to return IDs with ref part (as they come from the API)
+        CatalogItem catalogItem = new CatalogItem();
+        catalogItem.setId(encodedIdWithRef);
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem));
+
+        CatalogActivity activity = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/my-repo")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
+
+        // when - fetching catalog activities (which internally calls getCatalogItemIds that removes ref)
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
+
+        // then - verify that the component was correctly matched despite ref being removed
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+
+        verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
+        verify(projectsInfoService, times(1)).getProjectGroups("token");
+        verify(projectComponentsFacade, times(1)).getAllProjectComponents();
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItems(any());
     }
 }
 
