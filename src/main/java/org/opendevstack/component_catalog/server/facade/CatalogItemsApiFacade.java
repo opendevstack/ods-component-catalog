@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opendevstack.component_catalog.util.FunctionalUtils.fieldSorter;
 
@@ -103,6 +105,7 @@ public class CatalogItemsApiFacade {
                         .accessToken(null) // For better readability, but no accessToken is expected for this use case
                         .catalogId(catalogId)
                         .sortOrder(catalogRequestParams.getSortOrder())
+                        .permissions(Set.of(CatalogEntityPermissionEnum.REPO_READ))
                         .build())
             );
         }
@@ -138,6 +141,9 @@ public class CatalogItemsApiFacade {
     private List<CatalogItem> fetchCatalogItemsByCatalogId(CatalogRequestParams catalogRequestParams)
             throws InvalidIdException, InvalidCatalogEntityException {
         var principalPermissions = currentPrincipalCatalogPermissions(catalogRequestParams.getCatalogId());
+        // We allow adding permissions via catalogRequestParams. Intended for client credentials flow, where there is no principal claim within the token
+        var mergedPermissions =
+                Stream.concat(principalPermissions.stream(), Optional.ofNullable(catalogRequestParams.getPermissions()).orElse(Set.of()).stream()).collect(Collectors.toSet());
         var itemsEntitiesCtxs = catalogEntitiesService.getCatalogItemsEntities(catalogRequestParams.getCatalogId());
         var userActionsEntity = userActionsEntitiesService.getDefaultUserActionsEntity();
         if (filterByContributingFileExists(catalogRequestParams.getCatalogId()))
@@ -146,7 +152,7 @@ public class CatalogItemsApiFacade {
                                     catalogRequestParams.toBuilder()
                                             .catalogItemEntityContext(ctx)
                                             .userActionsEntity(userActionsEntity)
-                                            .permissions(principalPermissions)
+                                            .permissions(mergedPermissions)
                                             .accessToken(catalogRequestParams.getAccessToken()) // Leave the same token within the request (valid or not)
                                             .build()
                             )

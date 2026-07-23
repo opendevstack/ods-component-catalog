@@ -699,6 +699,61 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
+    void fetchCatalogItems_whenNoCatalogIdAndValidToken_givesRepoReadPermission() throws InvalidIdException {
+        try (var mockedJwt = mockHumanToken()) {
+
+            // given
+            var catalogId = "catalog-123";
+
+            var params = CatalogRequestParams.builder()
+                    .catalogId(catalogId)
+                    .accessToken(HUMAN_TOKEN)
+                    .permissions(Set.of(CatalogEntityPermissionEnum.REPO_READ))
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            var catalogItemContext = mock(CatalogItemEntityContext.class);
+
+            when(catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                    .thenReturn(List.of(catalogItemContext));
+
+            when(userActionsEntitiesService.getDefaultUserActionsEntity())
+                    .thenReturn(mock(UserActionsEntity.class));
+
+            doReturn(Set.of())
+                    .when(catalogItemsApiFacade)
+                    .currentPrincipalCatalogPermissions(catalogId);
+
+            doReturn(true)
+                    .when(catalogItemsApiFacade)
+                    .filterByContributingFileExists(catalogId);
+
+            doReturn(true)
+                    .when(catalogItemsApiFacade)
+                    .filterByProject(any(), any());
+
+            when(catalogApiAdapter.asCatalogItem(
+                    any(),
+                    anyList(),
+                    anyList(),
+                    any()))
+                    .thenReturn(new CatalogItem());
+
+            // when
+            catalogItemsApiFacade.fetchCatalogItems(params);
+
+            // then
+            verify(catalogApiAdapter).asCatalogItem(
+                    argThat(request ->
+                            request != null
+                                    && request.getPermissions().contains(CatalogEntityPermissionEnum.REPO_READ)),
+                    anyList(),
+                    anyList(),
+                    any());
+        }
+    }
+
+    @Test
     void fetchCatalogItems_whenCatalogIdProvidedAndApplicationToken_thenThrowsForbiddenException() throws InvalidIdException {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
