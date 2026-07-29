@@ -78,7 +78,7 @@ public class SecurityConfiguration {
                         // Basic auth user won't have the USER role, but we still need to allow user tokens from Azure
                         .hasAnyAuthority("ROLE_USER", "ROLE_CACHE_ADMIN")
                 )
-                .csrf(CsrfConfigurer::disable)
+                .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
                 .sessionManagement(s ->
                         s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
