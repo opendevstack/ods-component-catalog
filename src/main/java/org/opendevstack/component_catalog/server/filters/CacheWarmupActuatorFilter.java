@@ -47,15 +47,14 @@ public class CacheWarmupActuatorFilter extends OncePerRequestFilter {
 
         String cacheName = uri.substring(ACTUATOR_CACHES_PREFIX.length());
 
-        switch (cacheName) {
-            case CATALOGS_CACHE_NAME -> {
-                log.info(
-                        "Actuator cache '{}' cleared successfully. Triggering catalog warmup.",
-                        cacheName);
+        if (cacheName.equals(CATALOGS_CACHE_NAME)) {
+            log.info(
+                    "Actuator cache '{}' cleared successfully. Triggering catalog warmup.",
+                    cacheName);
 
-                cacheWarmupService.warmupCatalogsBitbucketServiceCacheAsync();
-            }
-            default -> log.debug(
+            cacheWarmupService.warmupCatalogsBitbucketServiceCacheAsync();
+        } else {
+            log.debug(
                     "Actuator cache '{}' cleared. No warmup configured.",
                     cacheName);
         }
