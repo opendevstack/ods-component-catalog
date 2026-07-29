@@ -9,7 +9,9 @@ spring:
     user:
       name: ${SPRING_SECURITY_PROVISIONER_USERNAME}
       password: ${SPRING_SECURITY_PROVISIONER_PASSWORD}
-      roles: PROVISIONER
+      roles:
+        - PROVISIONER
+        - CACHE_ADMIN
   profiles:
     active: dev
   http:

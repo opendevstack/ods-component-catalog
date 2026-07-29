@@ -62,10 +62,44 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Chain #2: Everything else -> Azure AD (Bearer/JWT), NO Basic challenge
+     * Chain #2: /actuator/caches/** -> Basic challenge and Azure AD (Bearer/JWT)
      */
     @Bean
     @Order(2)
+    SecurityFilterChain cacheDeleteSecurity(HttpSecurity http) throws Exception {
+        RequestMatcher cacheDelete =
+                PathPatternRequestMatcher.withDefaults()
+                        .matcher(HttpMethod.DELETE, "/actuator/caches/**");
+
+        http
+                .securityMatcher(cacheDelete)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest()
+                        // Basic auth user won't have the USER role, but we still need to allow user tokens from Azure
+                        .hasAnyAuthority("ROLE_USER", "ROLE_CACHE_ADMIN")
+                )
+                .csrf(CsrfConfigurer::disable)
+                .sessionManagement(s ->
+                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .httpBasic(Customizer.withDefaults())
+                .addFilterBefore(
+                        new ConditionalAadFilter(
+                                aadAuthFilter,
+                                cacheDelete,
+                                request -> false
+                        ),
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    /**
+     * Chain #3: Everything else -> Azure AD (Bearer/JWT), NO Basic challenge
+     */
+    @Bean
+    @Order(3)
     public SecurityFilterChain aadForEverythingElse(HttpSecurity http) throws Exception {
 
         RequestMatcher protectedEndpoints = new OrRequestMatcher(
