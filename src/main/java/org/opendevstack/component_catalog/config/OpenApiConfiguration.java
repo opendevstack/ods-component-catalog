@@ -12,9 +12,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfiguration {
 
+    private final static String BEARER_AUTH_SECURITY_SCHEME_NAME = "bearerAuth";
+    private final static String BASIC_AUTH_SECURITY_SCHEME_NAME = "basicAuth";
+
     @Bean(name = "apiInfo")
     OpenAPI apiInfo() {
-        final String securitySchemeName = "bearerAuth";
 
         // Copied from: openapi-componentcatalog-vx.x.x.yaml
         var edpCoreContact = new Contact()
@@ -36,22 +38,22 @@ public class OpenApiConfiguration {
                 .version("1.0.0");
 
         SecurityScheme bearerSecurityScheme = new SecurityScheme()
-                .name("bearerAuth")
+                .name(BEARER_AUTH_SECURITY_SCHEME_NAME)
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
                 .bearerFormat("JWT");
 
         SecurityScheme basicSecurityScheme = new SecurityScheme()
-                .name("basicAuth")
+                .name(BASIC_AUTH_SECURITY_SCHEME_NAME)
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("basic");
 
         Components securityComponents = new Components()
-                .addSecuritySchemes("bearerAuth", bearerSecurityScheme)
-                .addSecuritySchemes("basicAuth", basicSecurityScheme);
+                .addSecuritySchemes(BEARER_AUTH_SECURITY_SCHEME_NAME, bearerSecurityScheme)
+                .addSecuritySchemes(BASIC_AUTH_SECURITY_SCHEME_NAME, basicSecurityScheme);
 
         return new OpenAPI()
-                .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH_SECURITY_SCHEME_NAME))
                 .components(securityComponents)
                 .info(info);
     }
