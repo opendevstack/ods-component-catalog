@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfiguration {
 
-    private final static String BEARER_AUTH_SECURITY_SCHEME_NAME = "bearerAuth";
-    private final static String BASIC_AUTH_SECURITY_SCHEME_NAME = "basicAuth";
+    private static final String BEARER_AUTH_SECURITY_SCHEME_NAME = "bearerAuth";
+    private static final String BASIC_AUTH_SECURITY_SCHEME_NAME = "basicAuth";
 
     @Bean(name = "apiInfo")
     OpenAPI apiInfo() {
