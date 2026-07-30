@@ -76,7 +76,7 @@ public class SecurityConfiguration {
         http
                 .securityMatcher(cacheRefresh)
                 .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("CACHE_ADMIN"))
-                .csrf(CsrfConfigurer::disable)
+                .csrf(CsrfConfigurer::disable) //NOSONAR STATELESS prevents CSRF
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(Customizer.withDefaults())
                 // Important: don't add the AAD filter here
