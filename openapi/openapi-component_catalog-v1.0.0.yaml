@@ -34,6 +34,8 @@ tags:
     description: Schema Validations operations.
   - name: ProvisionerActions
     description: Provisioning notifications from AWX/Provisioner
+  - name: CacheAdministration
+    description: Internal cache administration operations.
 paths:
   /project/components:
     get:
@@ -1012,6 +1014,38 @@ paths:
           description: Invalid client token on the request.
         "403":
           description: Insufficient permissions for the client to access the resource.
+        "500":
+          description: Server error.
+  /caches/{cache}/refresh:
+    post:
+      security:
+        - basicAuth: [ ]
+      tags:
+        - CacheAdministration
+      summary: Refresh a cache
+      description: >
+        Clears the specified cache and triggers its warmup process.
+        Intended for internal automation.
+      operationId: refreshCache
+      parameters:
+        - name: cache
+          in: path
+          required: true
+          description: Cache name.
+          schema:
+            type: string
+            example: bitbucketServiceCache
+      responses:
+        "202":
+          description: Cache refresh accepted and warmup started.
+        "400":
+          description: Invalid cache name.
+        "401":
+          description: Invalid credentials.
+        "403":
+          description: Insufficient permissions.
+        "404":
+          description: Cache not found.
         "500":
           description: Server error.
 

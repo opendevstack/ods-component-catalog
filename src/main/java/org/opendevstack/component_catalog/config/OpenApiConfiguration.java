@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class SwaggerConfiguration {
+public class OpenApiConfiguration {
 
     @Bean(name = "apiInfo")
     OpenAPI apiInfo() {
@@ -35,14 +35,20 @@ public class SwaggerConfiguration {
                 .contact(edpCoreContact)
                 .version("1.0.0");
 
-        SecurityScheme securityScheme = new SecurityScheme()
-                .name(securitySchemeName)
+        SecurityScheme bearerSecurityScheme = new SecurityScheme()
+                .name("bearerAuth")
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
                 .bearerFormat("JWT");
 
+        SecurityScheme basicSecurityScheme = new SecurityScheme()
+                .name("basicAuth")
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("basic");
+
         Components securityComponents = new Components()
-                .addSecuritySchemes(securitySchemeName,securityScheme);
+                .addSecuritySchemes("bearerAuth", bearerSecurityScheme)
+                .addSecuritySchemes("basicAuth", basicSecurityScheme);
 
         return new OpenAPI()
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))

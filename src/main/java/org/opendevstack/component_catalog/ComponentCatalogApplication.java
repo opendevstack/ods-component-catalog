@@ -22,7 +22,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
                 "org.opendevstack.component_catalog.server.api",
                 "org.opendevstack.component_catalog.server.controllers",
                 "org.opendevstack.component_catalog.server.security",
-                "org.opendevstack.component_catalog.server.filters",
                 "org.opendevstack.component_catalog.server.mappers",
                 "org.opendevstack.component_catalog.config",
                 "org.opendevstack.component_catalog.server.services",

@@ -62,35 +62,25 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Chain #2: /actuator/caches/** -> Basic challenge and Azure AD (Bearer/JWT)
+     * Chain #2: /v1/caches/{cache}/refresh -> Basic challenge with role CACHE_ADMIN
      */
     @Bean
     @Order(2)
-    SecurityFilterChain cacheDeleteSecurity(HttpSecurity http) throws Exception {
-        RequestMatcher cacheDelete =
-                PathPatternRequestMatcher.withDefaults()
-                        .matcher(HttpMethod.DELETE, "/actuator/caches/**");
+    SecurityFilterChain cacheRefreshSecurity(HttpSecurity http) throws Exception {
+        PathPatternRequestMatcher cacheRefresh =
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/v1/caches/*/refresh");
+
+        var basicEntryPoint = new BasicAuthenticationEntryPoint();
+        basicEntryPoint.setRealmName("cache-administration");
 
         http
-                .securityMatcher(cacheDelete)
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest()
-                        // Basic auth user won't have the USER role, but we still need to allow user tokens from Azure
-                        .hasAnyAuthority("ROLE_USER", "ROLE_CACHE_ADMIN")
-                )
-                .csrf(CsrfConfigurer::disable) //NOSONAR required for /actuator endpoints, STATELESS prevents CSRF
-                .sessionManagement(s ->
-                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .securityMatcher(cacheRefresh)
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("CACHE_ADMIN"))
+                .csrf(CsrfConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(Customizer.withDefaults())
-                .addFilterBefore(
-                        new ConditionalAadFilter(
-                                aadAuthFilter,
-                                cacheDelete,
-                                request -> false
-                        ),
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                // Important: don't add the AAD filter here
+                .exceptionHandling(e -> e.authenticationEntryPoint(basicEntryPoint));
 
         return http.build();
     }
