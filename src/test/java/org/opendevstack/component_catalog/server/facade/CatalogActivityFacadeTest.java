@@ -448,6 +448,35 @@ class CatalogActivityFacadeTest {
         verify(projectComponentsFacade, times(1)).getAllProjectComponents();
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItems(any());
     }
+
+    @Test
+    void givenRequestedProjectNotFound_whenGetCatalogActivities_thenReturnEmptyList() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath = "projects/PROJ/repos/repo/raw/CatalogItem.yaml";
+        String encodedId = IdEncoderDecoder.idEncode(rawPath);
+        ProjectComponent pc = ProjectComponentMother.of("C1", encodedId, "ref", Status.CREATED);
+        ProjectComponents pcs = ProjectComponents.builder().components(Map.of("k1", pc)).build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(CatalogItemMother.of(encodedId)));
+
+        // when
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                "UNKNOWN_PROJECT",
+                status,
+                startDate,
+                endDate
+        );
+
+        // then
+        assertThat(result).isEmpty();
+        verify(catalogActivityMapper, never()).asCatalogActivity(anyString(), anyString(), any());
+    }
 }
-
-
