@@ -108,9 +108,13 @@ public class CatalogActivityFacade {
         List<CatalogActivity> catalogActivities = new ArrayList<>();
 
         for (var projectComponentsByProjectKey : allProjectComponentsByProjectKey.entrySet()) {
-            var catalogActivitiesByProject = projectComponentsByProjectKey.getValue().getComponents().values().stream()
-                    .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponent), projectComponent))
-                    .toList();
+            var projectComponents = Optional.ofNullable(projectComponentsByProjectKey.getValue());
+
+            var catalogActivitiesByProject = projectComponents.map(
+                    pc -> pc.getComponents().values().stream()
+                            .map(projectComponent -> catalogActivityMapper.asCatalogActivity(projectComponentsByProjectKey.getKey(), calculateCatalogItemSlug(projectComponent), projectComponent))
+                            .toList()
+            ).orElse(Collections.emptyList());
 
             catalogActivities.addAll(catalogActivitiesByProject);
         }
