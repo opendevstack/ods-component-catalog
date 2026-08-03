@@ -202,13 +202,17 @@ public class CatalogActivityFacade {
     }
 
     private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, String status, Long startDate, Long endDate) {
+        var filteredCatalogActivities = catalogActivities;
+
         if (status != null && !status.isBlank()) {
-            return List.copyOf(filterOutByStatus(catalogActivities, status));
-        } else if (startDate != null && endDate != null) {
-            return List.copyOf(filterOutByDateRange(catalogActivities, startDate, endDate));
-        } else {
-            return List.copyOf(catalogActivities);
+            filteredCatalogActivities = filterOutByStatus(filteredCatalogActivities, status);
         }
+
+        if (startDate != null && endDate != null) {
+            filteredCatalogActivities = filterOutByDateRange(filteredCatalogActivities, startDate, endDate);
+        }
+
+        return List.copyOf(filteredCatalogActivities);
     }
 
     private List<CatalogActivity> filterOutByStatus(List<CatalogActivity> catalogActivities, String status) {

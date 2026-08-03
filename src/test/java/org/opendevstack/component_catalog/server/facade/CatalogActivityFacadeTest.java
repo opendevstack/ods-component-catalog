@@ -321,6 +321,78 @@ class CatalogActivityFacadeTest {
         verify(catalogActivityMapper, times(1)).asCatalogActivity(eq("PROJ"), anyString(), eq(pc3));
     }
 
+    @Test
+    void givenStatusAndDateRange_whenGetCatalogActivities_thenApplyBothFiltersWithAnd() throws Exception {
+        // given
+        CatalogEntity entity = CatalogEntityMother.of();
+        when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
+        when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("owner1"));
+
+        String rawPath1 = "projects/PROJ/repos/repo-1/raw/CatalogItem.yaml";
+        String rawPath2 = "projects/PROJ/repos/repo-2/raw/CatalogItem.yaml";
+        String rawPath3 = "projects/PROJ/repos/repo-3/raw/CatalogItem.yaml";
+        String encodedId1 = IdEncoderDecoder.idEncode(rawPath1);
+        String encodedId2 = IdEncoderDecoder.idEncode(rawPath2);
+        String encodedId3 = IdEncoderDecoder.idEncode(rawPath3);
+
+        ProjectComponent pc1 = ProjectComponentMother.of("C1", encodedId1, "ref", Status.CREATED);
+        ProjectComponent pc2 = ProjectComponentMother.of("C2", encodedId2, "ref", Status.CREATED);
+        ProjectComponent pc3 = ProjectComponentMother.of("C3", encodedId3, "ref", Status.FAILED);
+        ProjectComponents pcs = ProjectComponents.builder()
+                .components(Map.of("k1", pc1, "k2", pc2, "k3", pc3))
+                .build();
+
+        when(projectComponentsFacade.getAllProjectComponents()).thenReturn(Map.of("PROJ", pcs));
+        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(
+                CatalogItemMother.of(encodedId1),
+                CatalogItemMother.of(encodedId2),
+                CatalogItemMother.of(encodedId3)
+        ));
+
+        CatalogActivity createdWithinRange = CatalogActivity.builder()
+                .componentId("C1")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-1")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("120"))
+                .build();
+        CatalogActivity createdOutsideRange = CatalogActivity.builder()
+                .componentId("C2")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-2")
+                .status(CatalogActivity.StatusEnum.CREATED)
+                .createdAt(new BigDecimal("90"))
+                .build();
+        CatalogActivity failedWithinRange = CatalogActivity.builder()
+                .componentId("C3")
+                .projectKey("PROJ")
+                .catalogItemSlug("proj/repo-3")
+                .status(CatalogActivity.StatusEnum.FAILED)
+                .createdAt(new BigDecimal("130"))
+                .build();
+
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc1))).thenReturn(createdWithinRange);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(createdOutsideRange);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc3))).thenReturn(failedWithinRange);
+
+        // when
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                "PROJ",
+                CatalogActivity.StatusEnum.CREATED.getValue(),
+                100L,
+                150L
+        );
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
+        assertThat(result.getFirst().getStatus()).isEqualTo(CatalogActivity.StatusEnum.CREATED);
+        assertThat(result.getFirst().getCreatedAt()).isEqualTo(new BigDecimal("120"));
+    }
+
      @Test
      void givenAListOfCatalogActivities_whenPaginateCatalogActivities_ThenReturnPaginatedResults() {
          // given
