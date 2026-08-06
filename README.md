@@ -74,6 +74,7 @@ Set other properties in the `application-local.yml` file as needed for local dev
 To do this you will need both the tailor installation and the oc executable.
 - For the tailor installation: https://github.com/opendevstack/tailor and follow the README
 - For the oc console, download it from the openshift site, click on the question mark next to the user profile link
+- You will need both private key and public key. These two can be obtained from the secret "my tailor is rich" within the devstack-cd project in OCP
 - Once everything is set, you can run the following command:
   `tailor secrets edit devstack-dev.env.enc --private-key="${ROUTE_TO_folderXYZ}/tailor-private.key" --public-key-dir="${ROUTE_TO_folderXYZ}"`
   notes:

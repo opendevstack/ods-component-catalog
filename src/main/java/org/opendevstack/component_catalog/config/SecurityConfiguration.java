@@ -62,10 +62,34 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Chain #2: Everything else -> Azure AD (Bearer/JWT), NO Basic challenge
+     * Chain #2: /v1/caches/{cache}/refresh -> Basic challenge with role CACHE_ADMIN
      */
     @Bean
     @Order(2)
+    SecurityFilterChain cacheRefreshSecurity(HttpSecurity http) throws Exception {
+        PathPatternRequestMatcher cacheRefresh =
+                PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/v1/caches/*/refresh");
+
+        var basicEntryPoint = new BasicAuthenticationEntryPoint();
+        basicEntryPoint.setRealmName("cache-administration");
+
+        http
+                .securityMatcher(cacheRefresh)
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("CACHE_ADMIN"))
+                .csrf(CsrfConfigurer::disable) //NOSONAR STATELESS prevents CSRF
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(Customizer.withDefaults())
+                // Important: don't add the AAD filter here
+                .exceptionHandling(e -> e.authenticationEntryPoint(basicEntryPoint));
+
+        return http.build();
+    }
+
+    /**
+     * Chain #3: Everything else -> Azure AD (Bearer/JWT), NO Basic challenge
+     */
+    @Bean
+    @Order(3)
     public SecurityFilterChain aadForEverythingElse(HttpSecurity http) throws Exception {
 
         RequestMatcher protectedEndpoints = new OrRequestMatcher(

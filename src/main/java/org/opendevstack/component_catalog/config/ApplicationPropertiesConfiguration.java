@@ -16,6 +16,12 @@ import java.util.List;
 @Configuration
 public class ApplicationPropertiesConfiguration {
 
+    @Bean("basicAuthUsersConfig")
+    @ConfigurationProperties(prefix = "component-catalog.security")
+    public SecurityProps securityProps() {
+        return SecurityProps.builder().build();
+    }
+
     @Bean("bitbucketServiceConfig")
     @ConfigurationProperties(prefix = "component-catalog.bitbucket.service")
     public BitbucketServiceProps bitbucketServiceProps() {
@@ -68,6 +74,21 @@ public class ApplicationPropertiesConfiguration {
     @ConfigurationProperties(prefix = "catalog-item")
     public CatalogItemDefaultProps  catalogItemDefaultConfig() {
         return CatalogItemDefaultProps.builder().build();
+    }
+
+    @Builder
+    @Data
+    public static class SecurityProps {
+        private UserProps provisioner;
+        private UserProps cacheAdmin;
+    }
+
+    @Builder
+    @Data
+    public static class UserProps {
+        private String username;
+        private String password;
+        private List<String> roles;
     }
 
     @Builder // useful for unit testing

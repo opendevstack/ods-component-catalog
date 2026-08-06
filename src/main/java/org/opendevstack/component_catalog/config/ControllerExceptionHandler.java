@@ -128,6 +128,20 @@ public class ControllerExceptionHandler {
         return defaultErrResponse(ex, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(CacheNotFoundException.class)
+    public ResponseEntity<RestErrorMessage> handleCacheNotFoundException(CacheNotFoundException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        return defaultErrResponse(ex, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CacheRefreshNotSupportedException.class)
+    public ResponseEntity<RestErrorMessage> handleCacheRefreshNotSupportedException(CacheRefreshNotSupportedException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        return defaultErrResponse(ex, HttpStatus.BAD_REQUEST);
+    }
+
     private static ResponseEntity<RestErrorMessage> defaultErrResponse(Exception ex, HttpStatus errStatus) {
         // Explicitly setting MediaType.APPLICATION_JSON contentType is required, 
         // due to clients sending miscellaneous Accept headers on the request, 

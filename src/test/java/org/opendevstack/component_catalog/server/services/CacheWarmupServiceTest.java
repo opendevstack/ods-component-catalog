@@ -305,6 +305,25 @@ class CacheWarmupServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // warmup() — Bitbucket service cache: async call delegates to sync method
+    // -------------------------------------------------------------------------
+
+    @Test
+    void whenWarmupCatalogsBitbucketServiceCacheAsync_thenDelegatesToSyncMethod() {
+        CacheWarmupService spyService = spy(
+                new CacheWarmupService(
+                        catalogsCollectionService,
+                        catalogEntitiesService,
+                        provisionerActionsService));
+
+        doNothing().when(spyService).warmupCatalogsBitbucketServiceCache();
+
+        spyService.warmupCatalogsBitbucketServiceCacheAsync();
+
+        verify(spyService).warmupCatalogsBitbucketServiceCache();
+    }
+
+    // -------------------------------------------------------------------------
     // helpers
     // -------------------------------------------------------------------------
 

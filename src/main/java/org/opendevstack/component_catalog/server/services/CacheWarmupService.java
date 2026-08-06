@@ -189,6 +189,11 @@ public class CacheWarmupService implements ApplicationRunner {
                 .map(Map::size)
                 .orElse(null);
     }
+
+    @Async
+    public void warmupCatalogsBitbucketServiceCacheAsync() {
+        warmupCatalogsBitbucketServiceCache();
+    }
 }
 
 
