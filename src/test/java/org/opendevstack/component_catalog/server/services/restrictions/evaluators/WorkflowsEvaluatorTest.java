@@ -2,6 +2,8 @@ package org.opendevstack.component_catalog.server.services.restrictions.evaluato
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
 
 import java.util.Collections;
@@ -13,12 +15,20 @@ class WorkflowsEvaluatorTest {
 
     private final WorkflowsEvaluator evaluator = new WorkflowsEvaluator();
 
-    @Test
-    void givenBothWorkflowParams_whenEvaluate_thenReturnTrueAndSuccessMessage() {
+    private static final String MISCONFIGURATION_ERROR = "WorkflowsEvaluator: Either both or neither provision nor delete workflow params should exist. If only one exist, this is a misconfiguration";
+    private static final String BOTH_PARAMS_SUCCESS = "WorkflowsEvaluator: Both provision and delete workflow params exist";
+    private static final String NEITHER_PARAMS_SUCCESS = "WorkflowsEvaluator: Neither provision nor delete workflow params exist";
+
+    @ParameterizedTest
+    @CsvSource({
+            "workflow,deletion_workflow",
+            "workflow_name,deletion_workflow"
+    })
+    void givenBothWorkflowParams_whenEvaluate_thenReturnTrueAndSuccessMessage(String provisionParam, String deleteParam) {
         // given
         var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("workflow", "string"),
-                CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
+                CatalogItemUserActionParameterMother.of(provisionParam, "string"),
+                CatalogItemUserActionParameterMother.of(deleteParam, "string")
         );
         var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
@@ -28,25 +38,7 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Both provision and delete workflow params exist");
-    }
-
-    @Test
-    void givenWorkflowNameAndDeletionWorkflow_whenEvaluate_thenReturnTrueAndSuccessMessage() {
-        // given
-        var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("workflow_name", "string"),
-                CatalogItemUserActionParameterMother.of("deletion_workflow", "string")
-        );
-        var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
-        var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
-
-        // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
-
-        // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Both provision and delete workflow params exist");
+        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 
     @Test
@@ -65,15 +57,19 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Both provision and delete workflow params exist");
+        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 
-    @Test
-    void givenNoWorkflowParams_whenEvaluate_thenReturnTrueAndSuccessMessage() {
+    @ParameterizedTest
+    @CsvSource({
+            "other_param,another_param",
+            "some_random_param,another_random_param"
+    })
+    void givenNoWorkflowParams_whenEvaluate_thenReturnTrueAndSuccessMessage(String param1, String param2) {
         // given
         var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("other_param", "string"),
-                CatalogItemUserActionParameterMother.of("another_param", "string")
+                CatalogItemUserActionParameterMother.of(param1, "string"),
+                CatalogItemUserActionParameterMother.of(param2, "string")
         );
         var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
@@ -83,7 +79,7 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Neither provision nor delete workflow params exist");
+        assertThat(result.getRight()).isEqualTo(NEITHER_PARAMS_SUCCESS);
     }
 
     @Test
@@ -97,14 +93,19 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Neither provision nor delete workflow params exist");
+        assertThat(result.getRight()).isEqualTo(NEITHER_PARAMS_SUCCESS);
     }
 
-    @Test
-    void givenOnlyProvisionWorkflow_whenEvaluate_thenReturnFalseAndErrorMessage() {
+    @ParameterizedTest
+    @CsvSource({
+            "workflow",
+            "workflow_name",
+            "deletion_workflow"
+    })
+    void givenOnlyOneWorkflowParam_whenEvaluate_thenReturnFalseAndErrorMessage(String workflowParam) {
         // given
         var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("workflow", "string"),
+                CatalogItemUserActionParameterMother.of(workflowParam, "string"),
                 CatalogItemUserActionParameterMother.of("other_param", "string")
         );
         var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
@@ -115,43 +116,7 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Either both or neither provision nor delete workflow params should exist. If only one exist, this is a misconfiguration");
-    }
-
-    @Test
-    void givenOnlyWorkflowName_whenEvaluate_thenReturnFalseAndErrorMessage() {
-        // given
-        var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("workflow_name", "string"),
-                CatalogItemUserActionParameterMother.of("other_param", "string")
-        );
-        var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
-        var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
-
-        // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
-
-        // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Either both or neither provision nor delete workflow params should exist. If only one exist, this is a misconfiguration");
-    }
-
-    @Test
-    void givenOnlyDeletionWorkflow_whenEvaluate_thenReturnFalseAndErrorMessage() {
-        // given
-        var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("deletion_workflow", "string"),
-                CatalogItemUserActionParameterMother.of("other_param", "string")
-        );
-        var params = RestrictionsParamsMother.of(parameters, Collections.emptyList());
-        var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
-
-        // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
-
-        // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Either both or neither provision nor delete workflow params should exist. If only one exist, this is a misconfiguration");
+        assertThat(result.getRight()).isEqualTo(MISCONFIGURATION_ERROR);
     }
 
     @Test
@@ -171,7 +136,7 @@ class WorkflowsEvaluatorTest {
 
         // then
         assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo("WorkflowsEvaluator: Both provision and delete workflow params exist");
+        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 }
 
