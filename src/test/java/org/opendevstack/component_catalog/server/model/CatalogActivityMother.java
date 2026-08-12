@@ -13,7 +13,7 @@ public class CatalogActivityMother {
                 .componentId(componentId)
                 .catalogItemSlug("catalog-item-slug")
                 .projectKey("project-key")
-                .status(CatalogActivity.StatusEnum.CREATING)
+                .status(ProvisioningStatus.CREATING)
                 .createdAt(new BigDecimal("1783949171"))
                 .build();
     }

@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
@@ -55,7 +56,7 @@ class ProvisionerActionsApiControllerTest {
     void givenAProjectKey_whenNotifyProvisioningCompleted_thenServiceIsCalled() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
-        var status = Status.CREATED;
+        var status = ProvisioningStatus.CREATED;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
@@ -79,12 +80,12 @@ class ProvisionerActionsApiControllerTest {
                 .parameters(parametersInner);
 
         // when
-        provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
+        provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, componentUrl, workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATED, componentUrl, workflowJobId, parameters)
         );
     }
 
@@ -92,7 +93,7 @@ class ProvisionerActionsApiControllerTest {
     void givenAProjectKey_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalled() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
-        var status = Status.CREATING; // any valid Status works, CREATING is an example
+        var status = ProvisioningStatus.CREATING; // any valid Status works, CREATING is an example
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
@@ -116,13 +117,13 @@ class ProvisionerActionsApiControllerTest {
                 .parameters(parametersInner);
 
         // when
-        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
+        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, componentUrl, workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, componentUrl, workflowJobId, parameters)
         );
     }
 
@@ -130,7 +131,7 @@ class ProvisionerActionsApiControllerTest {
     void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
-        var status = Status.CREATING;
+        var status = ProvisioningStatus.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var workflowJobId = "123456789";
@@ -152,12 +153,12 @@ class ProvisionerActionsApiControllerTest {
                 .parameters(parametersInner);
 
         // when
-        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status.name(), request);
+        provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status, request);
 
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, "", workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
         );
     }
 
@@ -165,7 +166,7 @@ class ProvisionerActionsApiControllerTest {
     void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdate_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
-        var status = Status.CREATING;
+        var status = ProvisioningStatus.CREATING;
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var workflowJobId = "123456789";
@@ -187,12 +188,12 @@ class ProvisionerActionsApiControllerTest {
                 .parameters(parametersInner);
 
         // when
-        provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status.name(), request);
+        provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status, request);
 
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, status, "", workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
         );
     }
 

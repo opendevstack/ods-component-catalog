@@ -10,6 +10,7 @@ import org.opendevstack.component_catalog.server.facade.CatalogActivityFacade;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
 import org.opendevstack.component_catalog.server.model.Pagination;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
@@ -31,7 +32,7 @@ class CatalogActivityControllerTest {
     private final SortParameter sortParameter = SortParameter.CREATION_DATE;
     private final SortOrder sortOrder = SortOrder.ASC;
     private final String project = "PROJECT-1";
-    private final String status = "CREATED";
+    private final ProvisioningStatus status = ProvisioningStatus.CREATED;
     private final Long startDate = 1L;
     private final Long endDate = 2L;
     private final Integer page = 1;

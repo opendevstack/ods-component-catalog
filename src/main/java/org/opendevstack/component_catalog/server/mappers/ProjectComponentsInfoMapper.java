@@ -7,11 +7,13 @@ import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -65,7 +67,7 @@ public class ProjectComponentsInfoMapper {
         var pci = ProjectComponentInfo.builder()
                 .componentId(comp.getComponentId())
                 .componentUrl(comp.getComponentUrl())
-                .status(comp.getStatus().toString())
+                .status(ProvisioningStatus.valueOf(comp.getStatus().toString()))
                 .logoUrl(logoUrl)
                 .canBeDeleted(containsManagerOrTeam(userGroups, projectKey))
                 .hasAutomatedDeletionWorkflow(hasAutomatedDeletionWorkflow)

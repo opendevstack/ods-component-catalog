@@ -15,6 +15,7 @@ import org.opendevstack.component_catalog.server.mappers.ProjectComponentMother;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.CatalogActivityMother;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
@@ -67,7 +68,7 @@ class CatalogActivityFacadeTest {
     private final SortParameter sortParameter = SortParameter.CREATION_DATE;
     private final SortOrder sortOrder = SortOrder.ASC;
     private final String project = null;
-    private final String status = null;
+    private final ProvisioningStatus status = null;
     private final Long startDate = null;
     private final Long endDate = null;
 
@@ -98,7 +99,7 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/my-repo")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .build();
 
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
@@ -179,7 +180,7 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .build();
 
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc)))
@@ -222,14 +223,14 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-1")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("100"))
                 .build();
         CatalogActivity failedActivity = CatalogActivity.builder()
                 .componentId("C2")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-2")
-                .status(CatalogActivity.StatusEnum.FAILED)
+                .status(ProvisioningStatus.FAILED)
                 .createdAt(new BigDecimal("200"))
                 .build();
 
@@ -237,12 +238,12 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(failedActivity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, CatalogActivity.StatusEnum.CREATED.getValue(), startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, ProvisioningStatus.CREATED, startDate, endDate);
 
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
-        assertThat(result.getFirst().getStatus()).isEqualTo(CatalogActivity.StatusEnum.CREATED);
+        assertThat(result.getFirst().getStatus()).isEqualTo(ProvisioningStatus.CREATED);
 
         verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
         verify(projectsInfoService, times(1)).getProjectGroups("token");
@@ -283,21 +284,21 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-1")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("99"))
                 .build();
         CatalogActivity startBoundaryActivity = CatalogActivity.builder()
                 .componentId("C2")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-2")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("100"))
                 .build();
         CatalogActivity endBoundaryActivity = CatalogActivity.builder()
                 .componentId("C3")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-3")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("150"))
                 .build();
 
@@ -353,21 +354,21 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-1")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("120"))
                 .build();
         CatalogActivity createdOutsideRange = CatalogActivity.builder()
                 .componentId("C2")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-2")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("90"))
                 .build();
         CatalogActivity failedWithinRange = CatalogActivity.builder()
                 .componentId("C3")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-3")
-                .status(CatalogActivity.StatusEnum.FAILED)
+                .status(ProvisioningStatus.FAILED)
                 .createdAt(new BigDecimal("130"))
                 .build();
 
@@ -381,7 +382,7 @@ class CatalogActivityFacadeTest {
                 sortParameter,
                 sortOrder,
                 "PROJ",
-                CatalogActivity.StatusEnum.CREATED.getValue(),
+                ProvisioningStatus.CREATED,
                 100L,
                 150L
         );
@@ -389,7 +390,7 @@ class CatalogActivityFacadeTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
-        assertThat(result.getFirst().getStatus()).isEqualTo(CatalogActivity.StatusEnum.CREATED);
+        assertThat(result.getFirst().getStatus()).isEqualTo(ProvisioningStatus.CREATED);
         assertThat(result.getFirst().getCreatedAt()).isEqualTo(new BigDecimal("120"));
     }
 
@@ -446,14 +447,14 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-1")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(null)
                 .build();
         CatalogActivity activityWithDate = CatalogActivity.builder()
                 .componentId("C2")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/repo-2")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .createdAt(new BigDecimal("125"))
                 .build();
 
@@ -503,7 +504,7 @@ class CatalogActivityFacadeTest {
                 .componentId("C1")
                 .projectKey("PROJ")
                 .catalogItemSlug("proj/my-repo")
-                .status(CatalogActivity.StatusEnum.CREATED)
+                .status(ProvisioningStatus.CREATED)
                 .build();
 
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);

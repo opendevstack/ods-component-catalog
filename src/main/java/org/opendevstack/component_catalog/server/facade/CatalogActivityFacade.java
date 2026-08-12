@@ -11,6 +11,7 @@ import org.opendevstack.component_catalog.server.mappers.CatalogActivityMapper;
 import org.opendevstack.component_catalog.server.model.CatalogActivity;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
@@ -44,7 +45,7 @@ public class CatalogActivityFacade {
     private final ProjectsInfoService projectsInfoService;
     private final CatalogActivityMapper catalogActivityMapper;
 
-    public List<CatalogActivity> getCatalogActivities(String catalogId, SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
+    public List<CatalogActivity> getCatalogActivities(String catalogId, SortParameter sort, SortOrder sortOrder, String project, ProvisioningStatus status, Long startDate, Long endDate) {
         var userIsAdminForCatalog = isUserAdminForCatalogProjects(catalogId);
 
         if (userIsAdminForCatalog) {
@@ -93,7 +94,7 @@ public class CatalogActivityFacade {
         return userIsAdminForCatalog;
     }
 
-    private List<CatalogActivity> getCatalogActivitiesForCatalog(String catalogId, SortParameter sort, SortOrder sortOrder, String project, String status, Long startDate, Long endDate) {
+    private List<CatalogActivity> getCatalogActivitiesForCatalog(String catalogId, SortParameter sort, SortOrder sortOrder, String project, ProvisioningStatus status, Long startDate, Long endDate) {
         var allProjectComponents = getAllProjectComponents(catalogId);
 
         var allProjectComponentsByProjectKey = new HashMap<String, ProjectComponents>();
@@ -201,10 +202,10 @@ public class CatalogActivityFacade {
         return catalogActivities.stream().sorted(comparator).toList();
     }
 
-    private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, String status, Long startDate, Long endDate) {
+    private List<CatalogActivity> filterOutCatalogActivities(List<CatalogActivity> catalogActivities, ProvisioningStatus status, Long startDate, Long endDate) {
         var filteredCatalogActivities = catalogActivities;
 
-        if (status != null && !status.isBlank()) {
+        if (status != null) {
             filteredCatalogActivities = filterOutByStatus(filteredCatalogActivities, status);
         }
 
@@ -215,8 +216,8 @@ public class CatalogActivityFacade {
         return List.copyOf(filteredCatalogActivities);
     }
 
-    private List<CatalogActivity> filterOutByStatus(List<CatalogActivity> catalogActivities, String status) {
-        return catalogActivities.stream().filter(activity -> status.equals(activity.getStatus().getValue())).toList();
+    private List<CatalogActivity> filterOutByStatus(List<CatalogActivity> catalogActivities, ProvisioningStatus status) {
+        return catalogActivities.stream().filter(activity -> status.equals(activity.getStatus())).toList();
     }
 
     private List<CatalogActivity> filterOutByDateRange(List<CatalogActivity> catalogActivities, Long startDate, Long endDate) {

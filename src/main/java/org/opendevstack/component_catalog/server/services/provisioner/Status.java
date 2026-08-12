@@ -5,5 +5,6 @@ public enum Status {
     CREATED,
     FAILED,
     DELETING,
+    DELETION_FAILED,
     UNKNOWN
 }

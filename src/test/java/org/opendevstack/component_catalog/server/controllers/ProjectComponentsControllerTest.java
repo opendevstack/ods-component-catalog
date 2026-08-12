@@ -11,6 +11,7 @@ import org.opendevstack.component_catalog.server.facade.ProjectComponentsFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -40,8 +41,8 @@ class ProjectComponentsControllerTest {
     @Test
     void givenValidProjectKey_whenGetProjectComponents_thenReturnOkWithItems() {
         // given
-        var pci1 = ProjectComponentInfo.builder().componentId("C1").componentUrl("url1").status("READY").logoUrl("logo1").build();
-        var pci2 = ProjectComponentInfo.builder().componentId("C2").componentUrl("url2").status("RUNNING").logoUrl("logo2").build();
+        var pci1 = ProjectComponentInfo.builder().componentId("C1").componentUrl("url1").status(ProvisioningStatus.CREATED).logoUrl("logo1").build();
+        var pci2 = ProjectComponentInfo.builder().componentId("C2").componentUrl("url2").status(ProvisioningStatus.CREATING).logoUrl("logo2").build();
 
         List<ProjectComponentInfo> components = List.of(pci1, pci2);
 

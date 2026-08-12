@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.CatalogActivityApi;
 import org.opendevstack.component_catalog.server.facade.CatalogActivityFacade;
 import org.opendevstack.component_catalog.server.model.PaginatedCatalogActivities;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.model.SortParameter;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
@@ -22,7 +23,7 @@ public class CatalogActivityController implements CatalogActivityApi {
     private final CatalogActivityFacade catalogActivityFacade;
 
     @Override
-    public ResponseEntity<PaginatedCatalogActivities> getCatalogActivitiesById(String catalogId, SortParameter sortParameter, SortOrder sortOrder, String project, String status, Long startDate, Long endDate, Integer page, Integer size) {
+    public ResponseEntity<PaginatedCatalogActivities> getCatalogActivitiesById(String catalogId, SortParameter sortParameter, SortOrder sortOrder, String project, ProvisioningStatus status, Long startDate, Long endDate, Integer page, Integer size) {
         // MaxSize is hardcoded, taking same value than at ProjectComponentsFacade::getAllProjectComponentsMetrics
         // We may think if we want to make this param configurable
         PaginationUtils.validatePagination(page, size, 100);
