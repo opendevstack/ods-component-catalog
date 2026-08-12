@@ -8,6 +8,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
 import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
@@ -31,7 +32,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
     @SneakyThrows
     @Override
     public ResponseEntity<Void> notifyProvisioningStatusUpdate(String projectKey,
-                                                               String status,
+                                                               ProvisioningStatus status,
                                                                ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         log.debug("Received project component update for project key: '{}', provisioningStatusUpdateRequest: {}, ",
                 projectKey, provisioningStatusUpdateRequest.toString());
@@ -44,7 +45,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         var request = ProjectComponentRequest.builder()
                 .componentId(provisioningStatusUpdateRequest.getComponentId())
                 .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
-                .status(Status.valueOf(status))
+                .status(Status.valueOf(status.getValue()))
                 .componentUrl(normalizedComponentUrl)
                 .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
                 .parameters(parameters)
@@ -57,7 +58,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
     @SneakyThrows
     @Override
-    public ResponseEntity<Void> notifyProvisioningStatusUpdatePartially(String projectKey, String status, ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
+    public ResponseEntity<Void> notifyProvisioningStatusUpdatePartially(String projectKey, ProvisioningStatus status, ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         log.debug("Received partial update notification for project key: '{}', provisioningStatusUpdateRequest: {}, ",
                 projectKey, provisioningStatusUpdateRequest.toString());
 
@@ -69,7 +70,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         var request = ProjectComponentRequest.builder()
                 .componentId(provisioningStatusUpdateRequest.getComponentId())
                 .catalogItemId(provisioningStatusUpdateRequest.getCatalogItemId())
-                .status(Status.valueOf(status))
+                .status(Status.valueOf(status.getValue()))
                 .componentUrl(normalizedComponentUrl)
                 .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
                 .parameters(parameters)

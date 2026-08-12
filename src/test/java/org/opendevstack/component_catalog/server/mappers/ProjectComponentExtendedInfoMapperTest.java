@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentParameter;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
@@ -23,13 +24,16 @@ import static org.mockito.Mockito.*;
 class ProjectComponentExtendedInfoMapperTest {
 
     @Mock
+    private ProvisioningStatusMapper provisioningStatusMapper;
+
+    @Mock
     private ProjectComponentParameterMapper projectComponentParameterMapper;
 
     private ProjectComponentExtendedInfoMapper mapper;
 
     @BeforeEach
     void setUp() {
-        mapper = new ProjectComponentExtendedInfoMapper(projectComponentParameterMapper);
+        mapper = new ProjectComponentExtendedInfoMapper(provisioningStatusMapper, projectComponentParameterMapper);
     }
 
     @Test
@@ -70,6 +74,8 @@ class ProjectComponentExtendedInfoMapperTest {
         );
         component.setParameters(List.of(param1, param2));
 
+        when(provisioningStatusMapper.asProvisioningStatus(Status.CREATED)).thenReturn(ProvisioningStatus.CREATED);
+
         // when
         Optional<ProjectComponentExtendedInfo> result =
                 mapper.mapToProjectComponentExtendedInfo(component);
@@ -81,7 +87,7 @@ class ProjectComponentExtendedInfoMapperTest {
         assertThat(info.getComponentId()).isEqualTo("C1");
         assertThat(info.getCatalogItemId()).isEqualTo("CAT-1");
         assertThat(info.getCatalogItemRef()).isEqualTo("REF-1");
-        assertThat(info.getStatus()).isEqualTo("CREATED");
+        assertThat(info.getStatus()).isEqualTo(ProvisioningStatus.CREATED);
 
         assertThat(info.getParameters()).hasSize(2);
         assertThat(info.getParameters()).containsExactly(mappedParam1, mappedParam2);

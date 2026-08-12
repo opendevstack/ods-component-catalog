@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionMother;
 import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -64,7 +65,7 @@ class ProjectComponentsInfoMapperTest {
 
         assertThat(info.getComponentId()).isEqualTo(componentId);
         assertThat(info.getComponentUrl()).isEqualTo("https://www.google.com");
-        assertThat(info.getStatus()).isEqualTo("CREATED");
+        assertThat(info.getStatus()).isEqualTo(ProvisioningStatus.CREATED);
         assertThat(info.getLogoUrl()).isEqualTo("logo-100.png");
         assertThat(info.getHasAutomatedDeletionWorkflow()).isFalse();
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(argThat(p ->
@@ -141,13 +142,13 @@ class ProjectComponentsInfoMapperTest {
 
         // when / then
         assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c1, token, projectKey, List.of())).get()
-                .extracting(ProjectComponentInfo::getStatus).isEqualTo("CREATED");
+                .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.CREATED);
         assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c2, token, projectKey, List.of())).get()
-                .extracting(ProjectComponentInfo::getStatus).isEqualTo("CREATING");
+                .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.CREATING);
         assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c3, token, projectKey, List.of())).get()
-                .extracting(ProjectComponentInfo::getStatus).isEqualTo("DELETING");
+                .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.DELETING);
         assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c4, token, projectKey, List.of())).get()
-                .extracting(ProjectComponentInfo::getStatus).isEqualTo("UNKNOWN");
+                .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.UNKNOWN);
 
         verify(catalogItemsApiFacade, times(4)).fetchCatalogItem(any());
     }

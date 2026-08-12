@@ -15,6 +15,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class ProjectComponentExtendedInfoMapper {
 
+    private final ProvisioningStatusMapper provisioningStatusMapper;
     private final ProjectComponentParameterMapper projectComponentParameterMapper;
 
     public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp) throws ComponentNotFoundException {
@@ -28,7 +29,7 @@ public class ProjectComponentExtendedInfoMapper {
         var projectComponentExtendedInfo = ProjectComponentExtendedInfo.builder()
                 .componentId(comp.getComponentId())
                 .componentUrl(comp.getComponentUrl())
-                .status(comp.getStatus().toString())
+                .status(provisioningStatusMapper.asProvisioningStatus(comp.getStatus()))
                 .catalogItemId(comp.getCatalogItemId())
                 .catalogItemRef(comp.getCatalogItemRef())
                 .parameters(projectComponentParameters)

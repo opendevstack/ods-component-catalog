@@ -478,8 +478,7 @@ paths:
           required: false
           example: CREATING
           schema:
-            type: string
-            enum: [ CREATING, CREATED, FAILED, DELETING, UNKNOWN ]
+            $ref: '#/components/schemas/ProvisioningStatus'
         - name: startDate
           in: query
           description: Start date for the filter based on creationDate at project component.
@@ -923,8 +922,7 @@ paths:
           required: true
           example: CREATING
           schema:
-            type: string
-            enum: [ CREATING, CREATED, FAILED, DELETING, UNKNOWN ]
+            $ref: '#/components/schemas/ProvisioningStatus'
       requestBody:
         required: true
         content:
@@ -962,8 +960,7 @@ paths:
           required: true
           example: CREATING
           schema:
-            type: string
-            enum: [ CREATING, CREATED, FAILED, DELETING, UNKNOWN ]
+            $ref: '#/components/schemas/ProvisioningStatus'
       requestBody:
         required: true
         content:
@@ -1097,8 +1094,7 @@ components:
           type: string
           example: 'edpc-4132-v2'
         status:
-          type: string
-          example: 'CREATING'
+          $ref: '#/components/schemas/ProvisioningStatus'
         canBeDeleted:
           type: boolean
           example: true
@@ -1135,8 +1131,7 @@ components:
           type: string
           example: 'more-encoded-info'
         status:
-          type: string
-          example: 'CREATING'
+          $ref: '#/components/schemas/ProvisioningStatus'
         componentUrl:
           type: string
           example: 'https://bitbucket.com/projects/CATALOGS/repos/project-components/browse/projects'
@@ -1494,12 +1489,22 @@ components:
           type: string
           example: 'MYSAMPLEPROJECT'
         status:
-          type: string
-          enum: [ CREATING, CREATED, FAILED, DELETING, UNKNOWN ]
+          $ref: '#/components/schemas/ProvisioningStatus'
         createdAt:
           description: The timestamp of the provision action.
           example: 1707043200000
           type: number
+    ProvisioningStatus:
+      type: string
+      description: Provisioning status of a component.
+      enum:
+        - CREATING
+        - CREATED
+        - FAILED
+        - DELETING
+        - DELETION_FAILED
+        - UNKNOWN
+      example: CREATING
     SortParameter:
       type: string
       enum:

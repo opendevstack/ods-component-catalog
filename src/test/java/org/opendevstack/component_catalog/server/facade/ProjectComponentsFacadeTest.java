@@ -15,6 +15,7 @@ import org.opendevstack.component_catalog.server.mappers.*;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
+import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -111,12 +112,12 @@ class ProjectComponentsFacadeTest {
 
         assertThat(result.getFirst().getComponentId()).isEqualTo("C1");
         assertThat(result.getFirst().getComponentUrl()).isEqualTo("http://component.url");
-        assertThat(result.get(0).getStatus()).isEqualTo("CREATED");
+        assertThat(result.get(0).getStatus()).isEqualTo(ProvisioningStatus.CREATED);
         assertThat(result.get(0).getLogoUrl()).isEqualTo("logo-1.png");
 
         assertThat(result.get(1).getComponentId()).isEqualTo("C2");
         assertThat(result.get(1).getComponentUrl()).isEqualTo("https://www.google.com");
-        assertThat(result.get(1).getStatus()).isEqualTo("CREATING");
+        assertThat(result.get(1).getStatus()).isEqualTo(ProvisioningStatus.CREATING);
         assertThat(result.get(1).getLogoUrl()).isEqualTo("logo-2.svg");
 
         verify(provisionerActionsService, times(1)).getProjectComponents(projectKey);
@@ -200,7 +201,7 @@ class ProjectComponentsFacadeTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getComponentId()).isEqualTo("G1");
-        assertThat(result.getFirst().getStatus()).isEqualTo("CREATING");
+        assertThat(result.getFirst().getStatus()).isEqualTo(ProvisioningStatus.CREATING);
         assertThat(result.getFirst().getLogoUrl()).isEqualTo("logo-ok.png");
     }
 
