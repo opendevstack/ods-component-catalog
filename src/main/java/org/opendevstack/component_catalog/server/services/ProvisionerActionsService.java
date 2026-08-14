@@ -33,6 +33,9 @@ import java.util.Optional;
 public class ProvisionerActionsService {
 
     public static final String JSON_FILE_EXTENSION = ".json";
+    private static final String DELETE_COMPONENT_COMMIT_MESSAGE = "Delete component and archive provisioning history";
+    private static final String DELETE_COMPONENT_PULL_REQUEST_REQUESTER_PLACEHOLDER = "XXXX";
+    private static final String DELETE_COMPONENT_PULL_REQUEST_TITLE = "Deletion requested by " + DELETE_COMPONENT_PULL_REQUEST_REQUESTER_PLACEHOLDER;
     private final BitbucketService bitbucketService;
     private final ObjectMapper objectMapper;
     private final ProjectComponentsService projectComponentsService;
@@ -111,7 +114,7 @@ public class ProvisionerActionsService {
     }
 
     @Synchronized
-    public void deleteComponentProvisioningStatus(String projectKey, String componentId) throws JsonProcessingException {
+    public void deleteComponentProvisioningStatus(String projectKey, String componentId, String requester) throws JsonProcessingException {
         log.debug("Deleting provisioning status. ProjectKey: {}, componentId: {}", projectKey, componentId);
 
         var projectComponentPathAt = getProjectComponentBitbucketPathAt(projectKey);
@@ -152,7 +155,7 @@ public class ProvisionerActionsService {
             var updatedProjectComponentsHistory = projectComponentsService.addNewComponent(projectComponentsHistory, projectComponentRequest);
 
             // update the file without the component to be removed
-            saveProjectComponents(projectComponentPathAt, projectComponentHistoryPathAt, sourceCommitId, projectComponentsHistorySourceCommitId, updatedProjectComponents, updatedProjectComponentsHistory);
+            saveProjectComponents(projectComponentPathAt, projectComponentHistoryPathAt, sourceCommitId, projectComponentsHistorySourceCommitId, updatedProjectComponents, updatedProjectComponentsHistory, requester);
         }
     }
 
@@ -196,17 +199,21 @@ public class ProvisionerActionsService {
         }
     }
 
-    // FIXME: Pending to do it in a single commit
+    // Persist both files atomically through a squash-merge flow, yielding a single commit on target branch.
     // We need to prevent there is no update if some other is in the middle of it
     // Pending to discuss ISO levels and how to block in deep
     @Synchronized
-    protected void saveProjectComponents(BitbucketPathAt projectComponentPathAt, BitbucketPathAt projectComponentHistoryPathAt, String projectComponentSourceCommitId, String projectComponentsHistorySourceCommitId, ProjectComponents updatedProjectComponents, ProjectComponents updatedProjectComponentsHistory) throws JsonProcessingException {
+    protected void saveProjectComponents(BitbucketPathAt projectComponentPathAt, BitbucketPathAt projectComponentHistoryPathAt, String projectComponentSourceCommitId, String projectComponentsHistorySourceCommitId, ProjectComponents updatedProjectComponents, ProjectComponents updatedProjectComponentsHistory, String requester) throws JsonProcessingException {
         try {
             String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
             String jsonUpdatedProjectComponentsHistory = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponentsHistory);
 
-            bitbucketService.pushFile(projectComponentPathAt, projectComponentSourceCommitId, jsonUpdatedProjectComponents);
-            bitbucketService.pushFile(projectComponentHistoryPathAt, projectComponentsHistorySourceCommitId, jsonUpdatedProjectComponentsHistory);
+            var customPullRequestTitle = DELETE_COMPONENT_PULL_REQUEST_TITLE.replace(DELETE_COMPONENT_PULL_REQUEST_REQUESTER_PLACEHOLDER, requester);
+
+            bitbucketService.pushFilesAtomically(List.of(
+                    new BitbucketService.BitbucketFileUpdate(projectComponentPathAt, projectComponentSourceCommitId, jsonUpdatedProjectComponents),
+                    new BitbucketService.BitbucketFileUpdate(projectComponentHistoryPathAt, projectComponentsHistorySourceCommitId, jsonUpdatedProjectComponentsHistory)
+            ), DELETE_COMPONENT_COMMIT_MESSAGE, customPullRequestTitle);
 
             projectComponentsCacheService.evict(projectComponentPathAt.getProjectKeyFromSubPath());
             projectComponentsCacheService.evict("allProjectKeys");

@@ -22,4 +22,5 @@ public class AuthenticationFacade {
 
         return principal.getAadIssuedBearerToken();
     }
+
 }

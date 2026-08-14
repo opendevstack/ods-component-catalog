@@ -10645,27 +10645,10 @@ components:
         requiredAllTasksComplete:
           type: boolean
         requiredApprovers:
-          type: object
-          properties:
-            enabled:
-              type: boolean
-              example: true
-            count:
-              type: string
-              example: "3"
-        requiredApproversDeprecated:
           type: integer
           format: int32
+          example: 3
         requiredSuccessfulBuilds:
-          type: object
-          properties:
-            enabled:
-              type: boolean
-              example: true
-            count:
-              type: string
-              example: "3"
-        requiredSuccessfulBuildsDeprecated:
           type: integer
           format: int32
     RestRepositoryRefChangeActivity:

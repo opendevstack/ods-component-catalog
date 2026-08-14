@@ -262,6 +262,7 @@ class ProvisionerActionsServiceTest {
         // given
         var projectKey = "projectKey";
         var componentId = "componentId";
+        var requester = "test.user";
 
         var pathAtBuilder = mock(BitbucketPathAt.BitbucketPathAtBuilder.class);
         var pathAt = mock(BitbucketPathAt.class);
@@ -281,13 +282,16 @@ class ProvisionerActionsServiceTest {
         when(projectComponentsService.deleteComponent(projectComponents, componentId)).thenReturn(projectComponentsWithoutComponentId);
 
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
-        var serializedProjectComponentsWithoutComponentId = prepareMocksForSave();
+        prepareMocksForSave();
 
         // when
-        provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId);
+        provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId, requester);
 
         // then
-        verify(bitbucketService).pushFile(pathAt, sourceCommitId, serializedProjectComponentsWithoutComponentId);
+        verify(bitbucketService).pushFilesAtomically(argThat(fileUpdates ->
+                        fileUpdates != null && fileUpdates.size() == 2),
+                eq("Delete component and archive provisioning history"),
+                eq("Deletion requested by " + requester));
     }
 
     @Test
@@ -295,6 +299,7 @@ class ProvisionerActionsServiceTest {
         // given
         var projectKey = "projectKey";
         var componentId = "componentId";
+        var requester = "test.user";
 
         var pathAtBuilder = mock(BitbucketPathAt.BitbucketPathAtBuilder.class);
         var pathAt = mock(BitbucketPathAt.class);
@@ -314,7 +319,7 @@ class ProvisionerActionsServiceTest {
 
         // when
         var exception = assertThrows(RestEntityNotFoundException.class, () ->
-                provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId)
+                provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId, requester)
         );
 
         // then
@@ -710,12 +715,14 @@ class ProvisionerActionsServiceTest {
         var projectKey = "configuredProjectKey";
         var repoSlug =  "repoSlug";
         var subPath = "subPath";
+        var projectHistorySubPath = "projectHistorySubPath";
         var subPathToken = "subPathToken";
         var branchName = "branchName";
 
         provisionerActionsConfiguration.setProjectKey(projectKey);
         provisionerActionsConfiguration.setRepositorySlug(repoSlug);
         provisionerActionsConfiguration.setSubPath(subPath);
+        provisionerActionsConfiguration.setProjectHistorySubPath(projectHistorySubPath);
         provisionerActionsConfiguration.setSubPathToken(subPathToken);
         provisionerActionsConfiguration.setBranchName(branchName);
     }
