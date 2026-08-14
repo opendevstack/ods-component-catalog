@@ -370,12 +370,16 @@ class ProvisionerActionsServiceTest {
 
         // when
         assertDoesNotThrow(() -> provisionerActionsService.saveProjectComponents(
-                projectComponentPathAt,
-                projectComponentHistoryPathAt,
-                projectComponentSourceCommitId,
-                projectComponentsHistorySourceCommitId,
-                updatedProjectComponents,
-                updatedProjectComponentsHistory,
+                ProvisionerActionsService.SaveProjectComponentRequest.builder()
+                        .pathAt(projectComponentPathAt)
+                        .sourceCommitId(projectComponentSourceCommitId)
+                        .projectComponents(updatedProjectComponents)
+                        .build(),
+                ProvisionerActionsService.SaveProjectComponentRequest.builder()
+                        .pathAt(projectComponentHistoryPathAt)
+                        .sourceCommitId(projectComponentsHistorySourceCommitId)
+                        .projectComponents(updatedProjectComponentsHistory)
+                        .build(),
                 requester
         ));
 

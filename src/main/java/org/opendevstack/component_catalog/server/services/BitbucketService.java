@@ -200,6 +200,9 @@ public class BitbucketService {
         String pullRequestVersion = null;
         boolean mergedSuccessfully = false;
 
+        var squashStrategyId = findSquashStrategyId(projectKey, repoSlug)
+                .orElseThrow(() -> new IllegalStateException("Squash merge strategy is not available; cannot guarantee a single atomic commit"));
+
         repositoryApi.createBranch(projectKey, repoSlug,
                 new RestCreateBranchRequest()
                         .name(tempBranchRef)
@@ -239,9 +242,6 @@ public class BitbucketService {
                     .map(String::valueOf)
                     .orElse("0");
 
-            var squashStrategyId = findSquashStrategyId(projectKey, repoSlug)
-                    .orElseThrow(() -> new IllegalStateException("Squash merge strategy is not available; cannot guarantee a single atomic commit"));
-
             pullRequestsApi.merge(projectKey, pullRequestId, repoSlug, pullRequestVersion,
                     new RestPullRequestMergeRequest()
                             .message(commitMessage)
@@ -251,23 +251,27 @@ public class BitbucketService {
             log.error("Unable to push files atomically: {}", ex.getMessage(), ex);
         } finally {
             try {
-                if (!mergedSuccessfully && pullRequestId != null) {
-                    try {
-                        pullRequestsApi.decline(projectKey, pullRequestId, repoSlug,
-                                Optional.ofNullable(pullRequestVersion).orElse("0"),
-                                new RestPullRequestDeclineRequest());
-                    } catch (Exception e) {
-                        log.warn("Unable to decline temporary atomic-update pull request: {}/{}/{}",
-                                projectKey, repoSlug, pullRequestId, e);
-                    }
-                }
-
-                repositoryApi.deleteBranch(projectKey, repoSlug,
-                        new RestBranchDeleteRequest().name(tempBranchRef));
+                cleanTemporaryMergeRequestAndBranch(mergedSuccessfully, pullRequestId, projectKey, repoSlug, pullRequestVersion, tempBranchRef);
             } catch (Exception e) {
                 log.warn("Unable to delete temporary atomic-update branch: {}/{}", repoSlug, tempBranchRef, e);
             }
         }
+    }
+
+    private void cleanTemporaryMergeRequestAndBranch(boolean mergedSuccessfully, String pullRequestId, String projectKey, String repoSlug, String pullRequestVersion, String tempBranchRef) {
+        if (!mergedSuccessfully && pullRequestId != null) {
+            try {
+                pullRequestsApi.decline(projectKey, pullRequestId, repoSlug,
+                        Optional.ofNullable(pullRequestVersion).orElse("0"),
+                        new RestPullRequestDeclineRequest());
+            } catch (Exception e) {
+                log.warn("Unable to decline temporary atomic-update pull request: {}/{}/{}",
+                        projectKey, repoSlug, pullRequestId, e);
+            }
+        }
+
+        repositoryApi.deleteBranch(projectKey, repoSlug,
+                new RestBranchDeleteRequest().name(tempBranchRef));
     }
 
     public record BitbucketFileUpdate(BitbucketPathAt pathAt, String sourceCommitId, String content) {

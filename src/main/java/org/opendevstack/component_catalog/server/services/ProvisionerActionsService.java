@@ -3,8 +3,11 @@ package org.opendevstack.component_catalog.server.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
@@ -155,7 +158,18 @@ public class ProvisionerActionsService {
             var updatedProjectComponentsHistory = projectComponentsService.addNewComponent(projectComponentsHistory, projectComponentRequest);
 
             // update the file without the component to be removed
-            saveProjectComponents(projectComponentPathAt, projectComponentHistoryPathAt, sourceCommitId, projectComponentsHistorySourceCommitId, updatedProjectComponents, updatedProjectComponentsHistory, requester);
+            var updatedProjectComponentRequest = SaveProjectComponentRequest.builder()
+                    .pathAt(projectComponentPathAt)
+                    .sourceCommitId(sourceCommitId)
+                    .projectComponents(updatedProjectComponents)
+                    .build();
+            var updatedProjectComponentsHistoryRequest = SaveProjectComponentRequest.builder()
+                    .pathAt(projectComponentHistoryPathAt)
+                    .sourceCommitId(projectComponentsHistorySourceCommitId)
+                    .projectComponents(updatedProjectComponentsHistory)
+                    .build();
+
+            saveProjectComponents(updatedProjectComponentRequest, updatedProjectComponentsHistoryRequest, requester);
         }
     }
 
@@ -203,22 +217,25 @@ public class ProvisionerActionsService {
     // We need to prevent there is no update if some other is in the middle of it
     // Pending to discuss ISO levels and how to block in deep
     @Synchronized
-    protected void saveProjectComponents(BitbucketPathAt projectComponentPathAt, BitbucketPathAt projectComponentHistoryPathAt, String projectComponentSourceCommitId, String projectComponentsHistorySourceCommitId, ProjectComponents updatedProjectComponents, ProjectComponents updatedProjectComponentsHistory, String requester) throws JsonProcessingException {
+    protected void saveProjectComponents(
+            SaveProjectComponentRequest projectComponentRequest,
+            SaveProjectComponentRequest updatedProjectComponentsHistoryRequest,
+            String requester) throws JsonProcessingException {
         try {
-            String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
-            String jsonUpdatedProjectComponentsHistory = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponentsHistory);
+            String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(projectComponentRequest.getProjectComponents());
+            String jsonUpdatedProjectComponentsHistory = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponentsHistoryRequest.getProjectComponents());
 
             var customPullRequestTitle = DELETE_COMPONENT_PULL_REQUEST_TITLE.replace(DELETE_COMPONENT_PULL_REQUEST_REQUESTER_PLACEHOLDER, requester);
 
             bitbucketService.pushFilesAtomically(List.of(
-                    new BitbucketService.BitbucketFileUpdate(projectComponentPathAt, projectComponentSourceCommitId, jsonUpdatedProjectComponents),
-                    new BitbucketService.BitbucketFileUpdate(projectComponentHistoryPathAt, projectComponentsHistorySourceCommitId, jsonUpdatedProjectComponentsHistory)
+                    new BitbucketService.BitbucketFileUpdate(projectComponentRequest.getPathAt(), projectComponentRequest.getSourceCommitId(), jsonUpdatedProjectComponents),
+                    new BitbucketService.BitbucketFileUpdate(updatedProjectComponentsHistoryRequest.getPathAt(), updatedProjectComponentsHistoryRequest.getSourceCommitId(), jsonUpdatedProjectComponentsHistory)
             ), DELETE_COMPONENT_COMMIT_MESSAGE, customPullRequestTitle);
 
-            projectComponentsCacheService.evict(projectComponentPathAt.getProjectKeyFromSubPath());
+            projectComponentsCacheService.evict(projectComponentRequest.getPathAt().getProjectKeyFromSubPath());
             projectComponentsCacheService.evict("allProjectKeys");
         } catch (HttpClientErrorException httpClientErrorException) {
-            log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
+            log.warn("There were an issue persisting project components: {}", projectComponentRequest.getProjectComponents(), httpClientErrorException);
 
             if (httpClientErrorException.getStatusCode() == HttpStatus.CONFLICT &&
                     httpClientErrorException.getMessage().contains("com.atlassian.bitbucket.content.FileContentUnmodifiedException")) {
@@ -328,4 +345,12 @@ public class ProvisionerActionsService {
         return projectKeys;
     }
 
+    @Builder
+    @Getter
+    @ToString
+    protected static class SaveProjectComponentRequest {
+        BitbucketPathAt pathAt;
+        String sourceCommitId;
+        ProjectComponents projectComponents;
+    }
 }
