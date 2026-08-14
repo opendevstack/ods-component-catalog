@@ -20,6 +20,7 @@ import org.opendevstack.component_catalog.server.services.cache.ProjectComponent
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,6 +30,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -258,6 +260,130 @@ class ProvisionerActionsServiceTest {
     }
 
     @Test
+    void givenProjectComponentsWithNullCatalogItemId_whenIsProvisioned_thenReturnFalse() throws InvalidEntityException {
+        // given
+        var component = new ProjectComponent();
+        component.setCatalogItemId("null");
+
+        var components = new HashMap<String, ProjectComponent>();
+        components.put("c1", component);
+
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(components);
+
+        when(projectComponentsService.getRepoPathFromCatalogItemId(anyString())).thenCallRealMethod();
+
+        // when
+        var result = provisionerActionsService.isProvisioned(projectComponents, Base64.getEncoder().encodeToString("my-item".getBytes()));
+
+        // then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void givenProjectKey_whenIsCatalogItemAlreadyProvisionedInProject_thenDelegateAndReturnTrue() throws JsonProcessingException {
+        // given
+        var projectKey = "projectKey";
+        var componentId = "componentId";
+        var catalogItemId = Base64.getEncoder().encodeToString("my-item".getBytes());
+
+        var pathAt = BitbucketPathAtMother.of();
+        var projectComponents = new ProjectComponents();
+        projectComponents.setComponents(Map.of(componentId, new ProjectComponent()));
+        projectComponents.getComponents().get(componentId).setCatalogItemId(catalogItemId);
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
+        when(projectComponentsService.getRepoPathFromCatalogItemId(anyString())).thenCallRealMethod();
+
+        // when
+        var result = provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
+
+        // then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void givenInvalidProjectComponentsJson_whenGetProjectComponents_thenThrowUnableToDeserializeEntityException() throws JsonProcessingException {
+        // given
+        var pathAt = BitbucketPathAtMother.of();
+        var serializedProjectComponents = "{ invalid-json";
+        var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
+
+        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.of(bitbucketFileContent));
+        when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class))
+                .thenThrow(new JsonProcessingException("boom") {});
+
+        // when
+        var exception = assertThrows(UnableToDeserializeEntityException.class, () ->
+                provisionerActionsService.getProjectComponents(pathAt)
+        );
+
+        // then
+        assertThat(exception.getMessage()).isEqualTo("Unable to deserialize ProjectComponents.");
+    }
+
+    @Test
+    void givenProjectKeyAndProjectFiles_whenGetAllProjectComponentsProjectKeys_thenOnlyJsonFilesAreReturned() {
+        // given
+        var pathAt = BitbucketPathAtMother.of();
+        var expectedFilenames = List.of("PROJECT_A_KEY.json", "PROJECT_B_KEY.txt", "PROJECT_C_KEY.json");
+
+        when(bitbucketService.pathAtBuilder()).thenReturn(bitbucketPathAtBuilder);
+
+        when(bitbucketPathAtBuilder.projectKey(provisionerActionsConfiguration.getProjectKey()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getRepositorySlug()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.at(provisionerActionsConfiguration.getBranchName()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.subPath(provisionerActionsConfiguration.getProjectsPath()))
+                .thenReturn(bitbucketPathAtBuilder);
+        when(bitbucketPathAtBuilder.build()).thenReturn(pathAt);
+
+        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt))
+                .thenReturn(expectedFilenames);
+
+        // when
+        var result = provisionerActionsService.getAllProjectComponentsProjectKeys();
+
+        // then
+        assertThat(result).containsExactly("PROJECT_A_KEY", "PROJECT_C_KEY");
+    }
+
+    @Test
+    void givenAtomicSaveAndBitbucketRejectsNoChanges_whenSaveProjectComponents_thenExceptionIsIgnored() throws JsonProcessingException {
+        // given
+        var projectComponentPathAt = BitbucketPathAtMother.of();
+        var projectComponentHistoryPathAt = BitbucketPathAtMother.of();
+        var projectComponentSourceCommitId = "sourceCommitId";
+        var projectComponentsHistorySourceCommitId = "historySourceCommitId";
+        var updatedProjectComponents = ProjectComponentsMother.of();
+        var updatedProjectComponentsHistory = ProjectComponentsMother.of();
+        var requester = "test.user";
+        var httpClientErrorException = new HttpClientErrorException(HttpStatus.CONFLICT, """
+                {"errors":[{"context":null,"message":"The content provided is the same as what already exists. No change was committed.","exceptionName":"com.atlassian.bitbucket.content.FileContentUnmodifiedException"}]}
+                """);
+
+        doThrow(httpClientErrorException).when(bitbucketService).pushFilesAtomically(anyList(), anyString(), anyString());
+        prepareMocksForSave();
+
+        // when
+        assertDoesNotThrow(() -> provisionerActionsService.saveProjectComponents(
+                projectComponentPathAt,
+                projectComponentHistoryPathAt,
+                projectComponentSourceCommitId,
+                projectComponentsHistorySourceCommitId,
+                updatedProjectComponents,
+                updatedProjectComponentsHistory,
+                requester
+        ));
+
+        // then
+        verify(bitbucketService).pushFilesAtomically(anyList(), anyString(), anyString());
+    }
+
+    @Test
     void givenAProjectKey_andAComponentId_whenDeleteComponentProvisioningStatus_thenBitbucketServiceIsCalled() throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
@@ -341,10 +467,10 @@ class ProvisionerActionsServiceTest {
         prepareMocksForSave();
 
         // when
-        provisionerActionsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
+        assertDoesNotThrow(() -> provisionerActionsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents));
 
         // then
-        // no exception is thrown
+        verify(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
     }
 
     @Test
@@ -440,13 +566,10 @@ class ProvisionerActionsServiceTest {
         when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.empty());
         when(projectComponentsService.createNewComponent()).thenReturn(null);
 
+        var request = request(componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, List.of());
+
         // when
-        var exception = assertThrows(ElementNotFoundException.class, () ->
-                provisionerActionsService.updatePartiallyComponentProvisioningStatus(
-                        projectKey,
-                        request(componentId, catalogItemId, status, componentUrl, workflowJobId, createdAt, updatedAt, List.of())
-                )
-        );
+        var exception = assertThrows(ElementNotFoundException.class, () -> provisionerActionsService.updatePartiallyComponentProvisioningStatus(projectKey, request));
 
         // then
         assertThat(exception.getMessage())
