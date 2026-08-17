@@ -202,15 +202,21 @@ class ProvisionerActionsApiControllerTest {
         // given
         var projectKey = "projectKey";
         var componentId = "componentId";
+        var requester = "test.user";
+        var requesterParam = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name(ProvisionerActionsApiController.DELETION_REQUESTER)
+                .values(List.of(requester))
+                .build();
 
         var request = new ProvisioningDeleteRequest()
-                .componentId(componentId);
+                .componentId(componentId)
+                .parameters(List.of(requesterParam));
 
         // when
         provisionerActionsApiController.deleteProvisioningStatus(projectKey, request);
 
         // then
-        verify(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId);
+        verify(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId, requester);
     }
 
     @Test
@@ -218,13 +224,19 @@ class ProvisionerActionsApiControllerTest {
         // given
         var projectKey = "projectKey";
         var componentId = "componentId";
+        var requester = "test.user";
+        var requesterParam = ProvisioningStatusUpdateRequestParametersInner.builder()
+                .name(ProvisionerActionsApiController.DELETION_REQUESTER)
+                .values(List.of(requester))
+                .build();
 
         var request = new ProvisioningDeleteRequest()
-                .componentId(componentId);
+                .componentId(componentId)
+                .parameters(List.of(requesterParam));
 
         org.mockito.Mockito.doThrow(new JsonProcessingException("Error") {
                 })
-                .when(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId);
+                .when(provisionerActionsService).deleteComponentProvisioningStatus(projectKey, componentId, requester);
 
         // when
         var response = provisionerActionsApiController.deleteProvisioningStatus(projectKey, request);

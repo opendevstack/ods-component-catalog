@@ -14,6 +14,7 @@ public class ProvisionerActionsConfiguration {
     private String repositorySlug;
     private String projectsPath;
     private String subPath;
+    private String projectHistorySubPath;
     private String subPathToken;
     private String branchName;
 }

@@ -13,6 +13,7 @@ public class WorkflowsEvaluator implements RestrictionsEvaluator {
     private static final String WORKFLOW_PARAM_NAME = "workflow";
     private static final String WORKFLOW_NAME_PARAM_NAME = "workflow_name";
     private static final String DELETE_WORKFLOW_PARAM_NAME = "deletion_workflow";
+    private static final String DELETE_WORKFLOW_NAME_PARAM_NAME = "deletion_workflow_name";
 
     // At this stage, there is no merge with default parameters yet.
     // Having that in mind, we can just evaluate the existence of the workflow parameters in the item configuration.
@@ -23,7 +24,7 @@ public class WorkflowsEvaluator implements RestrictionsEvaluator {
                 .toList();
 
         var provisionWorkflowParamExists = paramNames.contains(WORKFLOW_PARAM_NAME) || paramNames.contains(WORKFLOW_NAME_PARAM_NAME);
-        var deleteWorkflowParamExists = paramNames.contains(DELETE_WORKFLOW_PARAM_NAME);
+        var deleteWorkflowParamExists = paramNames.contains(DELETE_WORKFLOW_PARAM_NAME) || paramNames.contains(DELETE_WORKFLOW_NAME_PARAM_NAME);
 
         if (provisionWorkflowParamExists && deleteWorkflowParamExists) {
             return Pair.of(true, "WorkflowsEvaluator: Both provision and delete workflow params exist");

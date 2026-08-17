@@ -22,7 +22,9 @@ class WorkflowsEvaluatorTest {
     @ParameterizedTest
     @CsvSource({
             "workflow,deletion_workflow",
-            "workflow_name,deletion_workflow"
+            "workflow_name,deletion_workflow",
+            "workflow,deletion_workflow_name",
+            "workflow_name,deletion_workflow_name"
     })
     void givenBothWorkflowParams_whenEvaluate_thenReturnTrueAndSuccessMessage(String provisionParam, String deleteParam) {
         // given
@@ -100,7 +102,8 @@ class WorkflowsEvaluatorTest {
     @CsvSource({
             "workflow",
             "workflow_name",
-            "deletion_workflow"
+            "deletion_workflow",
+            "deletion_workflow_name"
     })
     void givenOnlyOneWorkflowParam_whenEvaluate_thenReturnFalseAndErrorMessage(String workflowParam) {
         // given

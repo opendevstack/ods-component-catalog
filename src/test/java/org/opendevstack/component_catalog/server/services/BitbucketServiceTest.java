@@ -2,8 +2,10 @@ package org.opendevstack.component_catalog.server.services;
 
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.PermissionManagementApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
+import org.opendevstack.component_catalog.client.bitbucket.v89.api.PullRequestsApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.RepositoryApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.*;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,13 +15,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.net.URL;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,11 +39,15 @@ class BitbucketServiceTest {
     @Mock
     private ObjectMapper objectMapper;
     @Mock
+    private ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
+    @Mock
     private RepositoryApi repositoryApi;
     @Mock
     private PermissionManagementApi permissionApi;
     @Mock
     private ProjectApi projectApi;
+    @Mock
+    private PullRequestsApi pullRequestsApi;
 
     @InjectMocks
     private BitbucketService service;
@@ -284,6 +295,292 @@ class BitbucketServiceTest {
 
         // then
         assertThat(result).containsExactly("file1.json");
+    }
+
+    @Test
+    void givenMultipleFiles_whenPushFilesInSeries_thenAllFilesUseCustomCommitMessage() {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of().copy().appendSubPath("another-file.json");
+
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "commit-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "commit-2", "content-2")
+        );
+
+        // when
+        service.pushFilesInSeries(fileUpdates, "custom commit message");
+
+        // then
+        verify(repositoryApi).editFile(firstPathAt.getSubPath(), firstPathAt.getProjectKey(), firstPathAt.getRepoSlug(),
+                "master", "content-1", "custom commit message", null, "commit-1");
+        verify(repositoryApi).editFile(secondPathAt.getSubPath(), secondPathAt.getProjectKey(), secondPathAt.getRepoSlug(),
+                "master", "content-2", "custom commit message", null, "commit-2");
+    }
+
+    @Test
+    void givenMultipleFiles_whenPushFilesAtomically_thenSquashMergeCreatesSingleTargetCommit() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        var settings = new RestRepositoryPullRequestSettings()
+                .mergeConfig(new RestPullRequestSettingsMergeConfig().strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, true, null, null).id("squash")
+                )));
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(settings);
+
+        var createdPr = new RestPullRequest().id(123L).version(7);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestMergeRequest.class)))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message");
+
+        // then
+        verify(repositoryApi).createBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestCreateBranchRequest.class));
+        ArgumentCaptor<RestPullRequest> pullRequestCaptor = ArgumentCaptor.forClass(RestPullRequest.class);
+        verify(pullRequestsApi).createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), pullRequestCaptor.capture());
+        assertThat(pullRequestCaptor.getValue().getParticipants()).isNull();
+        assertThat(pullRequestCaptor.getValue().getReviewers()).isNull();
+
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), mergeRequestCaptor.capture());
+        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash");
+        assertThat(mergeRequestCaptor.getValue().getMessage()).isEqualTo("atomic commit message");
+
+        verify(repositoryApi, times(2)).editFile(anyString(), eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
+                anyString(), anyString(), eq("atomic commit message"), isNull(), anyString());
+
+        verify(repositoryApi).deleteBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
+                argThat(request -> request != null && request.getName() != null && request.getName().startsWith("refs/heads/cc-atomic-")));
+    }
+
+    @Test
+    void givenMergeFailure_whenPushFilesAtomically_thenDeclinePrBeforeDeletingTempBranch() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        var settings = new RestRepositoryPullRequestSettings()
+                .mergeConfig(new RestPullRequestSettingsMergeConfig().strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, true, null, null).id("squash")
+                )));
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(settings);
+
+        var createdPr = new RestPullRequest().id(123L).version(7);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestMergeRequest.class)))
+                .thenThrow(new HttpClientErrorException(HttpStatus.CONFLICT));
+
+        // when
+        assertDoesNotThrow(() -> service.pushFilesAtomically(fileUpdates, "atomic commit message"));
+
+        // then
+        verify(pullRequestsApi).decline(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestDeclineRequest.class));
+        verify(repositoryApi).deleteBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
+                argThat(request -> request != null && request.getName() != null && request.getName().startsWith("refs/heads/cc-atomic-")));
+    }
+
+    @Test
+    void givenBrokenRepoSettingsPayload_whenPushFilesAtomically_thenFallbackToGlobalMergeConfig() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenThrow(new RestClientException("parse error"));
+
+        var globalMergeConfig = new RestPullRequestMergeConfig()
+                .strategies(List.of(new RestPullRequestMergeStrategy(null, true, null, null).id("squash")));
+        when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
+
+        var createdPr = new RestPullRequest().id(456L).version(9);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("456"), eq(firstPathAt.getRepoSlug()), eq("9"), any(RestPullRequestMergeRequest.class)))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message");
+
+        // then
+        verify(repositoryApi).getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug());
+        verify(pullRequestsApi).getMergeConfig("git");
+
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("456"), eq(firstPathAt.getRepoSlug()), eq("9"), mergeRequestCaptor.capture());
+        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash");
+    }
+
+    @Test
+    void givenRepoSquashStrategyNotEnabled_whenPushFilesAtomically_thenUsesRelaxedRepoStrategy() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        var repoSettings = new RestRepositoryPullRequestSettings()
+                .mergeConfig(new RestPullRequestSettingsMergeConfig().strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, false, null, null).id("squash-repo-relaxed")
+                )));
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(repoSettings);
+
+        var globalMergeConfig = new RestPullRequestMergeConfig()
+                .strategies(List.of(new RestPullRequestMergeStrategy(null, true, null, null).id("merge-commit")));
+        when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
+
+        var createdPr = new RestPullRequest().id(457L).version(10);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("457"), eq(firstPathAt.getRepoSlug()), eq("10"), any(RestPullRequestMergeRequest.class)))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message");
+
+        // then
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("457"), eq(firstPathAt.getRepoSlug()), eq("10"), mergeRequestCaptor.capture());
+        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash-repo-relaxed");
+    }
+
+    @Test
+    void givenGlobalSquashStrategyNotEnabled_whenPushFilesAtomically_thenUsesRelaxedGlobalStrategy() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        var repoSettings = new RestRepositoryPullRequestSettings()
+                .mergeConfig(new RestPullRequestSettingsMergeConfig().strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, true, null, null).id("merge-commit")
+                )));
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(repoSettings);
+
+        var globalMergeConfig = new RestPullRequestMergeConfig()
+                .strategies(List.of(new RestPullRequestMergeStrategy(null, false, null, null).id("squash-global-relaxed")));
+        when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
+
+        var createdPr = new RestPullRequest().id(458L).version(11);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("458"), eq(firstPathAt.getRepoSlug()), eq("11"), any(RestPullRequestMergeRequest.class)))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message");
+
+        // then
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("458"), eq(firstPathAt.getRepoSlug()), eq("11"), mergeRequestCaptor.capture());
+        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash-global-relaxed");
+    }
+
+
+    @Test
+    void givenNoSquashInRepoOrGlobal_whenPushFilesAtomically_thenHardcodedFallbackIsUsed() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(new RestRepositoryPullRequestSettings());
+        when(pullRequestsApi.getMergeConfig("git")).thenReturn(new RestPullRequestMergeConfig());
+
+        var createdPr = new RestPullRequest().id(460L).version(13);
+        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("460"), eq(firstPathAt.getRepoSlug()), eq("13"), any(RestPullRequestMergeRequest.class)))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message");
+
+        // then
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("460"), eq(firstPathAt.getRepoSlug()), eq("13"), mergeRequestCaptor.capture());
+        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo(BitbucketService.FALLBACK_SQUASH_STRATEGY_ID);
     }
 
 }

@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opendevstack.component_catalog.client.bitbucket.v89.ApiClient;
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.PermissionManagementApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.ProjectApi;
+import org.opendevstack.component_catalog.client.bitbucket.v89.api.PullRequestsApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.api.RepositoryApi;
 import org.opendevstack.component_catalog.client.bitbucket.v89.auth.HttpBearerAuth;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.*;
@@ -32,6 +33,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,11 +46,17 @@ import static org.opendevstack.component_catalog.util.EitherUtils.*;
 @Slf4j
 public class BitbucketService {
 
+    private static final String DEFAULT_COMMIT_MESSAGE = "Automated update from BitbucketService";
+    private static final String BRANCH_REF_PREFIX = "refs/heads/";
+    private static final String TEMP_BRANCH_PREFIX = "cc-atomic-";
+    private static final String SCM_ID_GIT = "git";
+
     @Qualifier("bitbucketServiceConfig")
     private final ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
     private final ObjectMapper objectMapper;
     private final ApiClient apiClient;
     private final RepositoryApi repositoryApi;
+    private final PullRequestsApi pullRequestsApi;
     private final PermissionManagementApi permissionApi;
     private final ProjectApi projectApi;
 
@@ -152,11 +160,234 @@ public class BitbucketService {
     }
 
     public void pushFile(BitbucketPathAt pathAt, String sourceCommitId, String content) {
+        pushFile(pathAt, sourceCommitId, content, DEFAULT_COMMIT_MESSAGE);
+    }
+
+    public void pushFile(BitbucketPathAt pathAt, String sourceCommitId, String content, String commitMessage) {
         log.debug("Pushing file to Bitbucket, repo: {}, path: {}", pathAt.getRepoSlug(), pathAt.getSubPath());
 
-        var sourceBranch = pathAt.getAt().replace("refs/heads/", "");
+        var sourceBranch = pathAt.getAt().replace(BRANCH_REF_PREFIX, "");
 
-        repositoryApi.editFile(pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(), sourceBranch, content, "Automated update from BitbucketService", null, sourceCommitId);
+        repositoryApi.editFile(pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(), sourceBranch,
+                content, commitMessage, null, sourceCommitId);
+    }
+
+    public void pushFilesInSeries(List<BitbucketFileUpdate> fileUpdates, String commitMessage) {
+        for (var fileUpdate : fileUpdates) {
+            pushFile(fileUpdate.pathAt(), fileUpdate.sourceCommitId(), fileUpdate.content(), commitMessage);
+        }
+    }
+
+    public void pushFilesAtomically(List<BitbucketFileUpdate> fileUpdates, String commitMessage) {
+        pushFilesAtomically(fileUpdates, commitMessage, commitMessage);
+    }
+
+    public void pushFilesAtomically(List<BitbucketFileUpdate> fileUpdates, String commitMessage, String pullRequestTitle) {
+        if (fileUpdates == null || fileUpdates.isEmpty()) {
+            throw new IllegalArgumentException("fileUpdates must contain at least one file");
+        }
+
+        var firstPathAt = fileUpdates.getFirst().pathAt();
+        validateAtomicUpdateInput(fileUpdates, firstPathAt);
+
+        var projectKey = firstPathAt.getProjectKey();
+        var repoSlug = firstPathAt.getRepoSlug();
+        var targetBranchRef = firstPathAt.getAt();
+        var targetBranch = branchNameFromRef(targetBranchRef);
+        var tempBranch = TEMP_BRANCH_PREFIX + Instant.now().toEpochMilli() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        var tempBranchRef = BRANCH_REF_PREFIX + tempBranch;
+        String pullRequestId = null;
+        String pullRequestVersion = null;
+        boolean mergedSuccessfully = false;
+
+        var squashStrategyId = findSquashStrategyId(projectKey, repoSlug)
+                .orElseThrow(() -> new IllegalStateException("Squash merge strategy is not available; cannot guarantee a single atomic commit"));
+
+        repositoryApi.createBranch(projectKey, repoSlug,
+                new RestCreateBranchRequest()
+                        .name(tempBranchRef)
+                        .startPoint(targetBranchRef)
+                        .message("Create temporary branch for atomic update"));
+
+        try {
+            for (var fileUpdate : fileUpdates) {
+                var tempPathAt = pathAtBuilder()
+                        .projectKey(fileUpdate.pathAt().getProjectKey())
+                        .repoSlug(fileUpdate.pathAt().getRepoSlug())
+                        .subPath(fileUpdate.pathAt().getSubPath())
+                        .at(tempBranchRef)
+                        .build();
+
+                var tempSourceCommitId = getLastCommit(tempPathAt).orElse(null);
+                pushFile(tempPathAt, tempSourceCommitId, fileUpdate.content(), commitMessage);
+            }
+
+            var pullRequest = new RestPullRequest()
+                    .title(pullRequestTitle)
+                    .description("Automated atomic multi-file update")
+                    .fromRef(pullRequestRef(projectKey, repoSlug, tempBranchRef, tempBranch))
+                    .toRef(pullRequestRef(projectKey, repoSlug, targetBranchRef, targetBranch));
+            // Bitbucket rejects participants/reviewers in create PR payload; generated model defaults them to empty lists.
+            pullRequest.setParticipants(null);
+            pullRequest.setReviewers(null);
+
+            var createdPullRequest = pullRequestsApi.createPullRequest(projectKey, repoSlug, pullRequest);
+
+            pullRequestId = Optional.ofNullable(createdPullRequest)
+                    .map(RestPullRequest::getId)
+                    .map(String::valueOf)
+                    .orElseThrow(() -> new IllegalStateException("Unable to create pull request for atomic update"));
+            pullRequestVersion = Optional.of(createdPullRequest)
+                    .map(RestPullRequest::getVersion)
+                    .map(String::valueOf)
+                    .orElse("0");
+
+            pullRequestsApi.merge(projectKey, pullRequestId, repoSlug, pullRequestVersion,
+                    new RestPullRequestMergeRequest()
+                            .message(commitMessage)
+                            .strategyId(squashStrategyId));
+            mergedSuccessfully = true;
+        } catch (Exception ex) {
+            log.error("Unable to push files atomically: {}", ex.getMessage(), ex);
+        } finally {
+            try {
+                cleanTemporaryMergeRequestAndBranch(mergedSuccessfully, pullRequestId, projectKey, repoSlug, pullRequestVersion, tempBranchRef);
+            } catch (Exception e) {
+                log.warn("Unable to delete temporary atomic-update branch: {}/{}", repoSlug, tempBranchRef, e);
+            }
+        }
+    }
+
+    private void cleanTemporaryMergeRequestAndBranch(boolean mergedSuccessfully, String pullRequestId, String projectKey, String repoSlug, String pullRequestVersion, String tempBranchRef) {
+        if (!mergedSuccessfully && pullRequestId != null) {
+            try {
+                pullRequestsApi.decline(projectKey, pullRequestId, repoSlug,
+                        Optional.ofNullable(pullRequestVersion).orElse("0"),
+                        new RestPullRequestDeclineRequest());
+            } catch (Exception e) {
+                log.warn("Unable to decline temporary atomic-update pull request: {}/{}/{}",
+                        projectKey, repoSlug, pullRequestId, e);
+            }
+        }
+
+        repositoryApi.deleteBranch(projectKey, repoSlug,
+                new RestBranchDeleteRequest().name(tempBranchRef));
+    }
+
+    public record BitbucketFileUpdate(BitbucketPathAt pathAt, String sourceCommitId, String content) {
+    }
+
+    private void validateAtomicUpdateInput(List<BitbucketFileUpdate> fileUpdates, BitbucketPathAt firstPathAt) {
+        var sameRepoAndBranch = fileUpdates.stream()
+                .map(BitbucketFileUpdate::pathAt)
+                .allMatch(pathAt -> Objects.equals(pathAt.getProjectKey(), firstPathAt.getProjectKey())
+                        && Objects.equals(pathAt.getRepoSlug(), firstPathAt.getRepoSlug())
+                        && Objects.equals(pathAt.getAt(), firstPathAt.getAt()));
+
+        if (!sameRepoAndBranch) {
+            throw new IllegalArgumentException("Atomic updates require all files to belong to the same project/repository/branch");
+        }
+    }
+
+    private RestPullRequestFromRef pullRequestRef(String projectKey, String repoSlug, String branchRef, String displayBranchName) {
+        return new RestPullRequestFromRef()
+                .id(branchRef)
+                .displayId(displayBranchName)
+                .type(RestPullRequestFromRef.TypeEnum.BRANCH)
+                .repository(new RestPullRequestFromRefRepository()
+                        .slug(repoSlug)
+                        .project(new RestPullRequestFromRefRepositoryProject().key(projectKey)));
+    }
+
+    /**
+     * Known Bitbucket squash strategy ID used as last-resort fallback when no squash strategy
+     * can be resolved from the API (e.g. because the Jackson deserialisation of
+     * {@code requiredApprovers} fails and the global config also returns no enabled squash entry).
+     */
+    static final String FALLBACK_SQUASH_STRATEGY_ID = "squash";
+
+    private Optional<String> findSquashStrategyId(String projectKey, String repoSlug) {
+        List<RestPullRequestMergeStrategy> repoStrategies = List.of();
+        try {
+            repoStrategies = Optional.ofNullable(repositoryApi.getPullRequestSettings1(projectKey, repoSlug))
+                    .map(RestRepositoryPullRequestSettings::getMergeConfig)
+                    .map(RestPullRequestSettingsMergeConfig::getStrategies)
+                    .orElse(List.of());
+
+            log.debug("Repository merge strategies for {}/{}: {}", projectKey, repoSlug,
+                    formatStrategies(repoStrategies));
+
+            var repoStrategy = extractSquashStrategyId(repoStrategies, true);
+            if (repoStrategy.isPresent()) {
+                return repoStrategy;
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Unable to read repository pull-request settings for {}/{}. Falling back to global merge config.",
+                    projectKey, repoSlug, ex);
+        }
+
+        List<RestPullRequestMergeStrategy> globalStrategies = List.of();
+        try {
+            globalStrategies = Optional.ofNullable(pullRequestsApi.getMergeConfig(SCM_ID_GIT))
+                    .map(RestPullRequestMergeConfig::getStrategies)
+                    .orElse(List.of());
+
+            log.debug("Global merge strategies for scmId '{}': {}", SCM_ID_GIT,
+                    formatStrategies(globalStrategies));
+
+            var globalStrategy = extractSquashStrategyId(globalStrategies, true);
+            if (globalStrategy.isPresent()) {
+                return globalStrategy;
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Unable to read global merge config for scmId '{}'.", SCM_ID_GIT, ex);
+        }
+
+        // Second pass: relax the enabled=true constraint — the strategy may exist but not be
+        // explicitly flagged as enabled at this level (it might be inherited / not overridden).
+        var repoStrategyRelaxed = extractSquashStrategyId(repoStrategies, false);
+        if (repoStrategyRelaxed.isPresent()) {
+            log.warn("Squash strategy found in repo config but not explicitly enabled for {}/{}; using '{}' anyway.",
+                    projectKey, repoSlug, repoStrategyRelaxed.get());
+            return repoStrategyRelaxed;
+        }
+
+        var globalStrategyRelaxed = extractSquashStrategyId(globalStrategies, false);
+        if (globalStrategyRelaxed.isPresent()) {
+            log.warn("Squash strategy found in global config but not explicitly enabled; using '{}' anyway.",
+                    globalStrategyRelaxed.get());
+            return globalStrategyRelaxed;
+        }
+
+        // Last resort: use the well-known Bitbucket squash strategy ID directly.
+        log.warn("No squash strategy found in either repo or global merge config for {}/{}. "
+                + "Falling back to hardcoded strategy id '{}'.", projectKey, repoSlug, FALLBACK_SQUASH_STRATEGY_ID);
+        return Optional.of(FALLBACK_SQUASH_STRATEGY_ID);
+    }
+
+    private Optional<String> extractSquashStrategyId(List<RestPullRequestMergeStrategy> strategies,
+                                                     boolean requireEnabled) {
+        return Optional.ofNullable(strategies)
+                .orElse(List.of())
+                .stream()
+                .filter(strategy -> !requireEnabled || Boolean.TRUE.equals(strategy.getEnabled()))
+                .filter(strategy -> {
+                    var id = Optional.ofNullable(strategy.getId()).orElse("").toLowerCase(Locale.ROOT);
+                    var name = Optional.ofNullable(strategy.getName()).orElse("").toLowerCase(Locale.ROOT);
+                    return id.contains(FALLBACK_SQUASH_STRATEGY_ID) || name.contains(FALLBACK_SQUASH_STRATEGY_ID);
+                })
+                .map(RestPullRequestMergeStrategy::getId)
+                .findFirst();
+    }
+
+    private static String formatStrategies(List<RestPullRequestMergeStrategy> strategies) {
+        return Optional.ofNullable(strategies).orElse(List.of()).stream()
+                .map(s -> "[id=%s, name=%s, enabled=%s]".formatted(s.getId(), s.getName(), s.getEnabled()))
+                .collect(Collectors.joining(", "));
+    }
+
+    private String branchNameFromRef(String branchRef) {
+        return branchRef.replace(BRANCH_REF_PREFIX, "");
     }
 
     private <T> Optional<Pair<MediaType, T>> getFileContents(String projectKey, String repoSlug, String subPath, String at,

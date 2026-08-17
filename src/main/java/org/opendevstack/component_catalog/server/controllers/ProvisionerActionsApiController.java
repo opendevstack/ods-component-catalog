@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
+import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
@@ -17,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Optional;
+
 import static org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade.map;
 
 @Controller
@@ -24,6 +27,9 @@ import static org.opendevstack.component_catalog.server.facade.ProvisionerAction
 @AllArgsConstructor
 @Slf4j
 public class ProvisionerActionsApiController implements ProvisionerActionsApi {
+
+    public static final String DELETION_REQUESTER = "deletion_requester";
+    private final AuthenticationFacade authenticationFacade;
 
     private final ProvisionerActionsApiFacade provisionerActionsApiFacade;
     private final ProvisionerActionsService provisionerActionsService;
@@ -86,7 +92,12 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
         log.debug("Received delete provisioning status for project key: '{}', componentId: {}", projectKey, provisioningDeleteRequest.getComponentId());
 
         try {
-            provisionerActionsService.deleteComponentProvisioningStatus(projectKey, provisioningDeleteRequest.getComponentId());
+            var requester = Optional.ofNullable(provisioningDeleteRequest.getParameters())
+                    .flatMap(paramsList -> paramsList.stream().filter(param -> DELETION_REQUESTER.equals(param.getName())).findFirst())
+                    .map( requestParam -> requestParam.getValues().stream().findFirst().orElse("N/A"))
+                    .orElse("N/A");
+
+            provisionerActionsService.deleteComponentProvisioningStatus(projectKey, provisioningDeleteRequest.getComponentId(), requester);
         } catch (JsonProcessingException e) {
             return ResponseEntity.unprocessableEntity().build();
         }
