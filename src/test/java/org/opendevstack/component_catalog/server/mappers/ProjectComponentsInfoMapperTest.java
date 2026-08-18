@@ -67,7 +67,6 @@ class ProjectComponentsInfoMapperTest {
         assertThat(info.getComponentUrl()).isEqualTo("https://www.google.com");
         assertThat(info.getStatus()).isEqualTo(ProvisioningStatus.CREATED);
         assertThat(info.getLogoUrl()).isEqualTo("logo-100.png");
-        assertThat(info.getHasAutomatedDeletionWorkflow()).isFalse();
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(argThat(p ->
                 p != null && ("ce-_vX7vv71N77-977-977-977-9TQ==").equals(p.getCatalogItemId())
         ));
@@ -87,8 +86,7 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getLogoUrl()).isEqualTo("");
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+        assertThat(maybeInfo.get().getLogoUrl()).isEmpty();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -107,8 +105,7 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getLogoUrl()).isEqualTo("");
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
+        assertThat(maybeInfo.get().getLogoUrl()).isEmpty();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -170,7 +167,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isTrue();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -191,7 +187,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -211,7 +206,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -233,7 +227,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -255,7 +248,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -279,7 +271,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isFalse();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
@@ -301,7 +292,6 @@ class ProjectComponentsInfoMapperTest {
 
         // then
         assertThat(maybeInfo).isPresent();
-        assertThat(maybeInfo.get().getHasAutomatedDeletionWorkflow()).isTrue();
 
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
     }
