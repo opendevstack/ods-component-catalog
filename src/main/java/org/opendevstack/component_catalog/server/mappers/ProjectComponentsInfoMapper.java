@@ -1,19 +1,16 @@
 package org.opendevstack.component_catalog.server.mappers;
 
-import org.openapitools.jackson.nullable.JsonNullable;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
-import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -49,7 +46,6 @@ public class ProjectComponentsInfoMapper {
         CatalogItem catalogItem = catalogItemsApiFacade.fetchCatalogItem(params);
 
         var logoUrl = "";
-        var hasAutomatedDeletionWorkflow = false;
 
         if (catalogItem == null) {
             log.warn("Catalog item not found for component {} with catalogItemId {} and catalogItemRef {}",
@@ -59,9 +55,6 @@ public class ProjectComponentsInfoMapper {
                     .map(CatalogItem::getImageFileId)
                     .filter(StringUtils::isNotBlank)
                     .orElse("");
-
-            var deletionWorkflow = extractDeletionWorkflow(catalogItem);
-            hasAutomatedDeletionWorkflow = deletionWorkflow != null;
         }
 
         var pci = ProjectComponentInfo.builder()
@@ -70,7 +63,6 @@ public class ProjectComponentsInfoMapper {
                 .status(ProvisioningStatus.valueOf(comp.getStatus().toString()))
                 .logoUrl(logoUrl)
                 .canBeDeleted(containsManagerOrTeam(userGroups, projectKey))
-                .hasAutomatedDeletionWorkflow(hasAutomatedDeletionWorkflow)
                 .build();
 
         return Optional.of(pci);
@@ -99,21 +91,4 @@ public class ProjectComponentsInfoMapper {
                 || StringUtils.isBlank(projectKey));
     }
 
-    private String extractDeletionWorkflow(CatalogItem catalogItem) {
-        var provisionAction = catalogItem.getUserActions().stream()
-                .filter(action -> "PROVISION".equals(action.getId()))
-                .findAny();
-
-        var deletionWorkflow = provisionAction.flatMap(action -> action.getParameters().stream()
-                .filter(param -> "deletion_workflow".equals(param.getName()) || "deletion_workflow_name".equals(param.getName()))
-                .findAny()
-                .map(CatalogItemUserActionParameter::getDefaultValue)
-                .map(JsonNullable::get))
-                .filter(StringUtils::isNotBlank)
-                .orElse(null);
-
-        log.debug("Extracted deletion workflow '{}' for catalog item '{}'", deletionWorkflow, catalogItem.getId());
-
-        return deletionWorkflow;
-    }
 }
