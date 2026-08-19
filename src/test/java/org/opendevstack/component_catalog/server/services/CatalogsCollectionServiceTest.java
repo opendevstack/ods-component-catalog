@@ -27,7 +27,8 @@ public class CatalogsCollectionServiceTest {
     private CatalogsCollectionService catalogsCollectionService;
 
     @Test
-    public void givenACatalogOfCatalogs_whenGetCatalogCollections_thenACatalogCollectionEntityReturned() throws InvalidIdException {
+    public void givenACatalogOfCatalogs_whenGetCatalogCollections_thenACatalogCollectionEntityReturned()
+            throws InvalidIdException {
         // given
         var catalogOfCatalogsId = "catalogOfCatalogsId";
 

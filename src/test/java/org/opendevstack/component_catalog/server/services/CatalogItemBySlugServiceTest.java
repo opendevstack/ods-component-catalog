@@ -67,7 +67,8 @@ class CatalogItemBySlugServiceTest {
     @Test
     void findByCatalogItemSlug_whenCollectionHasNullTargets_returnsEmpty() throws Exception {
         var collection = new CatalogsCollectionsEntity();
-        var metadata = new org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityMetadata();
+        var metadata = new org.opendevstack.component_catalog.server.services.catalog.
+                CatalogsCollectionsEntityMetadata();
         var spec = new CatalogsCollectionsEntitySpec();
         spec.setTargets(null);
         metadata.setSpec(spec);
@@ -84,7 +85,8 @@ class CatalogItemBySlugServiceTest {
     @Test
     void findByCatalogItemSlug_whenCollectionHasEmptyTargets_returnsEmpty() throws Exception {
         var collection = new CatalogsCollectionsEntity();
-        var metadata = new org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntityMetadata();
+        var metadata = new org.opendevstack.component_catalog.server.services.catalog.
+                CatalogsCollectionsEntityMetadata();
         var spec = new CatalogsCollectionsEntitySpec();
         spec.setTargets(new CatalogsCollectionsEntityTarget[]{});
         metadata.setSpec(spec);
@@ -131,7 +133,8 @@ class CatalogItemBySlugServiceTest {
         when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
                 .thenReturn(Optional.of(itemCtx));
 
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isPresent();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug")))
+                .isPresent();
     }
 
     @Test
@@ -148,7 +151,8 @@ class CatalogItemBySlugServiceTest {
         when(catalogEntitiesService.getCatalogItemEntity(encodedItemId("MYPROJECT", "repo-slug")))
                 .thenReturn(Optional.of(itemCtx));
 
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_REPO-SLUG"))).isPresent();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_REPO-SLUG")))
+                .isPresent();
     }
 
     @Test
@@ -188,7 +192,8 @@ class CatalogItemBySlugServiceTest {
         when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
                 .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("DIFFERENTPROJECT", "repo-slug"))));
 
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isEmpty();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug")))
+                .isEmpty();
         verify(catalogEntitiesService, never()).getCatalogItemEntity(any());
     }
 
@@ -202,7 +207,8 @@ class CatalogItemBySlugServiceTest {
         when(catalogEntitiesService.getCatalogEntity(idEncode(target.getUrl())))
                 .thenReturn(Optional.of(catalogEntityWithItemUrl(bitbucketItemUrl("MYPROJECT", "other-repo"))));
 
-        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug"))).isEmpty();
+        assertThat(catalogItemBySlugService.findByCatalogItemSlug(CatalogItemSlug.parse("myproject_repo-slug")))
+                .isEmpty();
         verify(catalogEntitiesService, never()).getCatalogItemEntity(any());
     }
 

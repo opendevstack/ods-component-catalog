@@ -26,7 +26,6 @@ import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.a
 import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.overrideNullFields;
 import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isAbsent;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNull;
 
 class EntitiesMapperTest {
@@ -40,13 +39,17 @@ class EntitiesMapperTest {
 
         RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
 
-        var groupsRestrictionProps = ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
+        var groupsRestrictionProps =
+                ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
                 .prefix(List.of("prefix1", "prefix2", "prefix3"))
                 .suffix(List.of("suffix1", "suffix2", "suffix3"))
                 .build();
 
-        CatalogItemUserActionMapper catalogItemUserActionMapper = new CatalogItemUserActionMapper(catalogItemUserActionParameterMapper,
-                List.of(dummyEvaluator), groupsRestrictionProps);
+        CatalogItemUserActionMapper catalogItemUserActionMapper = new CatalogItemUserActionMapper(
+                catalogItemUserActionParameterMapper,
+                List.of(dummyEvaluator),
+                groupsRestrictionProps
+        );
 
         this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
     }
@@ -57,12 +60,16 @@ class EntitiesMapperTest {
 
         var catalog = entitiesMapper.asCatalog(catalogEntityCtx);
 
-        assertEquals("Catalog Name", catalog.getName());
-        assertEquals("Catalog Description", catalog.getDescription());
-        assertEquals("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1NvbWVGaWxlT3JEaXI_YXQ9cmVmcy9oZWFkcy9tYXN0ZXI=", catalog.getCommunityPageId());
-        assertEquals(3, catalog.getLinks().size());
-        assertEquals(2, catalog.getTags().size());
-        assertEquals(2, catalog.getOwners().size());
+        assertThat(catalog.getName()).isEqualTo("Catalog Name");
+        assertThat(catalog.getDescription()).isEqualTo("Catalog Description");
+        assertThat(catalog.getCommunityPageId())
+                .isEqualTo(
+                        "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1NvbWVGaWxl"
+                                + "T3JEaXI_YXQ9cmVmcy9oZWFkcy9tYXN0ZXI="
+                );
+        assertThat(catalog.getLinks()).hasSize(3);
+        assertThat(catalog.getTags()).hasSize(2);
+        assertThat(catalog.getOwners()).hasSize(2);
     }
 
     @Test
@@ -71,8 +78,8 @@ class EntitiesMapperTest {
 
         var descriptor = entitiesMapper.asCatalogDescriptor(collectionsTarget);
 
-        assertEquals("L3BhdGgvdG8vc2ltcGxlLXNsdWc=", descriptor.getId());
-        assertEquals("simple-slug", descriptor.getSlug());
+        assertThat(descriptor.getId()).isEqualTo("L3BhdGgvdG8vc2ltcGxlLXNsdWc=");
+        assertThat(descriptor.getSlug()).isEqualTo("simple-slug");
     }
 
     @Test
@@ -82,10 +89,16 @@ class EntitiesMapperTest {
         var userGroups = Collections.<String>emptyList();
         var componentCount = 5; // Example component count for testing
 
-        var catalogItem = entitiesMapper.asCatalogItem(catalogItemEntityCtx, clusters, userGroups, Strings.EMPTY, componentCount);
+        var catalogItem = entitiesMapper.asCatalogItem(
+                catalogItemEntityCtx,
+                clusters,
+                userGroups,
+                Strings.EMPTY,
+                componentCount
+        );
 
-        assertEquals("Appshell in Angular", catalogItem.getTitle());
-        assertEquals(2, catalogItem.getUserActions().size());
+        assertThat(catalogItem.getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(catalogItem.getUserActions()).hasSize(2);
     }
 
     @Test
@@ -94,8 +107,8 @@ class EntitiesMapperTest {
         var customCatalogItemUserAction = asCatalogItemUserAction(baseUserActionEntity);
 
         // Non-nullable fields
-        assertEquals(baseUserActionEntity.getId(), customCatalogItemUserAction.getId());
-        assertEquals(baseUserActionEntity.getDisplayName(), customCatalogItemUserAction.getDisplayName());
+        assertThat(customCatalogItemUserAction.getId()).isEqualTo(baseUserActionEntity.getId());
+        assertThat(customCatalogItemUserAction.getDisplayName()).isEqualTo(baseUserActionEntity.getDisplayName());
 
         // Nullable fields
         assertToJsonNullable(baseUserActionEntity.getTriggerMessage(), customCatalogItemUserAction.getTriggerMessage());
@@ -105,8 +118,8 @@ class EntitiesMapperTest {
         var entityParams = baseUserActionEntity.getParameters();
         var itemParams = customCatalogItemUserAction.getParameters();
 
-        assertFalse(itemParams.isEmpty());
-        assertEquals(entityParams.length, itemParams.size());
+        assertThat(itemParams).isNotEmpty();
+        assertThat(itemParams).hasSize(entityParams.length);
 
         for (var i = 0; i < entityParams.length; i++) {
             var entityParam = entityParams[i];
@@ -118,24 +131,26 @@ class EntitiesMapperTest {
     @Test
     void asCatalogItemUserActionParameter_mapsUserActionEntityParameterToCatalogItemUserActionParameter() {
         var userActionEntityParameter = UserActionEntityParameterMother.of();
-        var itemUserActionParameter = catalogItemUserActionParameterMapper.asCatalogItemUserActionParameter(userActionEntityParameter);
+        var itemUserActionParameter =
+                catalogItemUserActionParameterMapper.asCatalogItemUserActionParameter(userActionEntityParameter);
 
         assertCatalogItemUserActionParameterMapping(userActionEntityParameter, itemUserActionParameter);
     }
 
     @Test
-    void asCatalogItemUserActionParameter_whenNullFieldOnUserActionEntityParameter_thenJsonNullableUndefinedFieldOnItemUserActionParameter() {
+    void asCatalogItemUserActionParameter_whenNullFieldOnEntityParameter_thenJsonNullableFieldIsUndefined() {
         var userActionEntityParameter = UserActionEntityParameterMother.of();
         // Set some fields to null to test the mapping of undefined fields
         userActionEntityParameter.setDefaultValue(null);
         userActionEntityParameter.setPlaceholder(null);
         userActionEntityParameter.setHint(null);
 
-        var itemUserActionParameter = catalogItemUserActionParameterMapper.asCatalogItemUserActionParameter(userActionEntityParameter);
+        var itemUserActionParameter =
+                catalogItemUserActionParameterMapper.asCatalogItemUserActionParameter(userActionEntityParameter);
 
-        assertEquals(JsonNullable.undefined(), itemUserActionParameter.getDefaultValue());
-        assertEquals(JsonNullable.undefined(), itemUserActionParameter.getPlaceholder());
-        assertEquals(JsonNullable.undefined(), itemUserActionParameter.getHint());
+        assertThat(itemUserActionParameter.getDefaultValue()).isEqualTo(JsonNullable.undefined());
+        assertThat(itemUserActionParameter.getPlaceholder()).isEqualTo(JsonNullable.undefined());
+        assertThat(itemUserActionParameter.getHint()).isEqualTo(JsonNullable.undefined());
     }
 
     @Test
@@ -171,24 +186,24 @@ class EntitiesMapperTest {
 
         var result = EntitiesMapper.overrideNullFields(src, dest);
 
-        assertEquals("dest-name", result.getName());
-        assertEquals("dest-type", result.getType());
-        assertEquals(false, result.getRequired());
+        assertThat(result.getName()).isEqualTo("dest-name");
+        assertThat(result.getType()).isEqualTo("dest-type");
+        assertThat(result.getRequired()).isFalse();
 
-        assertFalse(isAbsent(result.getDefaultValue()));
-        assertEquals("dest-default", result.getDefaultValue().get());
+        assertThat(isAbsent(result.getDefaultValue())).isFalse();
+        assertThat(result.getDefaultValue().get()).isEqualTo("dest-default");
 
-        assertEquals("src-label", result.getLabel());
+        assertThat(result.getLabel()).isEqualTo("src-label");
 
-        assertFalse(isAbsent(result.getPlaceholder()));
-        assertEquals("dest-placeholder", result.getPlaceholder().get());
+        assertThat(isAbsent(result.getPlaceholder())).isFalse();
+        assertThat(result.getPlaceholder().get()).isEqualTo("dest-placeholder");
 
-        assertFalse(isAbsent(result.getHint()));
-        assertEquals("src-hint", result.getHint().get());
+        assertThat(isAbsent(result.getHint())).isFalse();
+        assertThat(result.getHint().get()).isEqualTo("src-hint");
 
-        assertFalse(isAbsent(result.getSendOnDeletion()));
+        assertThat(isAbsent(result.getSendOnDeletion())).isFalse();
 
-        assertTrue(result.getVisible());
+        assertThat(result.getVisible()).isTrue();
     }
 
     @Test
@@ -237,7 +252,7 @@ class EntitiesMapperTest {
     }
 
     @Test
-    void asCatalogItemUserActionMessageDefinition_mapUserActionEntityMessageTitleAndUserActionEntityMessageDefinition() {
+    void asCatalogItemUserActionMessageDefinition_mapsTitleAndMessageDefinition() {
         // given
         var userActionEntityMessageTitle = UserActionEntityMessageTitleMother.of();
         var userActionEntityMessageDefinition = UserActionEntityMessageDefinitionMother.of();
@@ -249,9 +264,12 @@ class EntitiesMapperTest {
         // then
         assertThat(catalogItemUserActionMessageDefinition).isNotNull();
         assertThat(catalogItemUserActionMessageDefinition.getId()).isEqualTo("Message Definition ID");
-        assertThat(catalogItemUserActionMessageDefinition.getType()).isEqualTo(CatalogItemUserActionMessageType.SUCCESS);
-        assertThat(catalogItemUserActionMessageDefinition.getTitle()).isEqualTo("User Action Entity Message Title for success");
-        assertThat(catalogItemUserActionMessageDefinition.getMessage()).isEqualTo("Simple message for testing purposes for Message Definition ID with type success");
+        assertThat(catalogItemUserActionMessageDefinition.getType())
+                .isEqualTo(CatalogItemUserActionMessageType.SUCCESS);
+        assertThat(catalogItemUserActionMessageDefinition.getTitle())
+                .isEqualTo("User Action Entity Message Title for success");
+        assertThat(catalogItemUserActionMessageDefinition.getMessage())
+                .isEqualTo("Simple message for testing purposes for Message Definition ID with type success");
         assertThat(catalogItemUserActionMessageDefinition.getCreatesIncident()).isTrue();
     }
 
@@ -261,14 +279,17 @@ class EntitiesMapperTest {
         var userActionMessageDefinition = UserActionEntityMessageDefinitionMother.of();
 
         // when
-        var catalogItemUserActionMessageDefinition = entitiesMapper.asCatalogItemUserActionMessageDefinition(userActionMessageDefinition);
+        var catalogItemUserActionMessageDefinition =
+                entitiesMapper.asCatalogItemUserActionMessageDefinition(userActionMessageDefinition);
 
         // then
         assertThat(catalogItemUserActionMessageDefinition).isNotNull();
         assertThat(catalogItemUserActionMessageDefinition.getId()).isEqualTo("Message Definition ID");
-        assertThat(catalogItemUserActionMessageDefinition.getType()).isEqualTo(CatalogItemUserActionMessageType.SUCCESS);
+        assertThat(catalogItemUserActionMessageDefinition.getType())
+                .isEqualTo(CatalogItemUserActionMessageType.SUCCESS);
         assertThat(catalogItemUserActionMessageDefinition.getTitle()).isNull();
-        assertThat(catalogItemUserActionMessageDefinition.getMessage()).isEqualTo("Simple message for testing purposes for Message Definition ID with type success");
+        assertThat(catalogItemUserActionMessageDefinition.getMessage())
+                .isEqualTo("Simple message for testing purposes for Message Definition ID with type success");
     }
 
     @Test
@@ -277,7 +298,8 @@ class EntitiesMapperTest {
         var userActionEntityMessageType = UserActionEntityMessageTypeMother.of();
 
         // when
-        var catalogItemUserActionMessageType = entitiesMapper.asCatalogItemUserActionMessageType(userActionEntityMessageType);
+        var catalogItemUserActionMessageType =
+                entitiesMapper.asCatalogItemUserActionMessageType(userActionEntityMessageType);
 
         // then
         assertThat(catalogItemUserActionMessageType).isEqualTo(CatalogItemUserActionMessageType.SUCCESS);
@@ -314,11 +336,22 @@ class EntitiesMapperTest {
         var sourceCatalogItemUserActionParameterValidation = CatalogItemUserActionParameterValidationMother.of();
         var destCatalogItemUserActionParameterValidation = CatalogItemUserActionParameterValidationMother.of();
 
-        var sourceCatalogItemUserActionParameter = CatalogItemUserActionParameterMother.of("source parameter name", "parameter type", List.of(sourceCatalogItemUserActionParameterValidation));
-        var destCatalogItemUserActionParameter = CatalogItemUserActionParameterMother.of("dest parameter name", null, List.of(destCatalogItemUserActionParameterValidation));
+        var sourceCatalogItemUserActionParameter = CatalogItemUserActionParameterMother.of(
+                "source parameter name",
+                "parameter type",
+                List.of(sourceCatalogItemUserActionParameterValidation)
+        );
+        var destCatalogItemUserActionParameter = CatalogItemUserActionParameterMother.of(
+                "dest parameter name",
+                null,
+                List.of(destCatalogItemUserActionParameterValidation)
+        );
 
         // when
-        var result = EntitiesMapper.overrideNullFields(sourceCatalogItemUserActionParameter, destCatalogItemUserActionParameter);
+        var result = EntitiesMapper.overrideNullFields(
+                sourceCatalogItemUserActionParameter,
+                destCatalogItemUserActionParameter
+        );
 
         // then
         assertThat(result.getName()).isEqualTo(destCatalogItemUserActionParameter.getName());
@@ -327,17 +360,22 @@ class EntitiesMapperTest {
     }
 
     @Test
-    void givenACatalogItemEntityUserActionParameterValidation_whenAsUserActionEntityParameterValidation_thenReturnUserActionEntityParameterValidation() {
+    void givenCatalogItemUserActionParameterValidation_whenAsMapperValidation_thenReturnMappedValidation() {
         // given
         var catalogItemEntityUserActionParameterValidation = CatalogItemEntityUserActionParameterValidationMother.of();
 
         // when
-        var userActionEntityParameterValidation = catalogItemUserActionParameterMapper.asCatalogItemUserActionParameterValidation(catalogItemEntityUserActionParameterValidation);
+        var userActionEntityParameterValidation =
+                catalogItemUserActionParameterMapper.asCatalogItemUserActionParameterValidation(
+                        catalogItemEntityUserActionParameterValidation
+                );
 
         // then
         assertThat(userActionEntityParameterValidation).isNotNull();
-        assertThat(userActionEntityParameterValidation.getRegex()).isEqualTo(catalogItemEntityUserActionParameterValidation.getRegex());
-        assertThat(userActionEntityParameterValidation.getErrorMessage()).isEqualTo(catalogItemEntityUserActionParameterValidation.getErrorMessage());
+        assertThat(userActionEntityParameterValidation.getRegex())
+                .isEqualTo(catalogItemEntityUserActionParameterValidation.getRegex());
+        assertThat(userActionEntityParameterValidation.getErrorMessage())
+                .isEqualTo(catalogItemEntityUserActionParameterValidation.getErrorMessage());
     }
 
     @Test
@@ -351,9 +389,11 @@ class EntitiesMapperTest {
         // then
         assertThat(userActionEntityRestrictions).isNotNull()
                 .extracting(UserActionEntityRestrictions::isOneTimeOnly)
-        .isEqualTo(false);
-        assertThat(userActionEntityRestrictions.getProjects()).isEqualTo(new String[]{"ProjectA", "ProjectB"});
-        assertThat(userActionEntityRestrictions.getLocations()).isEqualTo(new String[]{"LocationA", "LocationB"});
+                .isEqualTo(false);
+        assertThat(userActionEntityRestrictions.getProjects())
+                .isEqualTo(new String[]{"ProjectA", "ProjectB"});
+        assertThat(userActionEntityRestrictions.getLocations())
+                .isEqualTo(new String[]{"LocationA", "LocationB"});
     }
 
     @Test
@@ -371,9 +411,9 @@ class EntitiesMapperTest {
         var result = EntitiesMapper.overrideNullFields(src, dest);
 
         // then
-        assertFalse(isAbsent(result.getDefaultValue()));
-        assertFalse(isNull(result.getDefaultValue()));
-        assertNotNull(result.getDefaultValue().get());
+        assertThat(isAbsent(result.getDefaultValue())).isFalse();
+        assertThat(isNull(result.getDefaultValue())).isFalse();
+        assertThat(result.getDefaultValue().get()).isNotNull();
     }
 
     @Test
@@ -391,9 +431,9 @@ class EntitiesMapperTest {
         var result = EntitiesMapper.overrideNullFields(src, dest);
 
         // then
-        assertFalse(isAbsent(result.getDefaultValue()));
-        assertFalse(isNull(result.getDefaultValue()));
-        assertEquals("dest-default", result.getDefaultValue().get());
+        assertThat(isAbsent(result.getDefaultValue())).isFalse();
+        assertThat(isNull(result.getDefaultValue())).isFalse();
+        assertThat(result.getDefaultValue().get()).isEqualTo("dest-default");
     }
 
     @Test
@@ -411,8 +451,8 @@ class EntitiesMapperTest {
         var result = EntitiesMapper.overrideNullFields(src, dest);
 
         // then
-        assertFalse(isAbsent(result.getOptions()));
-        assertNotNull(result.getOptions().get());
+        assertThat(isAbsent(result.getOptions())).isFalse();
+        assertThat(result.getOptions().get()).isNotNull();
     }
 
     @Test
@@ -430,16 +470,16 @@ class EntitiesMapperTest {
         var result = EntitiesMapper.overrideNullFields(src, dest);
 
         // then
-        assertEquals(List.of("opt1"), result.getOptions().get());
+        assertThat(result.getOptions().get()).isEqualTo(List.of("opt1"));
     }
 
     static void assertCatalogItemUserActionParameterMapping(UserActionEntityParameter from,
                                                             CatalogItemUserActionParameter to) {
         // Non-nullable fields
-        assertEquals(from.getName(), to.getName());
-        assertEquals(from.getType(), to.getType());
-        assertEquals(from.getLabel(), to.getLabel());
-        assertEquals(from.isVisible(), to.getVisible());
+        assertThat(to.getName()).isEqualTo(from.getName());
+        assertThat(to.getType()).isEqualTo(from.getType());
+        assertThat(to.getLabel()).isEqualTo(from.getLabel());
+        assertThat(to.getVisible()).isEqualTo(from.isVisible());
 
         // Nullable fields
         assertToJsonNullable(from.getDefaultValue(), to.getDefaultValue());
@@ -450,14 +490,17 @@ class EntitiesMapperTest {
         if (from.getValidations() != null && from.getValidations().length > 0) {
             assertThat(from.getValidations()).hasSize(1);
             assertThat(from.getValidations()).hasSize(1);
-            assertThat(from.getValidations()[0].getRegex()).isEqualTo(to.getValidations().get().getFirst().getRegex());
-            assertThat(from.getValidations()[0].getErrorMessage()).isEqualTo(to.getValidations().get().getFirst().getErrorMessage());
+            assertThat(from.getValidations()[0].getRegex())
+                    .isEqualTo(to.getValidations().get().getFirst().getRegex());
+            assertThat(from.getValidations()[0].getErrorMessage())
+                    .isEqualTo(to.getValidations().get().getFirst().getErrorMessage());
         }
 
         if (from.getLocations() != null && from.getLocations().length > 0) {
             assertThat(from.getLocations()).hasSize(to.getLocations().get().size());
             for(var i=0; i<from.getLocations().length; i++) {
-                assertThat(from.getLocations()[i].getLocation()).isEqualTo(to.getLocations().get().get(i).getLocation());
+                assertThat(from.getLocations()[i].getLocation())
+                        .isEqualTo(to.getLocations().get().get(i).getLocation());
                 assertThat(from.getLocations()[i].getValue()).isEqualTo(to.getLocations().get().get(i).getValue());
             }
         }
@@ -474,12 +517,12 @@ class EntitiesMapperTest {
 
     static <T> void assertToJsonNullable(T from, JsonNullable<T> to) {
         if (from == null) {
-            assertEquals(JsonNullable.undefined(), to);
+            assertThat(to).isEqualTo(JsonNullable.undefined());
         } else {
             if (from.getClass().isInstance(JsonNullable.class)) {
-                assertEquals(from, to.get());
+                assertThat(to.get()).isEqualTo(from);
             } else {
-                assertEquals(JsonNullable.of(from), to);
+                assertThat(to).isEqualTo(JsonNullable.of(from));
             }
         }
     }

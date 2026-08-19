@@ -36,7 +36,9 @@ public class UserActionEntityMessageDefinitionMother {
         };
     }
 
-    public static UserActionEntityMessageDefinition[] ofArray(UserActionEntityMessageDefinition userActionEntityMessageDefinition) {
+    public static UserActionEntityMessageDefinition[] ofArray(
+            UserActionEntityMessageDefinition userActionEntityMessageDefinition
+    ) {
         List<UserActionEntityMessageDefinition> list = new ArrayList<>(Arrays.asList(ofArray()));
 
         list.add(userActionEntityMessageDefinition);

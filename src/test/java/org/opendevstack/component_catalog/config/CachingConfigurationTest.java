@@ -34,6 +34,7 @@ class CachingConfigurationTest {
 
     @Test
     void givenCacheDisabled_whenCacheManager_thenReturnsNoOpCacheManager() {
+        // given
         var catalogsCollectionCacheProps = BitbucketServiceCacheProps.builder()
                 .enabled(false)
                 .build();
@@ -44,8 +45,14 @@ class CachingConfigurationTest {
                 .enabled(false)
                 .build();
 
-        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectsInfoServiceCacheProps, projectComponentsCacheProps);
+        // when
+        var cacheManager = config.cacheManager(
+                catalogsCollectionCacheProps,
+                projectsInfoServiceCacheProps,
+                projectComponentsCacheProps
+        );
 
+        // then
         assertThat(cacheManager).isInstanceOf(NoOpCacheManager.class);
     }
 
@@ -55,6 +62,7 @@ class CachingConfigurationTest {
 
     @Test
     void givenCachesEnabledWithLargeSize_whenCacheManager_thenReturnsJCacheCacheManagerExists() {
+        // given
         // cacheSize = 100 MB  →  maxEntries = 100 * 1024 * 1024 / 10_000 = 10485  (> 100, uses computed value)
         var catalogsCollectionCacheProps = BitbucketServiceCacheProps.builder()
                 .enabled(true)
@@ -72,8 +80,14 @@ class CachingConfigurationTest {
                 .evictionInterval(Duration.ofMinutes(120))
                 .build();
 
-        var cacheManager = config.cacheManager(catalogsCollectionCacheProps, projectsInfoServiceCacheProps, projectComponentsCacheProps);
+        // when
+        var cacheManager = config.cacheManager(
+                catalogsCollectionCacheProps,
+                projectsInfoServiceCacheProps,
+                projectComponentsCacheProps
+        );
 
+        // then
         assertThat(cacheManager).isInstanceOf(JCacheCacheManager.class);
 
         var nativeCacheManager = ((JCacheCacheManager) cacheManager).getCacheManager();
@@ -88,13 +102,17 @@ class CachingConfigurationTest {
     @ParameterizedTest
     @ValueSource(strings = {"EXPIRED", "REMOVED", "EVICTED"})
     void givenCacheEvent_whenOnEvent_thenNoException(String eventTypeName) {
+        // given
         CacheEvent<Object, Object> event = mock(CacheEvent.class);
         when(event.getType()).thenReturn(EventType.valueOf(eventTypeName));
         when(event.getKey()).thenReturn("some-key");
         when(event.getOldValue()).thenReturn("old-value");
         when(event.getNewValue()).thenReturn(null);
 
+        // when
         config.onEvent(event);
+
+        // then: no exception is thrown
     }
 }
 

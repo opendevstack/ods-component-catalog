@@ -43,7 +43,8 @@ public class CatalogsApiControllerTest {
         // Given
         var id = "catalogId";
         var communityPagePathAt = mock(BitbucketPathAt.class);
-        when(communityPagePathAt.getPathAt()).thenReturn("https://my-project/path_at"); // Required as Context initalizes based on pathAt
+        when(communityPagePathAt.getPathAt()).thenReturn("https://my-project/path_at");
+        // Required as Context initializes based on pathAt.
         var catalogEntityContext = CatalogEntityContextMother.of(communityPagePathAt);
 
         when(catalogEntitiesService.getCatalogEntityContext(id)).thenReturn(Optional.of(catalogEntityContext));
@@ -91,7 +92,8 @@ public class CatalogsApiControllerTest {
     }
 
     @Test
-    public void givenCatalogWithoutContributingFile_WhenGetSingleCatalog_ThenThrowBadConfiguration() throws InvalidIdException {
+    public void givenCatalogWithoutContributingFile_WhenGetSingleCatalog_ThenThrowBadConfiguration()
+            throws InvalidIdException {
         // Given
         var id = "catalogId";
         var communityPagePathAt = mock(BitbucketPathAt.class);

@@ -36,7 +36,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -105,7 +104,15 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        );
 
         // then
         assertThat(result).hasSize(1);
@@ -126,12 +133,18 @@ class CatalogActivityFacadeTest {
         when(projectsInfoService.getProjectGroups("token")).thenReturn(List.of("OTHER-GROUP"));
 
         // when
-        var exception = assertThrows(ForbiddenException.class, () ->
-                catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)
-        );
-
         // then
-        assertThat(exception.getMessage()).isEqualTo("User is not admin for catalog owner groups");
+        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        ))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User is not admin for catalog owner groups");
 
         verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
         verify(projectsInfoService, times(1)).getProjectGroups("token");
@@ -144,7 +157,15 @@ class CatalogActivityFacadeTest {
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate))
+        assertThatThrownBy(() -> catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        ))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("Catalog entity not found");
 
@@ -238,7 +259,15 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(failedActivity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, ProvisioningStatus.CREATED, startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                ProvisioningStatus.CREATED,
+                startDate,
+                endDate
+        );
 
         // then
         assertThat(result).hasSize(1);
@@ -278,7 +307,8 @@ class CatalogActivityFacadeTest {
         CatalogItem catalogItem1 = CatalogItemMother.of(encodedId1);
         CatalogItem catalogItem2 = CatalogItemMother.of(encodedId2);
         CatalogItem catalogItem3 = CatalogItemMother.of(encodedId3);
-        when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(catalogItem1, catalogItem2, catalogItem3));
+        when(catalogItemsApiFacade.fetchCatalogItems(any()))
+                .thenReturn(List.of(catalogItem1, catalogItem2, catalogItem3));
 
         CatalogActivity beforeRangeActivity = CatalogActivity.builder()
                 .componentId("C1")
@@ -303,16 +333,27 @@ class CatalogActivityFacadeTest {
                 .build();
 
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc1))).thenReturn(beforeRangeActivity);
-        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(startBoundaryActivity);
+        when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2)))
+                .thenReturn(startBoundaryActivity);
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc3))).thenReturn(endBoundaryActivity);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, null, 100L, 150L);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                null,
+                100L,
+                150L
+        );
 
         // then
         assertThat(result).hasSize(2);
         assertThat(result).extracting(CatalogActivity::getComponentId).containsExactly("C2", "C3");
-        assertThat(result).extracting(CatalogActivity::getCreatedAt).containsExactly(new BigDecimal("100"), new BigDecimal("150"));
+        assertThat(result)
+                .extracting(CatalogActivity::getCreatedAt)
+                .containsExactly(new BigDecimal("100"), new BigDecimal("150"));
 
         verify(catalogEntitiesService, times(1)).getCatalogEntity(catalogId);
         verify(projectsInfoService, times(1)).getProjectGroups("token");
@@ -407,7 +448,12 @@ class CatalogActivityFacadeTest {
          var baseUrl = "https://component-catalog.myserver.com";
 
          // when
-         PaginatedCatalogActivities result = catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl);
+         PaginatedCatalogActivities result = catalogActivityFacade.paginateCatalogActivities(
+                 activities,
+                 page,
+                 size,
+                 baseUrl
+         );
 
          // then
          assertThat(result).isNotNull();
@@ -418,7 +464,8 @@ class CatalogActivityFacadeTest {
      }
 
     @Test
-    void givenDateRangeWithNullCreatedAt_whenGetCatalogActivities_thenFilterOutActivitiesWithNullCreatedAt() throws Exception {
+    void givenDateRangeWithNullCreatedAt_whenGetCatalogActivities_thenFilterNullCreatedAt()
+            throws Exception {
         // given
         CatalogEntity entity = CatalogEntityMother.of();
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(entity));
@@ -462,7 +509,15 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc2))).thenReturn(activityWithDate);
 
         // when
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, null, 100L, 150L);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                null,
+                100L,
+                150L
+        );
 
         // then
         assertThat(result).hasSize(1);
@@ -510,7 +565,15 @@ class CatalogActivityFacadeTest {
         when(catalogActivityMapper.asCatalogActivity(eq("PROJ"), anyString(), eq(pc))).thenReturn(activity);
 
         // when - fetching catalog activities (which internally calls getCatalogItemIds that removes ref)
-        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate);
+        List<CatalogActivity> result = catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        );
 
         // then - verify that the component was correctly matched despite ref being removed
         assertThat(result).hasSize(1);

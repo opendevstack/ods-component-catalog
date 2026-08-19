@@ -4,7 +4,7 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RequestableProjectsRestrictionsEvaluatorTest {
 
@@ -31,8 +31,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -50,8 +50,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -68,8 +68,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(false, result.getLeft());
-        assertEquals(INVITATION_MSG, result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
     }
 
     @Test
@@ -86,8 +86,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(false, result.getLeft());
-        assertEquals(INVITATION_MSG, result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
     }
 
     @Test
@@ -104,8 +104,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -122,7 +122,7 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(false, result.getLeft());
-        assertEquals(INVITATION_MSG, result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
     }
 }

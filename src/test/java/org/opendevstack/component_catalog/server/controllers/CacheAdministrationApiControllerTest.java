@@ -9,8 +9,8 @@ import org.opendevstack.component_catalog.server.services.cache.CacheAdministrat
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
@@ -33,7 +33,7 @@ class CacheAdministrationApiControllerTest {
 
         // Then
         verify(cacheAdministrationService).refreshCache(cacheName);
-        assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
     }
 
     @Test
@@ -46,9 +46,8 @@ class CacheAdministrationApiControllerTest {
                 .refreshCache(cacheName);
 
         // Then
-        assertThrows(
-                RuntimeException.class,
-                () -> controller.refreshCache(cacheName)
-        );
+        assertThatThrownBy(() -> controller.refreshCache(cacheName))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("boom");
     }
 }

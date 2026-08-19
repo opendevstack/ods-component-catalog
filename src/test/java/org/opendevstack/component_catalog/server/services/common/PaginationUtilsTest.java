@@ -6,7 +6,7 @@ import org.opendevstack.component_catalog.server.model.Pagination;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PaginationUtilsTest {
 
@@ -160,7 +160,9 @@ class PaginationUtilsTest {
         String basePath = "https://component-catalog.myserver.com/project/paginations";
 
         // when
-        var exception = assertThrows(IllegalArgumentException.class, () -> PaginationUtils.buildPagination(page, size, elements, basePath));
+        var exception = assertThatThrownBy(() -> PaginationUtils.buildPagination(page, size, elements, basePath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .actual();
 
         // then
         assertThat(exception.getMessage()).isEqualTo("Page must be greater than or equal to 0");
@@ -177,7 +179,9 @@ class PaginationUtilsTest {
         String basePath = "https://component-catalog.myserver.com/project/paginations";
 
         // when
-        var exception = assertThrows(IllegalArgumentException.class, () -> PaginationUtils.buildPagination(page, size, elements, basePath));
+        var exception = assertThatThrownBy(() -> PaginationUtils.buildPagination(page, size, elements, basePath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .actual();
 
         // then
         assertThat(exception.getMessage()).isEqualTo("Size must be greater than 0");

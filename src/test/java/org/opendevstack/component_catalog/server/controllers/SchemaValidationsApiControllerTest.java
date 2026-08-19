@@ -4,7 +4,6 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.BadReque
 import org.opendevstack.component_catalog.server.mappers.EntitiesMapper;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import com.networknt.schema.ValidationMessage;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,7 +28,8 @@ class SchemaValidationsApiControllerTest {
     @Test
     void givenAValidYamlFile_whenValidateCatalogSchema_thenReturnsValidResponse() throws IOException {
         // given
-        SchemaValidationsApiController controller = new MockSchemaValidationsApiController(Collections.emptyList(), entitiesMapper);
+        SchemaValidationsApiController controller =
+                new MockSchemaValidationsApiController(Collections.emptyList(), entitiesMapper);
         String className = UserActionsEntity.class.getName();
         String fileContent = "anyContent: here"; // This should be a valid YAML content for the class
         MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -54,7 +55,8 @@ class SchemaValidationsApiControllerTest {
                 new ValidationMessage.Builder().message("Another error").build()
         );
 
-        SchemaValidationsApiController controller = new MockSchemaValidationsApiController(validationMessages, entitiesMapper);
+        SchemaValidationsApiController controller =
+                new MockSchemaValidationsApiController(validationMessages, entitiesMapper);
         String className = UserActionsEntity.class.getName();
         String fileContent = "anyContent: here"; // This should be a valid YAML content for the class
         MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -75,7 +77,8 @@ class SchemaValidationsApiControllerTest {
     @Test
     void givenAnInvalidClassName_whenValidateCatalogSchema_thenErrorResponse() throws IOException {
         // given
-        SchemaValidationsApiController controller = new MockSchemaValidationsApiController(Collections.emptyList(), entitiesMapper);
+        SchemaValidationsApiController controller =
+                new MockSchemaValidationsApiController(Collections.emptyList(), entitiesMapper);
         String className = "com.invalid.AnyClass"; // This class does not exist
         String fileContent = "anyContent: here"; // This should be a valid YAML content for the class
         MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -84,10 +87,10 @@ class SchemaValidationsApiControllerTest {
 
 
         // when
-        BadRequestException badRequestException = Assertions.assertThrows(BadRequestException.class, () -> controller.validateCatalogSchema(className, file));
-
         // then
-        assertThat(badRequestException.getMessage()).isEqualTo("Invalid class name: " + className);
+        assertThatThrownBy(() -> controller.validateCatalogSchema(className, file))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Invalid class name: " + className);
     }
 
     // This could be simplified if we use mocking frameworks like Mockito,
@@ -95,7 +98,10 @@ class SchemaValidationsApiControllerTest {
     private static class MockSchemaValidationsApiController extends SchemaValidationsApiController {
         private final List<ValidationMessage> expectedValidationMessages;
 
-        MockSchemaValidationsApiController(List<ValidationMessage> expectedValidationMessages, EntitiesMapper entitiesMapper) {
+        MockSchemaValidationsApiController(
+                List<ValidationMessage> expectedValidationMessages,
+                EntitiesMapper entitiesMapper
+        ) {
             super(entitiesMapper);
             this.expectedValidationMessages = expectedValidationMessages;
 

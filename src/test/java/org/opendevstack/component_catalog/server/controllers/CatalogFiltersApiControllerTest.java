@@ -72,7 +72,8 @@ class CatalogFiltersApiControllerTest {
         when(authInfo.getCurrentPrincipalName()).thenReturn(currentPrincipalName);
 
         when(catalogEntitiesService.getCatalogEntity(catalogId)).thenReturn(Optional.of(catalogEntity));
-        when(catalogEntitiesService.catalogPrincipalPermissions(catalogId, currentPrincipalName)).thenReturn(principalPermissions);
+        when(catalogEntitiesService.catalogPrincipalPermissions(catalogId, currentPrincipalName))
+                .thenReturn(principalPermissions);
         when(catalogEntitiesService.getCatalogItemsEntities(catalogId)).thenReturn(catalogItemsEntities);
         when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(userActionsEntity);
         when(catalogItemsApiFacade.catalogItemFiltersFrom(catalogRequestParams)).thenReturn(catalogItemFilters);

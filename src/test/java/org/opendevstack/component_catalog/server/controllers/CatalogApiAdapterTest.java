@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogApiAdapterTest {
 
@@ -49,16 +48,25 @@ class CatalogApiAdapterTest {
 
         RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
 
-        var groupsRestrictionProps = ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
+        var groupsRestrictionProps =
+                ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
                 .prefix(List.of("prefix1", "prefix2", "prefix3"))
                 .suffix(List.of("suffix1", "suffix2", "suffix3"))
                 .build();
 
         var catalogItemUserActionParameterMapper = new CatalogItemUserActionParameterMapper();
-        var catalogItemUserActionMapper = new CatalogItemUserActionMapper(catalogItemUserActionParameterMapper, List.of(dummyEvaluator), groupsRestrictionProps);
+        var catalogItemUserActionMapper = new CatalogItemUserActionMapper(
+                catalogItemUserActionParameterMapper,
+                List.of(dummyEvaluator),
+                groupsRestrictionProps
+        );
         var entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
 
-        catalogApiAdapter = new CatalogApiAdapter(entitiesMapper, catalogItemUserActionParameterMapper, catalogItemUserActionMapper);
+        catalogApiAdapter = new CatalogApiAdapter(
+                entitiesMapper,
+                catalogItemUserActionParameterMapper,
+                catalogItemUserActionMapper
+        );
     }
 
     @Test
@@ -81,7 +89,9 @@ class CatalogApiAdapterTest {
 
         UserActionEntity extraUserAction = UserActionEntityMother.of();
 
-        UserActionsEntity repoUserActions = UserActionsEntityMother.of(List.of(codeUserAction, provisionUserAction, extraUserAction));
+        UserActionsEntity repoUserActions = UserActionsEntityMother.of(
+                List.of(codeUserAction, provisionUserAction, extraUserAction)
+        );
 
         var projectKey = Strings.EMPTY;
         var clusters = Collections.<String>emptyList();
@@ -95,11 +105,19 @@ class CatalogApiAdapterTest {
                 .build();
 
         var componentCount = 5; // Example component count for testing
+        var expectedUpdatedAt =
+                catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli();
+        var expectedDescriptionFileId =
+                "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2Rlc2NyaXB0aW9uUGF0aD9h"
+                        + "dD1yZWZzL2hlYWRzL21hc3Rlcg==";
+        var expectedImageFileId =
+                "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hl"
+                        + "YWRzL21hc3Rlcg==";
 
         CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set from CatalogItemEntityContext.lastCommitDateUTC (milliseconds since epoch)
-        assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
+        assertThat(item.getUpdatedAt()).isEqualTo(expectedUpdatedAt);
 
         // Mandatory fields
         Optional<CatalogItemUserAction> codeActionOnItem = item.getUserActions().stream()
@@ -108,7 +126,8 @@ class CatalogApiAdapterTest {
 
         assertThat(item.getId()).isEqualTo("id");
         assertThat(item.getTitle()).isEqualTo("Appshell in Angular");
-        assertThat(item.getShortDescription()).isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
+        assertThat(item.getShortDescription())
+                .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
 
         assertThat(codeActionOnItem).isPresent();
 
@@ -122,9 +141,9 @@ class CatalogApiAdapterTest {
 
         // Assert ids encoding
         // Source of the token: id(repoItemCtx.descriptionPath)
-        assertThat(item.getDescriptionFileId()).isEqualTo("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2Rlc2NyaXB0aW9uUGF0aD9hdD1yZWZzL2hlYWRzL21hc3Rlcg==");
+        assertThat(item.getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
         // Source of the token:  id(repoItemCtx.imagePath)
-        assertThat(item.getImageFileId()).isEqualTo("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hlYWRzL21hc3Rlcg==");
+        assertThat(item.getImageFileId()).isEqualTo(expectedImageFileId);
 
         assertThat(item.getUserActions()).hasSize(3);
         assertThat(item.getUserActions().get(0).getId()).isEqualTo("CODE");
@@ -153,7 +172,9 @@ class CatalogApiAdapterTest {
 
         UserActionEntity extraUserAction = UserActionEntityMother.of();
 
-        UserActionsEntity repoUserActions = UserActionsEntityMother.of(List.of(codeUserAction, provisionUserAction, extraUserAction));
+        UserActionsEntity repoUserActions = UserActionsEntityMother.of(
+                List.of(codeUserAction, provisionUserAction, extraUserAction)
+        );
 
         var projectKey = Strings.EMPTY;
         var clusters = Collections.<String>emptyList();
@@ -167,38 +188,47 @@ class CatalogApiAdapterTest {
                 .build();
 
         var componentCount = 5; // Example component count for testing
+        var expectedUpdatedAt =
+                catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli();
+        var expectedDescriptionFileId =
+                "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2Rlc2NyaXB0aW9uUGF0aD9h"
+                        + "dD1yZWZzL2hlYWRzL21hc3Rlcg==";
+        var expectedImageFileId =
+                "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hl"
+                        + "YWRzL21hc3Rlcg==";
 
         CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set even when the principal has no repo permissions
-        assertThat(item.getUpdatedAt()).isEqualTo(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
+        assertThat(item.getUpdatedAt()).isEqualTo(expectedUpdatedAt);
 
         Optional<CatalogItemUserAction> codeAction = item.getUserActions().stream()
                 .filter(ua -> Objects.equals("CODE", ua.getId()))
                 .findFirst();
 
         // Removed fields due to lack of permissions
-        assertNull(item.getItemSrc());
-        assertNull(item.getPath());
+        assertThat(item.getItemSrc()).isNull();
+        assertThat(item.getPath()).isNull();
 
         // Mandatory fields
-        assertEquals("id", item.getId());
-        assertEquals("Appshell in Angular", item.getTitle());
-        assertEquals("Quickstart template to boost the development of web applications on the EDP.", item.getShortDescription());
+        assertThat(item.getId()).isEqualTo("id");
+        assertThat(item.getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(item.getShortDescription())
+                .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
         assertThat(codeAction).isPresent();
-        assertNull(codeAction.get().getUrl().get());
-        assertEquals(3, item.getTags().size());
-        assertEquals("2000-01-01T00:00Z", item.getDate().toString());
+        assertThat(codeAction.orElseThrow().getUrl().orElse(null)).isNull();
+        assertThat(item.getTags()).hasSize(3);
+        assertThat(item.getDate().toString()).isEqualTo("2000-01-01T00:00Z");
 
         // Optional fields
-        assertEquals(1, item.getAuthors().size());
-        assertEquals("author", item.getAuthors().getFirst());
+        assertThat(item.getAuthors()).hasSize(1);
+        assertThat(item.getAuthors().getFirst()).isEqualTo("author");
 
         // Assert ids encoding
         // id(repoItemCtx.descriptionPath)
-        assertEquals("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2Rlc2NyaXB0aW9uUGF0aD9hdD1yZWZzL2hlYWRzL21hc3Rlcg==", item.getDescriptionFileId());
+        assertThat(item.getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
         // id(repoItemCtx.imagePath)
-        assertEquals("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hlYWRzL21hc3Rlcg==", item.getImageFileId());
+        assertThat(item.getImageFileId()).isEqualTo(expectedImageFileId);
     }
 
     @Test
@@ -260,39 +290,41 @@ class CatalogApiAdapterTest {
 
         var componentCount = 5; // Example component count for testing
 
-        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
+        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(
+                catalogItemRequestParams,
+                clusters,
+                userGroups,
+                componentCount
+        );
 
-        assertEquals(3, filters.size());
+        assertThat(filters).hasSize(3);
 
         // Filters should match the order defined in catalog labels
         var labels = filters.stream()
                 .map(CatalogItemFilter::getLabel)
-                .toArray();
+                .toList();
 
-        assertArrayEquals(
-                new String[]{"catalogLabel1", "catalogLabel2", "catalogLabel3"},
-                labels);
+        assertThat(labels).containsExactly("catalogLabel1", "catalogLabel2", "catalogLabel3");
 
         var filter1 = filters.get(0);
         var filter2 = filters.get(1);
         var filter3 = filters.get(2);
 
-        assertEquals("catalogLabel1", filter1.getLabel());
-        assertEquals(1, filter1.getOptions().size());
-        assertTrue(filter1.getOptions().contains("option1"));
+        assertThat(filter1.getLabel()).isEqualTo("catalogLabel1");
+        assertThat(filter1.getOptions()).hasSize(1).contains("option1");
 
-        assertEquals("catalogLabel2", filter2.getLabel());
-        assertEquals(1, filter2.getOptions().size());
-        assertTrue(filter2.getOptions().contains("option2"));
+        assertThat(filter2.getLabel()).isEqualTo("catalogLabel2");
+        assertThat(filter2.getOptions()).hasSize(1).contains("option2");
 
-        assertEquals("catalogLabel3", filter3.getLabel());
-        assertEquals(2, filter3.getOptions().size());
-        assertTrue(filter3.getOptions().containsAll(Set.of("option3", "option4")));
+        assertThat(filter3.getLabel()).isEqualTo("catalogLabel3");
+        assertThat(filter3.getOptions()).hasSize(2).containsAll(Set.of("option3", "option4"));
     }
 
     @Test
     void catalogItemFiltersFrom_withoutMatchingLabels() {
-        CatalogItemEntity catalogItemEntity1 = catalogItemEntityFixture(Map.of("nonCatalogLabel", Set.of("missingOption")));
+        CatalogItemEntity catalogItemEntity1 = catalogItemEntityFixture(
+                Map.of("nonCatalogLabel", Set.of("missingOption"))
+        );
 
         CatalogItemEntity catalogItemEntity2 = catalogItemEntityFixture(Map.of("catalogLabel1", Set.of("option1")));
 
@@ -319,14 +351,18 @@ class CatalogApiAdapterTest {
 
         var componentCount = 5; // Example component count for testing
 
-        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(catalogItemRequestParams, clusters, userGroups, componentCount);
+        List<CatalogItemFilter> filters = catalogApiAdapter.catalogItemFiltersFrom(
+                catalogItemRequestParams,
+                clusters,
+                userGroups,
+                componentCount
+        );
 
-        assertEquals(1, filters.size());
+        assertThat(filters).hasSize(1);
 
         Set<String> actual = filters.getFirst().getOptions();
 
-        assertEquals(1, actual.size());
-        assertTrue(actual.contains("option1"));
+        assertThat(actual).hasSize(1).contains("option1");
     }
 
     @Test
@@ -357,13 +393,19 @@ class CatalogApiAdapterTest {
         assertThat(catalog).isNotNull();
         assertThat(catalog.getName()).isEqualTo("Catalog Name");
         assertThat(catalog.getDescription()).isEqualTo("Catalog Description");
-        assertThat(catalog.getCommunityPageId()).isEqualTo("cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1NvbWVGaWxlT3JEaXI_YXQ9cmVmcy9oZWFkcy9tYXN0ZXI=");
+        assertThat(catalog.getCommunityPageId())
+                .isEqualTo(
+                        "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL1Nv"
+                                + "bWVGaWxlT3JEaXI_YXQ9cmVm"
+                                + "cy9oZWFkcy9tYXN0ZXI="
+                );
         assertThat(catalog.getLinks()).hasSize(3);
         assertThat(catalog.getTags()).hasSize(2);
     }
 
     @Test
-    void givenTwoCustomUserActionEntities_andThreeDefaultUserActionEntities_andSomeActionsMerge_whenFinalizeUserActions_thenReturnFourUserActionEntities() {
+    void givenCustomAndDefaultUserActions_whenFinalizeUserActions_thenOnlyMandatoryActionsAreReturned(
+    ) {
         // given
         CatalogItemUserAction customUserActionProvision = CatalogItemUserActionMother.of()
                 .id("PROVISION")
@@ -404,21 +446,32 @@ class CatalogApiAdapterTest {
         var catalogItemId = Strings.EMPTY;
 
         List<CatalogItemUserAction> customUserActions = List.of(customUserActionProvision, customUserActionTest);
-        UserActionEntity[] defaultUserActions = {defaultUserActionCode, defaultUserActionProvision, defaultUserActionDummy};
+        UserActionEntity[] defaultUserActions = {
+                defaultUserActionCode,
+                defaultUserActionProvision,
+                defaultUserActionDummy
+        };
 
         // when
         var mergedUserActions = catalogApiAdapter.finalizeUserActions(
-                customUserActions, defaultUserActions, clusters, userGroups, projectKey, catalogItemId);
+                customUserActions,
+                defaultUserActions,
+                clusters,
+                userGroups,
+                projectKey,
+                catalogItemId
+        );
 
         // then
         assertThat(mergedUserActions).hasSize(2);
         assertThat(mergedUserActions).extracting("id").containsExactlyInAnyOrder("CODE", "PROVISION");
-        assertThat(mergedUserActions).extracting("id").doesNotContain("DUMMY"); // It is not appearing, even when on default actions, because mandatory = false
-        assertThat(mergedUserActions).extracting("id").doesNotContain("TEST"); // It is not appearing, because it is not defined in mandatory. We ignore custom actions that are not on default actions, so we can keep control.
+        assertThat(mergedUserActions).extracting("id").doesNotContain("DUMMY");
+        assertThat(mergedUserActions).extracting("id").doesNotContain("TEST");
     }
 
     @Test
-    void givenACatalogItem_AndItemContainsParameters_AndOneParameterSharesNameWithANonCustomizableParameter_whenFinalizeUserActions_nonCustomizableParameterIsFilteredOut() {
+    void givenCustomAndDefaultParameters_whenFinalizeUserActions_thenNonCustomizableParameterIsPreserved(
+    ) {
         // given
         var customUserActionProvision = generateCustomUserActions();
         var defaultUserActionProvision = generateDefaultUserActionEntity();
@@ -433,7 +486,13 @@ class CatalogApiAdapterTest {
 
         // when
         var mergedUserActions = catalogApiAdapter.finalizeUserActions(
-                customUserActions, defaultUserActions, clusters, userGroups, projectKey, catalogItemId);
+                customUserActions,
+                defaultUserActions,
+                clusters,
+                userGroups,
+                projectKey,
+                catalogItemId
+        );
 
         // then
         assertThat(mergedUserActions).hasSize(1);
@@ -441,20 +500,24 @@ class CatalogApiAdapterTest {
         var parameters =  mergedUserActions.getFirst().getParameters();
 
         assertThat(parameters).hasSize(3);
-        var parameterNonCustomizable = parameters.stream().filter(p -> p.getName().equals(PARAMETER_NON_CUSTOMIZABLE_NAME)).findFirst();
+        var parameterNonCustomizable = parameters.stream()
+                .filter(p -> p.getName().equals(PARAMETER_NON_CUSTOMIZABLE_NAME))
+                .findFirst();
         assertThat(parameterNonCustomizable).isPresent();
         assertThat(parameterNonCustomizable.get().getDefaultValue().get()).isEqualTo("123");
     }
 
     @Test
-    void givenACatalogItem_AndItemContainsParameters_AndOneParameterIsCustomizable_andCustomUserActionDoesNotDefineIt_whenFinalizeUserActions_thenCustomParameterAppears() {
+    void givenMissingCustomizableParameter_whenFinalizeUserActions_thenGeneratedParameterAppears(
+    ) {
         // given
         var customUserActionProvision = generateCustomUserActions();
         var defaultUserActionProvision = generateDefaultUserActionEntity();
         var parametersWithExtraOneList = new ArrayList<>(Arrays.asList(defaultUserActionProvision.getParameters()));
         var extraCustomizableParameterName = "extraCustomizableParameter";
         var extraCustomizableParameterValue = "123999";
-        var extraCustomizableParameter = UserActionEntityParameterMother.of(extraCustomizableParameterName,
+        var extraCustomizableParameter = UserActionEntityParameterMother.of(
+                extraCustomizableParameterName,
                 "string",
                 true,
                 extraCustomizableParameterValue,
@@ -482,7 +545,13 @@ class CatalogApiAdapterTest {
 
         // when
         var mergedUserActions = catalogApiAdapter.finalizeUserActions(
-                customUserActions, defaultUserActions, clusters, userGroups, projectKey, catalogItemId);
+                customUserActions,
+                defaultUserActions,
+                clusters,
+                userGroups,
+                projectKey,
+                catalogItemId
+        );
 
         // then
         assertThat(mergedUserActions).hasSize(1);
@@ -490,9 +559,12 @@ class CatalogApiAdapterTest {
         var parameters =  mergedUserActions.getFirst().getParameters();
 
         assertThat(parameters).hasSize(4);
-        var generatedExtraCustomizableParameter = parameters.stream().filter(p -> p.getName().equals(extraCustomizableParameterName)).findFirst();
+        var generatedExtraCustomizableParameter = parameters.stream()
+                .filter(p -> p.getName().equals(extraCustomizableParameterName))
+                .findFirst();
         assertThat(generatedExtraCustomizableParameter).isPresent();
-        assertThat(generatedExtraCustomizableParameter.get().getDefaultValue().get()).isEqualTo(extraCustomizableParameterValue);
+        assertThat(generatedExtraCustomizableParameter.get().getDefaultValue().get())
+                .isEqualTo(extraCustomizableParameterValue);
     }
 
     private UserActionEntity generateDefaultUserActionEntity() {
@@ -512,7 +584,8 @@ class CatalogApiAdapterTest {
     private CatalogItemUserAction generateCustomUserActions() {
         var customParameterToBeOverridden = CatalogItemUserActionParameterMother.of(PARAMETER_NON_CUSTOMIZABLE_NAME);
         var customParameter = CatalogItemUserActionParameterMother.of();
-        List<CatalogItemUserActionParameter> itemUserActionParameters = List.of(customParameter, customParameterToBeOverridden);
+        List<CatalogItemUserActionParameter> itemUserActionParameters =
+                List.of(customParameter, customParameterToBeOverridden);
 
         return CatalogItemUserActionMother.of(itemUserActionParameters)
                 .id("PROVISION")

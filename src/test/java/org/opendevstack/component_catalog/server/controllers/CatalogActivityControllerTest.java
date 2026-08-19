@@ -55,7 +55,11 @@ class CatalogActivityControllerTest {
     @Test
     void givenValidCatalogId_whenGetCatalogActivitiesById_ThenReturnActivitiesList() {
         // Given
-        var activity = CatalogActivity.builder().catalogItemSlug("project/repo").componentId("comp-1").projectKey("PK").build();
+        var activity = CatalogActivity.builder()
+                .catalogItemSlug("project/repo")
+                .componentId("comp-1")
+                .projectKey("PK")
+                .build();
         var baseUrl = "http://localhost/project/activities";
         var activities = List.of(activity);
         var pagination = Pagination.builder().build();
@@ -64,11 +68,30 @@ class CatalogActivityControllerTest {
                 .pagination(pagination)
                 .build();
 
-        when(catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)).thenReturn(activities);
-        when(catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl)).thenReturn(paginatedActivities);
+        when(catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        )).thenReturn(activities);
+        when(catalogActivityFacade.paginateCatalogActivities(activities, page, size, baseUrl))
+                .thenReturn(paginatedActivities);
 
         // When
-        var response = catalogActivityController.getCatalogActivitiesById(catalogId, sortParameter, sortOrder, project, status, startDate, endDate, page, size);
+        var response = catalogActivityController.getCatalogActivitiesById(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate,
+                page,
+                size
+        );
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -79,10 +102,28 @@ class CatalogActivityControllerTest {
     @Test
     void givenFacadeThrowsElementNotFound_whenGetCatalogActivitiesById_ThenPropagateException() {
         // Given
-        when(catalogActivityFacade.getCatalogActivities(catalogId, sortParameter, sortOrder, project, status, startDate, endDate)).thenThrow(new ElementNotFoundException("not found"));
+        when(catalogActivityFacade.getCatalogActivities(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate
+        )).thenThrow(new ElementNotFoundException("not found"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(catalogId, sortParameter, sortOrder, project, status, startDate, endDate, page, size))
+        assertThatThrownBy(() -> catalogActivityController.getCatalogActivitiesById(
+                catalogId,
+                sortParameter,
+                sortOrder,
+                project,
+                status,
+                startDate,
+                endDate,
+                page,
+                size
+        ))
                 .isInstanceOf(ElementNotFoundException.class)
                 .hasMessageContaining("not found");
     }

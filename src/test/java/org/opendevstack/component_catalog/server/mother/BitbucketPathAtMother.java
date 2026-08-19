@@ -14,7 +14,9 @@ public class BitbucketPathAtMother {
         return of(
                 "https://my-bitbucket-server.com",
                 "https://my-bitbucket-server.com/rest/api/latest",
-                "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/" + suffix + "?at=refs%2Fheads%2Fmaster"
+                "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/"
+                        + suffix
+                        + "?at=refs%2Fheads%2Fmaster"
         );
     }
 

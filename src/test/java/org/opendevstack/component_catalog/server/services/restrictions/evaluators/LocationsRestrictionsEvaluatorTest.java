@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LocationsRestrictionsEvaluatorTest {
 
@@ -38,8 +37,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -60,8 +59,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -82,8 +81,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -93,8 +92,18 @@ class LocationsRestrictionsEvaluatorTest {
 
         var clusters = List.of("eu");
         var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("locations", "locations", new ArrayList<>(), List.of("eu", "ch")),
-                CatalogItemUserActionParameterMother.of("locations", "locations", new ArrayList<>(), List.of("eu", "us"))
+                CatalogItemUserActionParameterMother.of(
+                        "locations",
+                        "locations",
+                        new ArrayList<>(),
+                        List.of("eu", "ch")
+                ),
+                CatalogItemUserActionParameterMother.of(
+                        "locations",
+                        "locations",
+                        new ArrayList<>(),
+                        List.of("eu", "us")
+                )
         );
 
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc);
@@ -106,8 +115,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
     }
 
     @Test
@@ -117,8 +126,18 @@ class LocationsRestrictionsEvaluatorTest {
 
         var clusters = List.of("eu");
         var parameters = List.of(
-                CatalogItemUserActionParameterMother.of("locations", "locations", new ArrayList<>(), List.of("ch", "us")),
-                CatalogItemUserActionParameterMother.of("locations", "locations", new ArrayList<>(), List.of("us"))
+                CatalogItemUserActionParameterMother.of(
+                        "locations",
+                        "locations",
+                        new ArrayList<>(),
+                        List.of("ch", "us")
+                ),
+                CatalogItemUserActionParameterMother.of(
+                        "locations",
+                        "locations",
+                        new ArrayList<>(),
+                        List.of("us")
+                )
         );
 
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc);
@@ -130,8 +149,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -152,8 +171,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -174,8 +193,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -196,12 +215,12 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
-    void givenRestrictionsWithTwoClusters_AndParamsWithOneCluster_whenEvaluate_AndParamsClusterIsInRestrictions_AndParamsClusterIsNotTheFirstOne_ThenReturnFalse() {
+    void givenRestrictionsAndClusters_whenSecondClusterMatches_thenReturnsFalse() {
         //given
         var projectKey = "projectKey";
 
@@ -230,8 +249,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertEquals(false, result.getLeft());
-        assertEquals("This product is not provisionable in the project location.", result.getRight());
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -243,7 +262,9 @@ class LocationsRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         var params = RestrictionsParamsMother.of(
-                List.of(CatalogItemUserActionParameterMother.of(List.of("us-test", "EU", "US-DEV"))),           // no parameters → simplest path
+                List.of(
+                        CatalogItemUserActionParameterMother.of(List.of("us-test", "EU", "US-DEV"))
+                ),
                 null
         );
 
