@@ -2,11 +2,43 @@
 
 This repository contains the source code for the Component Catalog backend service. 
 
-Also, under the "scripts" directory, the required scripts and OpenAPI specifications required for generating the required API REST clients and server.
+Also, under the `openapi/` directory, this repository includes the OpenAPI specifications used to generate
+the required API REST clients and server artifacts.
 
 The software architecture is as follows:
 
 ![app-architecture-20250206.drawio.svg](doc/app-architecture-20250206.drawio.svg)
+
+# Copilot and code style instructions
+
+This repository keeps project-specific coding conventions for AI-assisted changes in:
+- `.github/copilot-instructions.md`
+
+If project conventions evolve, update that file first so future generated changes remain consistent.
+
+## IntelliJ code style and Checkstyle
+
+Checkstyle is a static analysis tool that checks Java source code against a set of style rules. In practice,
+it helps keep indentation, imports, wrapping, naming, and brace placement consistent across the team.
+
+This repository currently keeps an IntelliJ formatting reference in `codeStyles/intellij/codeStyles.xml`.
+It can be imported into IntelliJ IDEA if needed, but there is no enforced Checkstyle setup yet.
+
+The `codeStyles/` folder is intended to host IDE-specific code style exports in the future too, for example:
+- `codeStyles/eclipse/`
+- `codeStyles/visualStudio/`
+
+### Import the IntelliJ scheme
+
+- Open the project in IntelliJ IDEA.
+- Go to `Settings` / `Preferences` > `Editor` > `Code Style`.
+- Click the gear icon next to the current scheme selector.
+- Choose `Import Scheme...` > `IntelliJ IDEA code style XML`.
+- Select `codeStyles/intellij/codeStyles.xml` from this repository.
+- Apply the imported scheme and set it as the current scheme for this project.
+
+If you update formatting rules later, please update both the XML scheme and
+`.github/copilot-instructions.md` together.
 
 # Local Development Setup - IntelliJ IDEA
 For setting up a local development environment, the required steps are:
