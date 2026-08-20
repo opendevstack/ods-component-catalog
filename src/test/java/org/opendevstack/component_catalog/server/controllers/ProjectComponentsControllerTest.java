@@ -41,8 +41,18 @@ class ProjectComponentsControllerTest {
     @Test
     void givenValidProjectKey_whenGetProjectComponents_thenReturnOkWithItems() {
         // given
-        var pci1 = ProjectComponentInfo.builder().componentId("C1").componentUrl("url1").status(ProvisioningStatus.CREATED).logoUrl("logo1").build();
-        var pci2 = ProjectComponentInfo.builder().componentId("C2").componentUrl("url2").status(ProvisioningStatus.CREATING).logoUrl("logo2").build();
+        var pci1 = ProjectComponentInfo.builder()
+                .componentId("C1")
+                .componentUrl("url1")
+                .status(ProvisioningStatus.CREATED)
+                .logoUrl("logo1")
+                .build();
+        var pci2 = ProjectComponentInfo.builder()
+                .componentId("C2")
+                .componentUrl("url2")
+                .status(ProvisioningStatus.CREATING)
+                .logoUrl("logo2")
+                .build();
 
         List<ProjectComponentInfo> components = List.of(pci1, pci2);
 
@@ -83,10 +93,13 @@ class ProjectComponentsControllerTest {
     void givenFacadeThrowsRuntimeException_whenGetProjectComponents_thenPropagateException() {
         // given
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenThrow(new RuntimeException("Unexpected error"));
+        when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken))
+                .thenThrow(new RuntimeException("Unexpected error"));
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey)).isInstanceOf(RuntimeException.class).hasMessageContaining("Unexpected error");
+        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Unexpected error");
 
         verify(projectComponentsFacade, times(1)).getProjectComponentsInfo(projectKey, accessToken);
     }

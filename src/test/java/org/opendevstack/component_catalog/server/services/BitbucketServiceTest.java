@@ -30,7 +30,7 @@ import java.net.URL;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,8 +69,8 @@ class BitbucketServiceTest {
         Optional<Pair<MediaType, String>> result = service.getCachedTextFileContents(pathAt);
 
         // then
-        assertTrue(result.isPresent());
-        assertEquals("Hello World", result.get().getRight());
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().getRight()).isEqualTo("Hello World");
     }
 
     @Test
@@ -81,15 +81,17 @@ class BitbucketServiceTest {
         responseBody.setValues(List.of(commit));
 
         ResponseEntity<GetCommits200Response> response = ResponseEntity.ok(responseBody);
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(response);
 
         // when
         Optional<RestCommit> result = service.getLastCommit("PROJ", "repo", "main");
 
         // then
-        assertTrue(result.isPresent());
-        assertEquals(commit, result.get());
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow()).isEqualTo(commit);
     }
 
     @Test
@@ -109,7 +111,9 @@ class BitbucketServiceTest {
         when(objectMapper.readValue(anyString(), any(TypeReference.class)))
                 .thenReturn(responseMap);
         when(objectMapper.convertValue(any(), eq(RestPermittedUser.class)))
-                .thenReturn(new RestPermittedUser().user(new RestPullRequestParticipantUser().name("testuser").active(true)).permission(RestPermittedUser.PermissionEnum.REPO_READ));
+                .thenReturn(new RestPermittedUser()
+                        .user(new RestPullRequestParticipantUser().name("testuser").active(true))
+                        .permission(RestPermittedUser.PermissionEnum.REPO_READ));
         when(permissionApi.findGroupsForUser(any(), any(), any(), any()))
                 .thenReturn(new FindUsersInGroup200Response());
 
@@ -117,7 +121,7 @@ class BitbucketServiceTest {
         Set<RestPermittedUser.PermissionEnum> result = service.searchRepoUserPermissions(pathAt, "testuser");
 
         // then
-        assertTrue(result.contains(RestPermittedUser.PermissionEnum.REPO_READ));
+        assertThat(result).contains(RestPermittedUser.PermissionEnum.REPO_READ);
     }
 
     // getLastCommit
@@ -202,7 +206,7 @@ class BitbucketServiceTest {
         boolean exists = service.doesContributingFileExists(pathAt);
 
         // then
-        assertTrue(exists);
+        assertThat(exists).isTrue();
     }
 
     @Test
@@ -217,7 +221,7 @@ class BitbucketServiceTest {
         boolean exists = service.doesContributingFileExists(pathAt);
 
         // then
-        assertFalse(exists);
+        assertThat(exists).isFalse();
     }
 
     @Test
@@ -314,8 +318,16 @@ class BitbucketServiceTest {
         // then
         verify(repositoryApi).editFile(firstPathAt.getSubPath(), firstPathAt.getProjectKey(), firstPathAt.getRepoSlug(),
                 "master", "content-1", "custom commit message", null, "commit-1");
-        verify(repositoryApi).editFile(secondPathAt.getSubPath(), secondPathAt.getProjectKey(), secondPathAt.getRepoSlug(),
-                "master", "content-2", "custom commit message", null, "commit-2");
+        verify(repositoryApi).editFile(
+                secondPathAt.getSubPath(),
+                secondPathAt.getProjectKey(),
+                secondPathAt.getRepoSlug(),
+                "master",
+                "content-2",
+                "custom commit message",
+                null,
+                "commit-2"
+        );
     }
 
     @Test
@@ -330,11 +342,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         var settings = new RestRepositoryPullRequestSettings()
@@ -345,31 +360,69 @@ class BitbucketServiceTest {
                 .thenReturn(settings);
 
         var createdPr = new RestPullRequest().id(123L).version(7);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("123"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("7"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenReturn(new RestPullRequest());
 
         // when
         service.pushFilesAtomically(fileUpdates, "atomic commit message");
 
         // then
-        verify(repositoryApi).createBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestCreateBranchRequest.class));
+        verify(repositoryApi).createBranch(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestCreateBranchRequest.class)
+        );
         ArgumentCaptor<RestPullRequest> pullRequestCaptor = ArgumentCaptor.forClass(RestPullRequest.class);
-        verify(pullRequestsApi).createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), pullRequestCaptor.capture());
+        verify(pullRequestsApi).createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                pullRequestCaptor.capture()
+        );
         assertThat(pullRequestCaptor.getValue().getParticipants()).isNull();
         assertThat(pullRequestCaptor.getValue().getReviewers()).isNull();
 
-        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
-        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), mergeRequestCaptor.capture());
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor =
+                ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("123"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("7"),
+                mergeRequestCaptor.capture()
+        );
         assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash");
         assertThat(mergeRequestCaptor.getValue().getMessage()).isEqualTo("atomic commit message");
 
-        verify(repositoryApi, times(2)).editFile(anyString(), eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
-                anyString(), anyString(), eq("atomic commit message"), isNull(), anyString());
+        verify(repositoryApi, times(2)).editFile(
+                anyString(),
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                anyString(),
+                anyString(),
+                eq("atomic commit message"),
+                isNull(),
+                anyString()
+        );
 
-        verify(repositoryApi).deleteBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
-                argThat(request -> request != null && request.getName() != null && request.getName().startsWith("refs/heads/cc-atomic-")));
+        verify(repositoryApi).deleteBranch(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                argThat(request -> request != null
+                        && request.getName() != null
+                        && request.getName().startsWith("refs/heads/cc-atomic-"))
+        );
     }
 
     @Test
@@ -384,11 +437,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         var settings = new RestRepositoryPullRequestSettings()
@@ -399,18 +455,40 @@ class BitbucketServiceTest {
                 .thenReturn(settings);
 
         var createdPr = new RestPullRequest().id(123L).version(7);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("123"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("7"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenThrow(new HttpClientErrorException(HttpStatus.CONFLICT));
 
         // when
-        assertDoesNotThrow(() -> service.pushFilesAtomically(fileUpdates, "atomic commit message"));
+        assertThatCode(() -> service.pushFilesAtomically(fileUpdates, "atomic commit message"))
+                .doesNotThrowAnyException();
 
         // then
-        verify(pullRequestsApi).decline(eq(firstPathAt.getProjectKey()), eq("123"), eq(firstPathAt.getRepoSlug()), eq("7"), any(RestPullRequestDeclineRequest.class));
-        verify(repositoryApi).deleteBranch(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()),
-                argThat(request -> request != null && request.getName() != null && request.getName().startsWith("refs/heads/cc-atomic-")));
+        verify(pullRequestsApi).decline(
+                eq(firstPathAt.getProjectKey()),
+                eq("123"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("7"),
+                any(RestPullRequestDeclineRequest.class)
+        );
+        verify(repositoryApi).deleteBranch(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                argThat(request -> request != null
+                        && request.getName() != null
+                        && request.getName().startsWith("refs/heads/cc-atomic-"))
+        );
     }
 
     @Test
@@ -425,11 +503,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
@@ -440,9 +521,19 @@ class BitbucketServiceTest {
         when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
 
         var createdPr = new RestPullRequest().id(456L).version(9);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("456"), eq(firstPathAt.getRepoSlug()), eq("9"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("456"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("9"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenReturn(new RestPullRequest());
 
         // when
@@ -452,8 +543,15 @@ class BitbucketServiceTest {
         verify(repositoryApi).getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug());
         verify(pullRequestsApi).getMergeConfig("git");
 
-        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
-        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("456"), eq(firstPathAt.getRepoSlug()), eq("9"), mergeRequestCaptor.capture());
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor =
+                ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("456"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("9"),
+                mergeRequestCaptor.capture()
+        );
         assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash");
     }
 
@@ -468,11 +566,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         var repoSettings = new RestRepositoryPullRequestSettings()
@@ -487,17 +588,34 @@ class BitbucketServiceTest {
         when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
 
         var createdPr = new RestPullRequest().id(457L).version(10);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("457"), eq(firstPathAt.getRepoSlug()), eq("10"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("457"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("10"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenReturn(new RestPullRequest());
 
         // when
         service.pushFilesAtomically(fileUpdates, "atomic commit message");
 
         // then
-        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
-        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("457"), eq(firstPathAt.getRepoSlug()), eq("10"), mergeRequestCaptor.capture());
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor =
+                ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("457"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("10"),
+                mergeRequestCaptor.capture()
+        );
         assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash-repo-relaxed");
     }
 
@@ -512,11 +630,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         var repoSettings = new RestRepositoryPullRequestSettings()
@@ -527,21 +648,40 @@ class BitbucketServiceTest {
                 .thenReturn(repoSettings);
 
         var globalMergeConfig = new RestPullRequestMergeConfig()
-                .strategies(List.of(new RestPullRequestMergeStrategy(null, false, null, null).id("squash-global-relaxed")));
+                .strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, false, null, null).id("squash-global-relaxed")
+                ));
         when(pullRequestsApi.getMergeConfig("git")).thenReturn(globalMergeConfig);
 
         var createdPr = new RestPullRequest().id(458L).version(11);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("458"), eq(firstPathAt.getRepoSlug()), eq("11"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("458"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("11"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenReturn(new RestPullRequest());
 
         // when
         service.pushFilesAtomically(fileUpdates, "atomic commit message");
 
         // then
-        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
-        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("458"), eq(firstPathAt.getRepoSlug()), eq("11"), mergeRequestCaptor.capture());
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor =
+                ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("458"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("11"),
+                mergeRequestCaptor.capture()
+        );
         assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash-global-relaxed");
     }
 
@@ -557,11 +697,14 @@ class BitbucketServiceTest {
         );
 
         when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
-        when(bitbucketServiceProps.getBaseRestUrl()).thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
 
         var commit = new RestCommit().id("temp-commit");
         var commitsResponse = new GetCommits200Response().values(List.of(commit));
-        when(repositoryApi.getCommitsWithHttpInfo(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
                 .thenReturn(ResponseEntity.ok(commitsResponse));
 
         when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
@@ -569,18 +712,36 @@ class BitbucketServiceTest {
         when(pullRequestsApi.getMergeConfig("git")).thenReturn(new RestPullRequestMergeConfig());
 
         var createdPr = new RestPullRequest().id(460L).version(13);
-        when(pullRequestsApi.createPullRequest(eq(firstPathAt.getProjectKey()), eq(firstPathAt.getRepoSlug()), any(RestPullRequest.class)))
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
                 .thenReturn(createdPr);
-        when(pullRequestsApi.merge(eq(firstPathAt.getProjectKey()), eq("460"), eq(firstPathAt.getRepoSlug()), eq("13"), any(RestPullRequestMergeRequest.class)))
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("460"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("13"),
+                any(RestPullRequestMergeRequest.class)
+        ))
                 .thenReturn(new RestPullRequest());
 
         // when
         service.pushFilesAtomically(fileUpdates, "atomic commit message");
 
         // then
-        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
-        verify(pullRequestsApi).merge(eq(firstPathAt.getProjectKey()), eq("460"), eq(firstPathAt.getRepoSlug()), eq("13"), mergeRequestCaptor.capture());
-        assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo(BitbucketService.FALLBACK_SQUASH_STRATEGY_ID);
+        ArgumentCaptor<RestPullRequestMergeRequest> mergeRequestCaptor =
+                ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("460"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("13"),
+                mergeRequestCaptor.capture()
+        );
+        assertThat(mergeRequestCaptor.getValue().getStrategyId())
+                .isEqualTo(BitbucketService.FALLBACK_SQUASH_STRATEGY_ID);
     }
 
 }

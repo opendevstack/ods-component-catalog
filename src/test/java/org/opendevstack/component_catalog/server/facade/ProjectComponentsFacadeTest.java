@@ -7,7 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogItemDefaultProps;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.CatalogProjectComponentsGroupsRestrictionProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.
+        CatalogProjectComponentsGroupsRestrictionProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -83,7 +84,13 @@ class ProjectComponentsFacadeTest {
         var projectKey = "PRJ-123";
 
         ProjectComponent c1 = ProjectComponentMother.of("C1", "Y2F0LTE", "cmVmLTE", Status.CREATED);
-        ProjectComponent c2 = ProjectComponentMother.of("C2", "Y2F0LTI", "cmVmLTI", Status.CREATING, "https://www.google.com");
+        ProjectComponent c2 = ProjectComponentMother.of(
+                "C2",
+                "Y2F0LTI",
+                "cmVmLTI",
+                Status.CREATING,
+                "https://www.google.com"
+        );
 
         var comps = new LinkedHashMap<String, ProjectComponent>();
         comps.put("k1", c1);
@@ -169,7 +176,7 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenOneComponentFailsWithInvalidCatalogItemEntityException_whenGetProjectComponentsInfo_thenSkipThatComponent()
+    void givenOneComponentFailsWithInvalidCatalogItemEntityException_whenGetProjectComponentsInfo_thenSkipComponent()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var projectKey = "PRJ-EX";
@@ -654,7 +661,8 @@ class ProjectComponentsFacadeTest {
 
         var comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
         var pcA = ProjectComponentsMother.of(Map.of("k1", comp));
-        var pcB = new org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents(); // components == null
+        var pcB = new org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents();
+        // components == null
 
         when(provisionerActionsService.getProjectComponents("A")).thenReturn(pcA);
         when(provisionerActionsService.getProjectComponents("B")).thenReturn(pcB);
@@ -675,7 +683,8 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenListAllProjectsJsons_whenGetAllProjectComponentsProjectKeys_thenReturnSortedKeysWithoutJsonExtension() throws Exception {
+    void givenListAllProjectsJsons_whenGetAllProjectComponentsProjectKeys_thenReturnSortedKeys()
+            throws Exception {
         // given
         when(provisionerActionsService.listAllProjectsJsons()).thenReturn(List.of("B.json", "A.json", "c.json"));
 

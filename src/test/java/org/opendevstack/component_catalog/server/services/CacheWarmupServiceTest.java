@@ -334,7 +334,11 @@ class CacheWarmupServiceTest {
     private CatalogsCollectionsEntityTarget targetWithUrl(String slug) {
         var target = new CatalogsCollectionsEntityTarget();
         target.setSlug(slug);
-        target.setUrl("https://bitbucket.example.com/projects/MYPRJ/repos/" + slug + "/raw/Catalog.yaml?at=refs%2Fheads%2Fmaster");
+        target.setUrl(
+                "https://bitbucket.example.com/projects/MYPRJ/repos/"
+                        + slug
+                        + "/raw/Catalog.yaml?at=refs%2Fheads%2Fmaster"
+        );
         return target;
     }
 

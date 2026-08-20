@@ -28,7 +28,8 @@ class ProjectsInfoServiceTest {
 
     @BeforeEach
     void setUp() throws MalformedURLException {
-        ApplicationPropertiesConfiguration.ExternalServiceProps props = mock(ApplicationPropertiesConfiguration.ExternalServiceProps.class);
+        ApplicationPropertiesConfiguration.ExternalServiceProps props =
+                mock(ApplicationPropertiesConfiguration.ExternalServiceProps.class);
         apiClientsBuilder = mock(ApiClientsBuilder.class);
         projectsApi = mock(ProjectsApi.class);
         azureGroupsApi = mock(AzureGroupsApi.class);

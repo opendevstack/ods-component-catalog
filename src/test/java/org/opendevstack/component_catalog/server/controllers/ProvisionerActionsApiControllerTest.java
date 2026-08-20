@@ -18,6 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -90,7 +91,8 @@ class ProvisionerActionsApiControllerTest {
     }
 
     @Test
-    void givenAProjectKey_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalled() throws JsonProcessingException {
+    void givenAProjectKey_whenNotifyProvisioningStatusUpdatePartially_thenCallsService()
+            throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
         var status = ProvisioningStatus.CREATING; // any valid Status works, CREATING is an example
@@ -128,7 +130,8 @@ class ProvisionerActionsApiControllerTest {
     }
 
     @Test
-    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
+    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdatePartially_thenServiceIsCalledWithEmptyUrl()
+            throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
         var status = ProvisioningStatus.CREATING;
@@ -157,13 +160,15 @@ class ProvisionerActionsApiControllerTest {
 
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
-        verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(projectKey.toUpperCase(),
+        verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
+                projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
         );
     }
 
     @Test
-    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdate_thenServiceIsCalledWithEmptyUrl() throws JsonProcessingException {
+    void givenAProjectKeyAndNoComponentUrl_whenNotifyProvisioningStatusUpdate_thenServiceIsCalledWithEmptyUrl()
+            throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
         var status = ProvisioningStatus.CREATING;
@@ -192,7 +197,8 @@ class ProvisionerActionsApiControllerTest {
 
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
-        verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
+        verify(provisionerActionsService).updateComponentProvisioningStatus(
+                projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
         );
     }
@@ -220,7 +226,8 @@ class ProvisionerActionsApiControllerTest {
     }
 
     @Test
-    void givenAProjectKey_whenDeleteProvisioningStatusThrowsException_thenUnprocessableEntityIsReturned() throws JsonProcessingException {
+    void givenAProjectKey_whenDeleteProvisioningStatusThrowsException_thenUnprocessableEntityIsReturned()
+            throws JsonProcessingException {
         // given
         var projectKey = "projectKey";
         var componentId = "componentId";
@@ -242,6 +249,6 @@ class ProvisionerActionsApiControllerTest {
         var response = provisionerActionsApiController.deleteProvisioningStatus(projectKey, request);
 
         // then
-        org.junit.jupiter.api.Assertions.assertEquals(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+        assertThat(response.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY);
     }
 }

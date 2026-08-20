@@ -7,7 +7,10 @@ import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class CacheSchedulingTest {
 

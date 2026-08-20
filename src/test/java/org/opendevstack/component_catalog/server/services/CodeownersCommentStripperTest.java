@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class CodeownersCommentStripperTest {
 
@@ -26,10 +26,10 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "valid/path @team",
                 ""
-        ), out);
+        ));
     }
 
     @Test
@@ -44,10 +44,10 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "src/** @team/core   ",
                 "docs/**  @docs    "
-        ), out);
+        ));
     }
 
     @Test
@@ -62,10 +62,10 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "scripts/** @ci/ops  #notAComment   ",
                 "path#with @team   "
-        ), out);
+        ));
     }
 
     @Test
@@ -82,9 +82,9 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "path \\\\"
-        ), out);
+        ));
     }
 
     @Test
@@ -99,9 +99,9 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "path \\\\#literalHash @team "
-        ), out);
+        ));
     }
 
     @Test
@@ -119,13 +119,13 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "",
                 "   ",
                 "\t\t",
                 "src/** @a/b",
                 "   "
-        ), out);
+        ));
     }
 
     @Test
@@ -139,9 +139,9 @@ class CodeownersCommentStripperTest {
         List<String> out = CodeownersCommentStripper.strip(in);
 
         // then
-        assertEquals(List.of(
+        assertThat(out).isEqualTo(List.of(
                 "   src/**     @team/core    "
-        ), out);
+        ));
     }
 
     // ---------------------------
@@ -158,7 +158,7 @@ class CodeownersCommentStripperTest {
         String out = CodeownersCommentStripper.strip(input);
 
         // then
-        assertEquals(expected, out);
+        assertThat(out).isEqualTo(expected);
     }
 
     @Test
@@ -171,7 +171,7 @@ class CodeownersCommentStripperTest {
         String out = CodeownersCommentStripper.strip(input);
 
         // then
-        assertEquals(expected, out);
+        assertThat(out).isEqualTo(expected);
     }
 
     @Test
@@ -184,7 +184,7 @@ class CodeownersCommentStripperTest {
         String out = CodeownersCommentStripper.strip(input);
 
         // then
-        assertEquals(expected, out);
+        assertThat(out).isEqualTo(expected);
     }
 
     @Test
@@ -198,8 +198,8 @@ class CodeownersCommentStripperTest {
         String outEmpty = CodeownersCommentStripper.strip(emptyInput);
 
         // then
-        assertNull(outNull);
-        assertEquals("", outEmpty);
+        assertThat(outNull).isNull();
+        assertThat(outEmpty).isEqualTo("");
     }
 
     @Test
@@ -212,7 +212,7 @@ class CodeownersCommentStripperTest {
         String out = CodeownersCommentStripper.strip(input);
 
         // then
-        assertEquals(expected, out);
+        assertThat(out).isEqualTo(expected);
     }
 
     @Test
@@ -233,6 +233,6 @@ class CodeownersCommentStripperTest {
         String out = CodeownersCommentStripper.strip(input);
 
         // then
-        assertEquals(expected, out);
+        assertThat(out).isEqualTo(expected);
     }
 }

@@ -56,7 +56,8 @@ class CatalogEntitiesServiceTest {
     }
 
     @Test
-    void givenACatalogId_whenGetCatalogItemsEntities_thenReturnCatalogItemEntityContextList() throws InvalidIdException {
+    void givenACatalogId_whenGetCatalogItemsEntities_thenReturnCatalogItemEntityContextList()
+            throws InvalidIdException {
         // given
         var catalogId = "aSdFam...yCg==";
         var catalogIdPathAt = mock(BitbucketPathAt.class);
@@ -87,11 +88,13 @@ class CatalogEntitiesServiceTest {
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getCommunityPagePath()).isEqualTo("projects/MYPROJECT/repos/repo-slug/raw/some-package/community.md?at=refs/heads/master");
+        assertThat(result.get().getCommunityPagePath())
+                .isEqualTo("projects/MYPROJECT/repos/repo-slug/raw/some-package/community.md?at=refs/heads/master");
     }
 
     @Test
-    void givenACatalogItemEntityMetadata_whenBuildCodeowners_thenReturnListOfCodeowners() throws InvalidEntityException {
+    void givenACatalogItemEntityMetadata_whenBuildCodeowners_thenReturnListOfCodeowners()
+            throws InvalidEntityException {
         // Given
         var metadata = CatalogItemEntityMetadataMother.of();
         var pathAt = mock(BitbucketPathAt.class);
@@ -170,6 +173,8 @@ class CatalogEntitiesServiceTest {
 
         //when //then
         assertThatThrownBy(() -> catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(ctx))
-                .isInstanceOf(org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException.class);
+                .isInstanceOf(
+                        org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException.class
+                );
     }
 }

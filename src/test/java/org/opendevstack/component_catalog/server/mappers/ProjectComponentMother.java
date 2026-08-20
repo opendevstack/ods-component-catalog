@@ -13,7 +13,13 @@ public class ProjectComponentMother {
         return of(componentId, catalogItemId, catalogItemRef, status, "http://component.url");
     }
 
-    public static ProjectComponent of(String componentId, String catalogItemId, String catalogItemRef, Status status, String componentUrl) {
+    public static ProjectComponent of(
+            String componentId,
+            String catalogItemId,
+            String catalogItemRef,
+            Status status,
+            String componentUrl
+    ) {
         return ProjectComponent.builder()
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)

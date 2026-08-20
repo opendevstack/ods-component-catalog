@@ -12,8 +12,11 @@ import org.opendevstack.component_catalog.server.services.CacheWarmupService;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CacheAdministrationServiceTest {
@@ -39,10 +42,8 @@ class CacheAdministrationServiceTest {
                 .thenReturn(null);
 
         // When / Then
-        assertThrows(
-                CacheNotFoundException.class,
-                () -> service.refreshCache(cacheName)
-        );
+        assertThatThrownBy(() -> service.refreshCache(cacheName))
+                .isInstanceOf(CacheNotFoundException.class);
 
         verify(cacheManager).getCache(cacheName);
         verifyNoInteractions(cacheWarmupService);
@@ -57,10 +58,8 @@ class CacheAdministrationServiceTest {
                 .thenReturn(cache);
 
         // When / Then
-        assertThrows(
-                CacheRefreshNotSupportedException.class,
-                () -> service.refreshCache(cacheName)
-        );
+        assertThatThrownBy(() -> service.refreshCache(cacheName))
+                .isInstanceOf(CacheRefreshNotSupportedException.class);
 
         verify(cacheManager).getCache(cacheName);
         verify(cache, never()).clear();

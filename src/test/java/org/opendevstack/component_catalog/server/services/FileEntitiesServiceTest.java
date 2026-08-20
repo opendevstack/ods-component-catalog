@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
@@ -41,13 +41,14 @@ class FileEntitiesServiceTest {
         when(bitbucketService.pathAtBuilder()).thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.pathAt(any())).thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.build()).thenReturn(pathAt);
-        when(bitbucketService.getCachedBinaryFileContents(pathAt)).thenReturn(Optional.of(Pair.of(mediaType, fileContent)));
+        when(bitbucketService.getCachedBinaryFileContents(pathAt))
+                .thenReturn(Optional.of(Pair.of(mediaType, fileContent)));
 
         Optional<Pair<MediaType, byte[]>> result = fileEntitiesService.getFileById(id);
 
-        assertTrue(result.isPresent());
-        assertEquals(mediaType, result.get().getLeft());
-        assertArrayEquals(fileContent, result.get().getRight());
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().getLeft()).isEqualTo(mediaType);
+        assertThat(result.orElseThrow().getRight()).isEqualTo(fileContent);
     }
 
     @Test
@@ -67,6 +68,6 @@ class FileEntitiesServiceTest {
         String result = fileEntitiesService.inlineMarkdownImgs(id, markdown);
 
         // then
-        assertEquals(expectedMarkdown, result);
+        assertThat(result).isEqualTo(expectedMarkdown);
     }
 }

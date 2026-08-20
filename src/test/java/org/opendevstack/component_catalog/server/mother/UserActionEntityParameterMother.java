@@ -34,22 +34,66 @@ public class UserActionEntityParameterMother {
         );
     }
 
-    public static UserActionEntityParameter of(String name, String type, boolean required, String defaultValue, List<String> defaultValues,
-                                               List<UserActionEntityParameterLocation> locations, List<String> options, String label, String placeholder, String hint,
-                                               boolean customizable, boolean sendOnDeletion, boolean visible) {
-        return of(name, type, required, defaultValue, defaultValues, locations, options, label, placeholder, hint, customizable, sendOnDeletion, visible, Collections.emptyList());
+    public static UserActionEntityParameter of(
+            String name,
+            String type,
+            boolean required,
+            String defaultValue,
+            List<String> defaultValues,
+            List<UserActionEntityParameterLocation> locations,
+            List<String> options,
+            String label,
+            String placeholder,
+            String hint,
+            boolean customizable,
+            boolean sendOnDeletion,
+            boolean visible
+    ) {
+        return of(
+                name,
+                type,
+                required,
+                defaultValue,
+                defaultValues,
+                locations,
+                options,
+                label,
+                placeholder,
+                hint,
+                customizable,
+                sendOnDeletion,
+                visible,
+                Collections.emptyList()
+        );
     }
 
-    public static UserActionEntityParameter of(String name, String type, boolean required, String defaultValue, List<String> defaultValues,
-                                               List<UserActionEntityParameterLocation> locations, List<String> options, String label, String placeholder, String hint,
-                                               boolean customizable, boolean sendOnDeletion, boolean visible, List<UserActionEntityParameterValidation> validations) {
+    public static UserActionEntityParameter of(
+            String name,
+            String type,
+            boolean required,
+            String defaultValue,
+            List<String> defaultValues,
+            List<UserActionEntityParameterLocation> locations,
+            List<String> options,
+            String label,
+            String placeholder,
+            String hint,
+            boolean customizable,
+            boolean sendOnDeletion,
+            boolean visible,
+            List<UserActionEntityParameterValidation> validations
+    ) {
         return UserActionEntityParameter.builder()
                 .name(name)
                 .type(type)
                 .required(required)
                 .defaultValue(defaultValue)
                 .defaultValues(defaultValues == null ? new String[0] : defaultValues.toArray(new String[0]))
-                .locations(locations == null ? new UserActionEntityParameterLocation[0] : locations.toArray(new UserActionEntityParameterLocation[0]))
+                .locations(
+                        locations == null
+                                ? new UserActionEntityParameterLocation[0]
+                                : locations.toArray(new UserActionEntityParameterLocation[0])
+                )
                 .options(options == null ? new String[0] : options.toArray(new String[0]))
                 .label(label)
                 .placeholder(placeholder)

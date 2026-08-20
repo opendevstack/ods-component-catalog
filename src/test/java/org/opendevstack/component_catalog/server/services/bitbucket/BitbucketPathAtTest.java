@@ -11,7 +11,9 @@ public class BitbucketPathAtTest {
         // given
         var baseRawUrl = "https://my-bitbucket-server.com";
         var baseRestUrl = "https://my-bitbucket-server.com/rest/api/latest";
-        var rawUrl = "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/SomeFileOrDir?at=refs%2Fheads%2Fmaster";
+        var rawUrl =
+                "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/SomeFileOrDir"
+                        + "?at=refs%2Fheads%2Fmaster";
 
         // when
         var bitbucketPathAt = BitbucketPathAt.builder()
@@ -32,7 +34,9 @@ public class BitbucketPathAtTest {
         // given
         var baseRawUrl = "https://my-bitbucket-server.com";
         var baseRestUrl = "https://my-bitbucket-server.com/rest/api/latest";
-        var restUrl = "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/SomeFileOrDir?at=refs%2Fheads%2Fmaster";
+        var restUrl =
+                "https://my-bitbucket-server.com/projects/MYPROJECT/repos/repo-slug/raw/some-package/SomeFileOrDir"
+                        + "?at=refs%2Fheads%2Fmaster";
 
         // when
         var bitbucketPathAt = BitbucketPathAt.builder()

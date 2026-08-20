@@ -1,8 +1,8 @@
 package org.opendevstack.component_catalog.server.mother;
 
-import org.opendevstack.component_catalog.org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocationMother;
+import org.opendevstack.component_catalog.org.opendevstack.component_catalog.server.model.
+        CatalogItemUserActionParameterLocationMother;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
-import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterValidation;
 import org.openapitools.jackson.nullable.JsonNullable;
 
@@ -20,11 +20,20 @@ public class CatalogItemUserActionParameterMother {
     }
 
     public static CatalogItemUserActionParameter of(String name) {
-        return of(name, "CatalogItemUserActionParameter Type", List.of(CatalogItemUserActionParameterValidationMother.of()));
+        return of(
+                name,
+                "CatalogItemUserActionParameter Type",
+                List.of(CatalogItemUserActionParameterValidationMother.of())
+        );
     }
 
     public static CatalogItemUserActionParameter of(String name, List<String> locations) {
-        return of(name, "CatalogItemUserActionParameter Type", List.of(CatalogItemUserActionParameterValidationMother.of()), locations);
+        return of(
+                name,
+                "CatalogItemUserActionParameter Type",
+                List.of(CatalogItemUserActionParameterValidationMother.of()),
+                locations
+        );
     }
 
     public static CatalogItemUserActionParameter of(String name, String type) {
@@ -32,7 +41,12 @@ public class CatalogItemUserActionParameterMother {
     }
 
 
-    public static CatalogItemUserActionParameter of(String name, String type, List<CatalogItemUserActionParameterValidation> validations, List<String> locations) {
+    public static CatalogItemUserActionParameter of(
+            String name,
+            String type,
+            List<CatalogItemUserActionParameterValidation> validations,
+            List<String> locations
+    ) {
         var locationObjects = locations.stream()
                 .map(CatalogItemUserActionParameterLocationMother::of).toList();
         return CatalogItemUserActionParameter.builder()
@@ -51,7 +65,11 @@ public class CatalogItemUserActionParameterMother {
     }
 
 
-    public static CatalogItemUserActionParameter of(String name, String type, List<CatalogItemUserActionParameterValidation> validations) {
+    public static CatalogItemUserActionParameter of(
+            String name,
+            String type,
+            List<CatalogItemUserActionParameterValidation> validations
+    ) {
         return CatalogItemUserActionParameter.builder()
                 .name(name)
                 .type(type)

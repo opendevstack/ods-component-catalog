@@ -23,7 +23,8 @@ class YamlSchemaValidatorTest {
         var validCatalogItemEntityYaml = loadFileFromClasspath("valid-catalog-item-entity.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(validCatalogItemEntityYaml, CatalogItemEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(validCatalogItemEntityYaml, CatalogItemEntity.class);
 
         // then
         assertThat(validationMessageList).isEmpty();
@@ -35,7 +36,8 @@ class YamlSchemaValidatorTest {
         var validCatalogsCollectionsEntityYaml = loadFileFromClasspath("valid-catalogs-collections-entity.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(validCatalogsCollectionsEntityYaml, CatalogsCollectionsEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(validCatalogsCollectionsEntityYaml, CatalogsCollectionsEntity.class);
 
         // then
         assertThat(validationMessageList).isEmpty();
@@ -47,7 +49,8 @@ class YamlSchemaValidatorTest {
         var validCatalogEntityYaml = loadFileFromClasspath("valid-catalog-entity.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(validCatalogEntityYaml, CatalogEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(validCatalogEntityYaml, CatalogEntity.class);
 
         // then
         assertThat(validationMessageList).isEmpty();
@@ -59,7 +62,8 @@ class YamlSchemaValidatorTest {
         var validUserActionsEntityYaml = loadFileFromClasspath("valid-user-actions-entity.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(validUserActionsEntityYaml, UserActionsEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(validUserActionsEntityYaml, UserActionsEntity.class);
 
         // then
         assertThat(validationMessageList).isEmpty();
@@ -71,11 +75,12 @@ class YamlSchemaValidatorTest {
         var validCatalogItemEntityYaml = loadFileFromClasspath("invalid-yaml.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(validCatalogItemEntityYaml, CatalogItemEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(validCatalogItemEntityYaml, CatalogItemEntity.class);
 
         // then
         assertThat(validationMessageList).hasSize(1);
-        assertThat(validationMessageList.get(0).getMessage()).startsWith("Error while parsing YAML");
+        assertThat(validationMessageList.getFirst().getMessage()).startsWith("Error while parsing YAML");
     }
 
     @Test
@@ -84,13 +89,16 @@ class YamlSchemaValidatorTest {
         var invalidCatalogItemEntityYaml = loadFileFromClasspath("invalid-catalog-item-entity.yml");
 
         // when
-        List<ValidationMessage> validationMessageList = YamlSchemaValidator.validate(invalidCatalogItemEntityYaml, CatalogItemEntity.class);
+        List<ValidationMessage> validationMessageList =
+                YamlSchemaValidator.validate(invalidCatalogItemEntityYaml, CatalogItemEntity.class);
 
         // then
-        assertThat(validationMessageList).hasSize(2);
-
-        assertThat(validationMessageList).anySatisfy( msg -> assertThat(msg.getMessage()).startsWith("/metadata: required property 'tags' not found"));
-        assertThat(validationMessageList).anySatisfy( msg -> assertThat(msg.getMessage()).startsWith("/spec/userActions/0: required property 'triggerMessage' not found"));
+        assertThat(validationMessageList)
+                .hasSize(2)
+                .anySatisfy(msg -> assertThat(msg.getMessage())
+                        .startsWith("/metadata: required property 'tags' not found"))
+                .anySatisfy(msg -> assertThat(msg.getMessage())
+                        .startsWith("/spec/userActions/0: required property 'triggerMessage' not found"));
     }
 
     private static String loadFileFromClasspath(String fileName) {

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,8 +26,14 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
 
     private static final String[] restrictionLoc = {"eu", "us"};
     private static final List<String> clustersOk = List.of("eu");
-    private static final List<CatalogItemUserActionParameter> parametersOk = List.of(CatalogItemUserActionParameterMother.of("locations", "locations",
-            new ArrayList<>(), List.of("eu", "us")));
+    private static final List<CatalogItemUserActionParameter> parametersOk = List.of(
+            CatalogItemUserActionParameterMother.of(
+                    "locations",
+                    "locations",
+                    new ArrayList<>(),
+                    List.of("eu", "us")
+            )
+    );
 
     @Mock
     private ProvisionerActionsService provisionerActionsService;
@@ -43,7 +49,8 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc, null, true);
         var catalogItemId = "CAT-001";
 
-        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId)).thenReturn(true);
+        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId))
+                .thenReturn(true);
 
         List<CatalogItemUserActionParameter> parameters = List.of();
 
@@ -64,9 +71,10 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(false, result.getLeft());
-        assertEquals(ONE_TIME_ONLY_MSG, result.getRight());
-        verify(provisionerActionsService, times(1)).isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo(ONE_TIME_ONLY_MSG);
+        verify(provisionerActionsService, times(1))
+                .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }
 
     @Test
@@ -77,7 +85,8 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc, null, true);
         var catalogItemId = "CAT-XYZ";
 
-        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId)).thenReturn(false);
+        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId))
+                .thenReturn(false);
 
         List<String> userGroups = Collections.emptyList();
 
@@ -96,9 +105,10 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
-        verify(provisionerActionsService, times(1)).isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
+        verify(provisionerActionsService, times(1))
+                .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }
 
     @Test
@@ -125,8 +135,8 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(true, result.getLeft());
-        assertEquals("", result.getRight());
+        assertThat(result.getLeft()).isTrue();
+        assertThat(result.getRight()).isEmpty();
         verifyNoInteractions(provisionerActionsService);
     }
 
@@ -137,7 +147,8 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var restrictions = UserActionEntityRestrictionsMother.of(restrictionLoc, new String[]{"DEVSTACK"}, true);
         var catalogItemId = "CAT-INV";
 
-        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId)).thenReturn(true);
+        when(provisionerActionsService.isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId))
+                .thenReturn(true);
 
         List<String> userGroups = Collections.emptyList();
 
@@ -156,8 +167,9 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertEquals(false, result.getLeft());
-        assertEquals(ONE_TIME_ONLY_MSG, result.getRight());
-        verify(provisionerActionsService, times(1)).isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
+        assertThat(result.getLeft()).isFalse();
+        assertThat(result.getRight()).isEqualTo(ONE_TIME_ONLY_MSG);
+        verify(provisionerActionsService, times(1))
+                .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }
 }

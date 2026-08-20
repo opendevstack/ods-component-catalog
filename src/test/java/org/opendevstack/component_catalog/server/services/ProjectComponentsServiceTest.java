@@ -133,7 +133,16 @@ class ProjectComponentsServiceTest {
         //when
         ProjectComponents updated = service.updateExistingComponent(
                 pc,
-                request("comp1", encodedFullDifferent, Status.CREATED, "x", null, "created", "updated", Collections.emptyList())
+                request(
+                        "comp1",
+                        encodedFullDifferent,
+                        Status.CREATED,
+                        "x",
+                        null,
+                        "created",
+                        "updated",
+                        Collections.emptyList()
+                )
         );
 
         //then
@@ -152,7 +161,16 @@ class ProjectComponentsServiceTest {
         assertThatThrownBy(() ->
                 service.updateExistingComponent(
                         pc,
-                        request("unknown", "zzz", Status.CREATED, "x", null, "created", "updated", Collections.emptyList())
+                                request(
+                                        "unknown",
+                                        "zzz",
+                                        Status.CREATED,
+                                        "x",
+                                        null,
+                                        "created",
+                                        "updated",
+                                        Collections.emptyList()
+                                )
                 ))
                 .isInstanceOf(InvalidComponentStateException.class);
     }
@@ -207,7 +225,16 @@ class ProjectComponentsServiceTest {
         assertThatThrownBy(() ->
                 service.updatePartiallyExistingComponent(
                         pc,
-                        request("missing", "zzz", Status.CREATED, "x", null, "created", "updated", Collections.emptyList())
+                                request(
+                                        "missing",
+                                        "zzz",
+                                        Status.CREATED,
+                                        "x",
+                                        null,
+                                        "created",
+                                        "updated",
+                                        Collections.emptyList()
+                                )
                 ))
                 .isInstanceOf(InvalidComponentStateException.class);
     }

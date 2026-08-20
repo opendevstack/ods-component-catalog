@@ -20,18 +20,20 @@ import org.opendevstack.component_catalog.server.services.restrictions.evaluator
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class UserActionsEntitiesServiceTest {
 
     @Mock
@@ -41,9 +43,8 @@ class UserActionsEntitiesServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        var groupsRestrictionProps = ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
+        var groupsRestrictionProps =
+                ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
                 .prefix(List.of("prefix1", "prefix2", "prefix3"))
                 .suffix(List.of("suffix1", "suffix2", "suffix3"))
                 .build();
@@ -69,7 +70,7 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId(entityId)).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
-        assertEquals(entity, userActionsEntitiesService.getUserActionsEntity(entityId));
+        assertThat(userActionsEntitiesService.getUserActionsEntity(entityId)).isEqualTo(entity);
     }
 
     @Test
@@ -78,7 +79,8 @@ class UserActionsEntitiesServiceTest {
 
         when(catalogServiceAdapter.bitbucketPathAtFromId("testId")).thenThrow(new InvalidIdException("err"));
 
-        assertThrows(IllegalArgumentException.class, () -> userActionsEntitiesService.getUserActionsEntity(entityId));
+        assertThatThrownBy(() -> userActionsEntitiesService.getUserActionsEntity(entityId))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -89,7 +91,8 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId("testId")).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> userActionsEntitiesService.getUserActionsEntity(entityId));
+        assertThatThrownBy(() -> userActionsEntitiesService.getUserActionsEntity(entityId))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -118,11 +121,15 @@ class UserActionsEntitiesServiceTest {
         when(title.getId()).thenReturn(UserActionEntityMessageType.SUCCESS);
 
         Optional<Pair<UserActionEntityMessageTitle, UserActionEntityMessageDefinition>> result =
-                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle("actionBbId", "actionId", "defId");
+                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle(
+                        "actionBbId",
+                        "actionId",
+                        "defId"
+                );
 
-        assertTrue(result.isPresent());
-        assertEquals(title, result.get().getLeft());
-        assertEquals(def, result.get().getRight());
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().getLeft()).isEqualTo(title);
+        assertThat(result.orElseThrow().getRight()).isEqualTo(def);
     }
 
     @Test
@@ -130,11 +137,11 @@ class UserActionsEntitiesServiceTest {
         var userActionsPathAt = mock(BitbucketPathAt.class);
         UserActionEntityMessageDefinition def = mock(UserActionEntityMessageDefinition.class);
         when(def.getId()).thenReturn("otherId");
-        when(def.getType()).thenReturn(UserActionEntityMessageType.ERROR);
 
         UserActionEntity action = mock(UserActionEntity.class);
         when(action.getId()).thenReturn("actionId");
-        when(action.getMessagesTitles()).thenReturn(new UserActionEntityMessageTitle[]{mock(UserActionEntityMessageTitle.class)});
+        when(action.getMessagesTitles())
+                .thenReturn(new UserActionEntityMessageTitle[]{mock(UserActionEntityMessageTitle.class)});
         when(action.getMessagesDefinitions()).thenReturn(new UserActionEntityMessageDefinition[]{def});
 
         UserActionsEntitySpec spec = mock(UserActionsEntitySpec.class);
@@ -147,9 +154,13 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         Optional<Pair<UserActionEntityMessageTitle, UserActionEntityMessageDefinition>> result =
-                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle("actionBbId", "actionId", "defId");
+                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle(
+                        "actionBbId",
+                        "actionId",
+                        "defId"
+                );
 
-        assertTrue(result.isEmpty());
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -178,11 +189,15 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
         Optional<Pair<UserActionEntityMessageTitle, UserActionEntityMessageDefinition>> result =
-                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle("actionBbId", "actionId", "nonexistentId");
+                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitle(
+                        "actionBbId",
+                        "actionId",
+                        "nonexistentId"
+                );
 
-        assertTrue(result.isPresent());
-        assertEquals(errorTitle, result.get().getLeft());
-        assertEquals(defaultDef, result.get().getRight());
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().getLeft()).isEqualTo(errorTitle);
+        assertThat(result.orElseThrow().getRight()).isEqualTo(defaultDef);
     }
 
     @Test
@@ -204,9 +219,10 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
-        List<UserActionEntityMessageTitle> result = userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId");
-        assertEquals(1, result.size());
-        assertEquals(title, result.getFirst());
+        List<UserActionEntityMessageTitle> result =
+                userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId");
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst()).isEqualTo(title);
     }
 
     @Test
@@ -226,7 +242,10 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
-        assertThrows(IllegalStateException.class, () -> userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId"));
+        assertThatThrownBy(
+                () -> userActionsEntitiesService.getUserActionsEntityMessageTitles(bitbucketId, "actionId")
+        )
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -248,9 +267,10 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
-        List<UserActionEntityMessageDefinition> result = userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId");
-        assertEquals(1, result.size());
-        assertEquals(def, result.getFirst());
+        List<UserActionEntityMessageDefinition> result =
+                userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId");
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst()).isEqualTo(def);
     }
 
     @Test
@@ -270,11 +290,15 @@ class UserActionsEntitiesServiceTest {
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(userActionsPathAt);
         when(catalogServiceAdapter.getUserActionsEntity(userActionsPathAt)).thenReturn(Optional.of(entity));
 
-        assertThrows(IllegalStateException.class, () -> userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId"));
+        assertThatThrownBy(
+                () -> userActionsEntitiesService.getUserActionsEntityMessageDefinitions(bitbucketId, "actionId")
+        )
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    void givenACatalogItemId_andUserActionId_andMessageDefinitionId_whenGetUserActionEntityMessageDefinitionWithTitleFromCatalogItemId_thenPairTitleMessageDefinitionIsReturned() throws InvalidIdException {
+    void givenCatalogItemIdAndMessageDefinition_whenGetDefinitionWithTitle_thenCustomMessageIsReturned()
+            throws InvalidIdException {
         // Given
         var bitbucketId = "testId";
 
@@ -282,22 +306,36 @@ class UserActionsEntitiesServiceTest {
         String userActionId = "userActionId";
         String messageDefinitionId = "messageDefinitionId";
 
-        String customMessageToOverrideDefaultMessage = "This is a custom message that overrides the default message";
+        String customMessageToOverrideDefaultMessage =
+                "This is a custom message that overrides the default message";
 
-        buildAndInitializeMocksForDefaultUserActionsEntity(bitbucketId, userActionId, messageDefinitionId);
-        buildAndInitializeMocksForCustomUserActionsEntity(catalogItemId, userActionId, messageDefinitionId, customMessageToOverrideDefaultMessage);
+        buildAndInitializeDefaultUserActionsMocks(bitbucketId, userActionId, messageDefinitionId);
+        buildAndInitializeCustomUserActionsMocks(
+                catalogItemId,
+                userActionId,
+                messageDefinitionId,
+                customMessageToOverrideDefaultMessage
+        );
 
         // when
-        var optMessageDefinitionWithTitle = userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitleFromCatalogItemId(catalogItemId, userActionId, messageDefinitionId);
+        var optMessageDefinitionWithTitle =
+                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitleFromCatalogItemId(
+                        catalogItemId,
+                        userActionId,
+                        messageDefinitionId
+                );
 
         // Then
         assertThat(optMessageDefinitionWithTitle).isPresent();
-        assertThat(optMessageDefinitionWithTitle.get().getLeft().getTitle()).isEqualTo("User Action Entity Message Title for success"); // Initialized at mother
-        assertThat(optMessageDefinitionWithTitle.get().getRight().getMessage()).isEqualTo(customMessageToOverrideDefaultMessage);
+        assertThat(optMessageDefinitionWithTitle.get().getLeft().getTitle())
+                .isEqualTo("User Action Entity Message Title for success");
+        assertThat(optMessageDefinitionWithTitle.get().getRight().getMessage())
+                .isEqualTo(customMessageToOverrideDefaultMessage);
     }
 
     @Test
-    void givenACatalogItemId_andUserActionId_andMessageDefinitionId_whenGetUserActionEntityMessageDefinitionWithTitleFromCatalogItemId_AndNoUserDefinedMessageDefinitionId_thenPairTitleDefaultMessageDefinitionIsReturned() throws InvalidIdException {
+    void givenCatalogItemIdAndNoCustomDefinition_whenGetDefinitionWithTitle_thenDefaultMessageIsReturned()
+            throws InvalidIdException {
         // Given
         var bitbucketId = "testId";
 
@@ -305,19 +343,30 @@ class UserActionsEntitiesServiceTest {
         String userActionId = "userActionId";
         String messageDefinitionId = "messageDefinitionId";
 
-        buildAndInitializeMocksForDefaultUserActionsEntity(bitbucketId, userActionId, messageDefinitionId);
-        buildAndInitializeMocksForCustomUserActionsEntityWithNoMessageDefinitionId(catalogItemId);
+        buildAndInitializeDefaultUserActionsMocks(bitbucketId, userActionId, messageDefinitionId);
+        buildAndInitializeCustomUserActionsMocksWithoutDefinitionId(catalogItemId);
 
         // when
-        var optMessageDefinitionWithTitle = userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitleFromCatalogItemId(catalogItemId, userActionId, messageDefinitionId);
+        var optMessageDefinitionWithTitle =
+                userActionsEntitiesService.getUserActionEntityMessageDefinitionWithTitleFromCatalogItemId(
+                        catalogItemId,
+                        userActionId,
+                        messageDefinitionId
+                );
 
         // Then
         assertThat(optMessageDefinitionWithTitle).isPresent();
-        assertThat(optMessageDefinitionWithTitle.get().getLeft().getTitle()).isEqualTo("User Action Entity Message Title for success"); // Initialized at mother
-        assertThat(optMessageDefinitionWithTitle.get().getRight().getMessage()).isEqualTo("Simple message for testing purposes for messageDefinitionId with type success"); // initialized at mother
+        assertThat(optMessageDefinitionWithTitle.get().getLeft().getTitle())
+                .isEqualTo("User Action Entity Message Title for success");
+        assertThat(optMessageDefinitionWithTitle.get().getRight().getMessage())
+                .isEqualTo("Simple message for testing purposes for messageDefinitionId with type success");
     }
 
-    private void buildAndInitializeMocksForDefaultUserActionsEntity(String bitbucketId, String userActionId, String messageDefinitionId) throws InvalidIdException {
+    private void buildAndInitializeDefaultUserActionsMocks(
+            String bitbucketId,
+            String userActionId,
+            String messageDefinitionId
+    ) throws InvalidIdException {
         // Initialize data
         UserActionEntityMessageDefinition[] messageDefinitionsArray = UserActionEntityMessageDefinitionMother.ofArray(
                 UserActionEntityMessageDefinitionMother.of(messageDefinitionId, UserActionEntityMessageType.SUCCESS)
@@ -326,48 +375,63 @@ class UserActionsEntitiesServiceTest {
         List<UserActionEntity> userActions = List.of(
                 UserActionEntityMother.of("userActionId1"),
                 UserActionEntityMother.of("userActionId2"),
-                UserActionEntityMother.of(userActionId, messageDefinitionsArray ) // The one we want to find
+                UserActionEntityMother.of(userActionId, messageDefinitionsArray)
         );
 
-        UserActionsEntity defaultUserActionsEntity = UserActionsEntityMother.of(userActions); // spec and actions
+        UserActionsEntity defaultUserActionsEntity = UserActionsEntityMother.of(userActions);
 
         // define mocks
         BitbucketPathAt bitbucketIdUserActionsPathAt = mock(BitbucketPathAt.class);
 
         when(catalogServiceAdapter.bitbucketPathAtFromId(bitbucketId)).thenReturn(bitbucketIdUserActionsPathAt);
-        when(catalogServiceAdapter.getUserActionsEntity(bitbucketIdUserActionsPathAt)).thenReturn(Optional.of(defaultUserActionsEntity));
+        when(catalogServiceAdapter.getUserActionsEntity(bitbucketIdUserActionsPathAt))
+                .thenReturn(Optional.of(defaultUserActionsEntity));
     }
 
-    private void buildAndInitializeMocksForCustomUserActionsEntity(String catalogItemId, String userActionId, String messageDefinitionId, String messageDefinitionMessage) throws InvalidIdException {
+    private void buildAndInitializeCustomUserActionsMocks(
+            String catalogItemId,
+            String userActionId,
+            String messageDefinitionId,
+            String messageDefinitionMessage
+    ) throws InvalidIdException {
         // Initialize data
         UserActionEntityMessageDefinition[] messageDefinitionsArray = UserActionEntityMessageDefinitionMother.ofArray(
-                UserActionEntityMessageDefinitionMother.of(messageDefinitionId, UserActionEntityMessageType.SUCCESS, messageDefinitionMessage)
+                UserActionEntityMessageDefinitionMother.of(
+                        messageDefinitionId,
+                        UserActionEntityMessageType.SUCCESS,
+                        messageDefinitionMessage
+                )
         );
 
         List<CatalogItemEntityUserAction> userActions = List.of(
                 CatalogItemEntityUserActionMother.of("customUserActionId1"),
                 CatalogItemEntityUserActionMother.of("customUserActionId2"),
-                CatalogItemEntityUserActionMother.of(userActionId, messageDefinitionsArray) // The one we want to find
+                CatalogItemEntityUserActionMother.of(userActionId, messageDefinitionsArray)
         );
 
-        buildAndInitializeMocksForCustomUserActionsEntity(catalogItemId, userActions);
+        buildAndInitializeCustomUserActionsMocks(catalogItemId, userActions);
 
     }
 
-    private void buildAndInitializeMocksForCustomUserActionsEntityWithNoMessageDefinitionId(String catalogItemId) throws InvalidIdException {
+    private void buildAndInitializeCustomUserActionsMocksWithoutDefinitionId(String catalogItemId)
+            throws InvalidIdException {
         // Initialize data
         List<CatalogItemEntityUserAction> userActions = List.of(
                 CatalogItemEntityUserActionMother.of("customUserActionId1"),
                 CatalogItemEntityUserActionMother.of("customUserActionId2")
         );
 
-        buildAndInitializeMocksForCustomUserActionsEntity(catalogItemId, userActions);
+        buildAndInitializeCustomUserActionsMocks(catalogItemId, userActions);
 
     }
 
-    private void buildAndInitializeMocksForCustomUserActionsEntity(String catalogItemId, List<CatalogItemEntityUserAction> userActions) throws InvalidIdException {
+    private void buildAndInitializeCustomUserActionsMocks(
+            String catalogItemId,
+            List<CatalogItemEntityUserAction> userActions
+    ) throws InvalidIdException {
         // Initialize data
-        CatalogItemEntity customUserActionsEntity = CatalogItemEntityMother.of(userActions.toArray(new CatalogItemEntityUserAction[0])); // spec and actions
+        CatalogItemEntity customUserActionsEntity =
+                CatalogItemEntityMother.of(userActions.toArray(new CatalogItemEntityUserAction[0]));
 
         // define mocks
         BitbucketPathAt catalogItemIdUserActionsPathAt = mock(BitbucketPathAt.class);
