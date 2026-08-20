@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.server.services;
 
 import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.*;
 
 import java.nio.charset.StandardCharsets;
@@ -74,6 +75,24 @@ class ProjectComponentsServiceTest {
         assertThat(added.getComponentUrl()).isEqualTo("url");
         assertThat(added.getCreatedAt()).isEqualTo("created");
         assertThat(added.getUpdatedAt()).isEqualTo("updated");
+    }
+
+    @Test
+    void givenNullComponentsAndCatalogWithoutBranch_whenAddNewComponent_thenMapCreatedAndMasterRefUsed() {
+        //given
+        ProjectComponents pc = new ProjectComponents();
+        String encoded = base64("repo/path");
+
+        //when
+        ProjectComponents updated = service.addNewComponent(
+                pc,
+                request("comp1", encoded, Status.CREATING, "url", null, "created", "updated", Collections.emptyList())
+        );
+
+        //then
+        assertThat(updated.getComponents()).containsKey("comp1");
+        assertThat(updated.getComponents().get("comp1").getCatalogItemRef())
+                .isEqualTo(base64(ProjectComponentsService.REFS_HEADS_MASTER));
     }
 
     @Test
@@ -305,6 +324,62 @@ class ProjectComponentsServiceTest {
     }
 
     @Test
+    void givenBlankDeletionWorkflowJobId_whenUpdatePartially_thenKeepsExistingDeletionWorkflowJobId() {
+        //given
+        String encodedRepo = base64("repo/a");
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .deletionWorkflowJobId("existing-deletion-job-id")
+                .status(Status.CREATING)
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        ProjectComponentRequest request = ProjectComponentRequest.builder()
+                .componentId("comp1")
+                .status(Status.CREATED)
+                .deletionWorkflowJobId("")
+                .build();
+
+        //when
+        ProjectComponents updated = service.updatePartiallyExistingComponent(pc, request);
+
+        //then
+        assertThat(updated.getComponents().get("comp1").getDeletionWorkflowJobId()).isEqualTo("existing-deletion-job-id");
+    }
+
+    @Test
+    void givenNewDeletionWorkflowJobId_whenUpdatePartially_thenUsesNewDeletionWorkflowJobId() {
+        //given
+        String encodedRepo = base64("repo/a");
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .deletionWorkflowJobId("old-deletion-job-id")
+                .status(Status.CREATING)
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        ProjectComponentRequest request = ProjectComponentRequest.builder()
+                .componentId("comp1")
+                .status(Status.CREATED)
+                .deletionWorkflowJobId("new-deletion-job-id")
+                .build();
+
+        //when
+        ProjectComponents updated = service.updatePartiallyExistingComponent(pc, request);
+
+        //then
+        assertThat(updated.getComponents().get("comp1").getDeletionWorkflowJobId()).isEqualTo("new-deletion-job-id");
+    }
+
+    @Test
     void givenValidCatalogItemId_whenGetRepoPath_thenReturnsPathWithoutBranch() {
         //given
         String encoded = base64("repo/x?at=refs/heads/main");
@@ -314,6 +389,17 @@ class ProjectComponentsServiceTest {
 
         //then
         assertThat(result).isEqualTo(base64("repo/x"));
+    }
+
+    @Test
+    void givenNullCatalogItemId_whenGetRepoPath_thenThrowInvalidEntityException() {
+        //given
+        String catalogItemId = null;
+
+        //when //then
+        assertThatThrownBy(() -> service.getRepoPathFromCatalogItemId(catalogItemId))
+                .isInstanceOf(InvalidEntityException.class)
+                .hasMessageContaining("Invalid Base64 encoded catalogItemId");
     }
 
     @Test
