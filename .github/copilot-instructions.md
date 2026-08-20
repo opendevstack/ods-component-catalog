@@ -8,7 +8,7 @@ If the project conventions change, update this document first so future edits st
 ## Project snapshot
 - Java 21 / Spring Boot 3.5.x application.
 - Gradle build with OpenAPI-generated sources.
-- Main package: `org.opendevstack.projects_info_service`.
+- Main package: `org.opendevstack.component_catalog`.
 - Shared IntelliJ code style scheme: `codeStyles/intellij/codeStyles.xml`.
 - Max line length: 120 characters.
 - `codeStyles/` is reserved for IDE-specific code style exports such as `codeStyles/eclipse/` or
