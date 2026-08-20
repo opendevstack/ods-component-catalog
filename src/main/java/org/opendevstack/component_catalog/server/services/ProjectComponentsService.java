@@ -163,6 +163,7 @@ public class ProjectComponentsService {
                 .catalogItemRef(resolveCatalogItemRef(entry.getValue(), request.getCatalogItemId()))
                 .componentUrl(resolveComponentUrl(entry.getValue(), request.getComponentUrl()))
                 .workflowJobId(resolveWorkflowJobId(entry.getValue(), request.getWorkflowJobId()))
+                .deletionWorkflowJobId(resolveDeletionWorkflowJobId(entry.getValue(), request.getDeletionWorkflowJobId()))
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .parameters(resolveParameters(entry.getValue(), request.getParameters()))
@@ -190,6 +191,12 @@ public class ProjectComponentsService {
     private String resolveWorkflowJobId(ProjectComponent value, String newJobId) {
         return StringUtils.isBlank(newJobId)
                 ? value.getWorkflowJobId()
+                : newJobId;
+    }
+
+    private String resolveDeletionWorkflowJobId(ProjectComponent value, String newJobId) {
+        return StringUtils.isBlank(newJobId)
+                ? value.getDeletionWorkflowJobId()
                 : newJobId;
     }
 

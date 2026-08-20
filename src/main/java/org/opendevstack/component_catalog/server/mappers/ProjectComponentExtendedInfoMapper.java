@@ -34,6 +34,7 @@ public class ProjectComponentExtendedInfoMapper {
                 .catalogItemRef(comp.getCatalogItemRef())
                 .parameters(projectComponentParameters)
                 .workflowJobId(comp.getWorkflowJobId())
+                .deletionWorkflowJobId(comp.getDeletionWorkflowJobId())
                 .build();
 
         log.debug("Mapped project component extended info: {}", projectComponentExtendedInfo);

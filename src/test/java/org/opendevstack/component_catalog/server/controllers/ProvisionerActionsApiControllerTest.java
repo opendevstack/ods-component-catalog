@@ -40,6 +40,7 @@ class ProvisionerActionsApiControllerTest {
                                             Status status,
                                             String url,
                                             String workflowJobId,
+                                            String deletionWorkflowJobId,
                                             List<Parameter> params) {
         return ProjectComponentRequest.builder()
                 .componentId(componentId)
@@ -47,6 +48,7 @@ class ProvisionerActionsApiControllerTest {
                 .status(status)
                 .componentUrl(url)
                 .workflowJobId(workflowJobId)
+                .deletionWorkflowJobId(deletionWorkflowJobId)
                 .createdAt(null)
                 .updatedAt(null)
                 .parameters(params)
@@ -62,6 +64,7 @@ class ProvisionerActionsApiControllerTest {
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
         var workflowJobId = "123456789";
+        var deletionWorkflowJobId = "987654321";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -78,6 +81,7 @@ class ProvisionerActionsApiControllerTest {
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
                 .workflowJobId(workflowJobId)
+                .deletionWorkflowJobId(deletionWorkflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -86,7 +90,7 @@ class ProvisionerActionsApiControllerTest {
         // then
         verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
-                request(componentId, catalogItemId, Status.CREATED, componentUrl, workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATED, componentUrl, workflowJobId, deletionWorkflowJobId, parameters)
         );
     }
 
@@ -100,6 +104,7 @@ class ProvisionerActionsApiControllerTest {
         var catalogItemId = "catalogItemId";
         var componentUrl = "componentUrl";
         var workflowJobId = "123456789";
+        var deletionWorkflowJobId = "987654321";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -116,6 +121,7 @@ class ProvisionerActionsApiControllerTest {
                 .catalogItemId(catalogItemId)
                 .componentUrl(componentUrl)
                 .workflowJobId(workflowJobId)
+                .deletionWorkflowJobId(deletionWorkflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -125,7 +131,7 @@ class ProvisionerActionsApiControllerTest {
         verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                request(componentId, catalogItemId, Status.CREATING, componentUrl, workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, componentUrl, workflowJobId, deletionWorkflowJobId, parameters)
         );
     }
 
@@ -138,6 +144,7 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var workflowJobId = "123456789";
+        var deletionWorkflowJobId = "987654321";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -153,6 +160,7 @@ class ProvisionerActionsApiControllerTest {
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .workflowJobId(workflowJobId)
+                .deletionWorkflowJobId(deletionWorkflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -162,7 +170,7 @@ class ProvisionerActionsApiControllerTest {
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, deletionWorkflowJobId, parameters)
         );
     }
 
@@ -175,6 +183,7 @@ class ProvisionerActionsApiControllerTest {
         var componentId = "componentId";
         var catalogItemId = "catalogItemId";
         var workflowJobId = "123456789";
+        var deletionWorkflowJobId = "987654321";
         var parameterInner = ProvisioningStatusUpdateRequestParametersInner.builder()
                 .name("parameterName")
                 .values(List.of("parameterValue"))
@@ -190,6 +199,7 @@ class ProvisionerActionsApiControllerTest {
                 .componentId(componentId)
                 .catalogItemId(catalogItemId)
                 .workflowJobId(workflowJobId)
+                .deletionWorkflowJobId(deletionWorkflowJobId)
                 .parameters(parametersInner);
 
         // when
@@ -199,7 +209,7 @@ class ProvisionerActionsApiControllerTest {
         verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
         verify(provisionerActionsService).updateComponentProvisioningStatus(
                 projectKey.toUpperCase(),
-                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, parameters)
+                request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, deletionWorkflowJobId, parameters)
         );
     }
 
