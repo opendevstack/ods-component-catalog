@@ -22,6 +22,7 @@ public class ProjectComponent {
     private Status status;
     private String componentUrl;
     private String workflowJobId;
+    private String deletionWorkflowJobId;
     private String createdAt;
     private String updatedAt;
     private List<Parameter> parameters;

@@ -27,6 +27,7 @@ public class ProjectComponentMother {
                 .catalogItemRef(catalogItemRef)
                 .componentUrl(componentUrl)
                 .workflowJobId("12345")
+                .deletionWorkflowJobId("67890")
                 .build();
     }
 }

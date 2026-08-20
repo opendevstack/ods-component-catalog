@@ -6,7 +6,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.opendevstack.component_catalog.server.api.ProvisionerActionsApi;
-import org.opendevstack.component_catalog.server.facade.AuthenticationFacade;
 import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
@@ -29,7 +28,6 @@ import static org.opendevstack.component_catalog.server.facade.ProvisionerAction
 public class ProvisionerActionsApiController implements ProvisionerActionsApi {
 
     public static final String DELETION_REQUESTER = "deletion_requester";
-    private final AuthenticationFacade authenticationFacade;
 
     private final ProvisionerActionsApiFacade provisionerActionsApiFacade;
     private final ProvisionerActionsService provisionerActionsService;
@@ -54,6 +52,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 .status(Status.valueOf(status.getValue()))
                 .componentUrl(normalizedComponentUrl)
                 .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
+                .deletionWorkflowJobId(provisioningStatusUpdateRequest.getDeletionWorkflowJobId().orElse(""))
                 .parameters(parameters)
                 .build();
 
@@ -79,6 +78,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 .status(Status.valueOf(status.getValue()))
                 .componentUrl(normalizedComponentUrl)
                 .workflowJobId(provisioningStatusUpdateRequest.getWorkflowJobId().orElse(""))
+                .deletionWorkflowJobId(provisioningStatusUpdateRequest.getDeletionWorkflowJobId().orElse(""))
                 .parameters(parameters)
                 .build();
 
