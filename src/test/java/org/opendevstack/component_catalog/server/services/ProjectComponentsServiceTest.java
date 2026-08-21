@@ -78,6 +78,36 @@ class ProjectComponentsServiceTest {
     }
 
     @Test
+    void givenWorkflowJobIds_whenAddNewComponent_thenWorkflowFieldsAreMapped() {
+        //given
+        ProjectComponents pc = new ProjectComponents();
+        pc.setComponents(new HashMap<>());
+
+        String encoded = base64("repo/path?at=refs/heads/main");
+
+        ProjectComponentRequest request = ProjectComponentRequest.builder()
+                .componentId("comp1")
+                .catalogItemId(encoded)
+                .status(Status.CREATING)
+                .componentUrl("url")
+                .workflowJobId("wf-123")
+                .deletionWorkflowJobId("del-wf-456")
+                .createdAt("created")
+                .updatedAt("updated")
+                .parameters(Collections.emptyList())
+                .build();
+
+        //when
+        ProjectComponents updated = service.addNewComponent(pc, request);
+
+        //then
+        ProjectComponent added = updated.getComponents().get("comp1");
+
+        assertThat(added.getWorkflowJobId()).isEqualTo("wf-123");
+        assertThat(added.getDeletionWorkflowJobId()).isEqualTo("del-wf-456");
+    }
+
+    @Test
     void givenNullComponentsAndCatalogWithoutBranch_whenAddNewComponent_thenMapCreatedAndMasterRefUsed() {
         //given
         ProjectComponents pc = new ProjectComponents();
@@ -132,6 +162,50 @@ class ProjectComponentsServiceTest {
         assertThat(updatedComp.getParameters()).containsExactly(parameter);
         assertThat(updatedComp.getCreatedAt()).isEqualTo("created");
         assertThat(updatedComp.getUpdatedAt()).isEqualTo("updated");
+    }
+
+    @Test
+    void givenWorkflowJobIds_whenUpdateExistingComponent_thenWorkflowFieldsAreMapped() {
+        //given
+        String encodedFull = base64("repo/z?at=refs/heads/main");
+        String encodedRepo = base64("repo/z");
+
+        ProjectComponent existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedRepo)
+                .catalogItemRef(null)
+                .componentUrl("oldUrl")
+                .status(Status.CREATING)
+                .workflowJobId("old-wf")
+                .deletionWorkflowJobId("old-del-wf")
+                .createdAt("oldCreated")
+                .updatedAt("oldUpdated")
+                .build();
+
+        ProjectComponents pc = ProjectComponents.builder()
+                .components(Map.of("comp1", existing))
+                .build();
+
+        ProjectComponentRequest request = ProjectComponentRequest.builder()
+                .componentId("comp1")
+                .catalogItemId(encodedFull)
+                .status(Status.CREATED)
+                .componentUrl("newUrl")
+                .workflowJobId("new-wf")
+                .deletionWorkflowJobId("new-del-wf")
+                .createdAt("created")
+                .updatedAt("updated")
+                .parameters(Collections.emptyList())
+                .build();
+
+        //when
+        ProjectComponents updated = service.updateExistingComponent(pc, request);
+
+        //then
+        ProjectComponent updatedComp = updated.getComponents().get("comp1");
+
+        assertThat(updatedComp.getWorkflowJobId()).isEqualTo("new-wf");
+        assertThat(updatedComp.getDeletionWorkflowJobId()).isEqualTo("new-del-wf");
     }
 
     @Test
