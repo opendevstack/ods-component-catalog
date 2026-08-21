@@ -275,6 +275,31 @@ class BitbucketServiceTest {
     }
 
     @Test
+    void givenSinglePageResponseWithNestedFiles_whenGetFilenamesRecursive_thenNestedFilesAreReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(List.of("file1.json", "folder/file2.json", "folder/subfolder/file3.json"));
+        response.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).containsExactly("file1.json", "folder/file2.json", "folder/subfolder/file3.json");
+    }
+
+    @Test
     void givenMultiplePages_whenGetFilenames_thenAllPagesAreAggregated() {
         // given
         BitbucketPathAt pathAt = BitbucketPathAtMother.of();
