@@ -282,7 +282,7 @@ public class ProvisionerActionsService {
                 .build();
 
         log.debug("Listing all project JSONs from path: {}", bitbucketProjectsDirectoryPathAt);
-        var projectJsonFiles = bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt);
+        var projectJsonFiles = bitbucketService.getFilenamesFromRemoteDirectory(bitbucketProjectsDirectoryPathAt, false);
 
         log.debug("Project JSON files retrieved: {}", projectJsonFiles);
         return projectJsonFiles;

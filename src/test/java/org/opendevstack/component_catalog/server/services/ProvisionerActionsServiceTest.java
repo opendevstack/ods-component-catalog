@@ -345,7 +345,7 @@ class ProvisionerActionsServiceTest {
                 .thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.build()).thenReturn(pathAt);
 
-        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt))
+        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt, false))
                 .thenReturn(expectedFilenames);
 
         // when
@@ -866,7 +866,7 @@ class ProvisionerActionsServiceTest {
                 .thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.build()).thenReturn(pathAt);
 
-        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt))
+        when(bitbucketService.getFilenamesFromRemoteDirectory(pathAt, false))
                 .thenReturn(expectedFilenames);
 
         // when
@@ -875,7 +875,7 @@ class ProvisionerActionsServiceTest {
         // then
         assertThat(result).isEqualTo(expectedFilenames);
 
-        verify(bitbucketService).getFilenamesFromRemoteDirectory(pathAt);
+        verify(bitbucketService).getFilenamesFromRemoteDirectory(pathAt, false);
     }
 
     private String prepareMocksForSave() throws JsonProcessingException {

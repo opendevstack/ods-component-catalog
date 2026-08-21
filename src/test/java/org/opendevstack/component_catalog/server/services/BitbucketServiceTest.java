@@ -243,10 +243,60 @@ class BitbucketServiceTest {
         )).thenReturn(response);
 
         // when
-        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
 
         // then
         assertThat(result).containsExactly("file1.json", "file2.json");
+    }
+
+    @Test
+    void givenSinglePageResponseWithNestedFiles_whenGetFilenamesNotRecursive_thenOnlyRootFilesReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(List.of("file1.json", "folder/file2.json", "folder/subfolder/file3.json"));
+        response.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, false);
+
+        // then
+        assertThat(result).containsExactly("file1.json");
+    }
+
+    @Test
+    void givenSinglePageResponseWithNestedFiles_whenGetFilenamesRecursive_thenNestedFilesAreReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(List.of("file1.json", "folder/file2.json", "folder/subfolder/file3.json"));
+        response.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).containsExactly("file1.json", "folder/file2.json", "folder/subfolder/file3.json");
     }
 
     @Test
@@ -274,10 +324,41 @@ class BitbucketServiceTest {
         )).thenReturn(page2);
 
         // when
-        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
 
         // then
         assertThat(result).containsExactly("file1.json", "file2.json", "file3.json");
+    }
+
+    @Test
+    void givenNestedFilesInFirstPage_whenGetFilenamesNotRecursive_thenPaginationStillContinues() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response page1 = new StreamFiles200Response();
+        page1.setValues(List.of("folder/file1.json", "folder/subfolder/file2.json"));
+        page1.setIsLastPage(false);
+        page1.setNextPageStart(2);
+
+        StreamFiles200Response page2 = new StreamFiles200Response();
+        page2.setValues(List.of("file3.json"));
+        page2.setIsLastPage(true);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(),
+                pathAt.getAt(), BigDecimal.ZERO, null
+        )).thenReturn(page1);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(), pathAt.getProjectKey(), pathAt.getRepoSlug(),
+                pathAt.getAt(), new BigDecimal(2), null
+        )).thenReturn(page2);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, false);
+
+        // then
+        assertThat(result).containsExactly("file3.json");
     }
 
     @Test
@@ -295,10 +376,56 @@ class BitbucketServiceTest {
         )).thenReturn(response);
 
         // when
-        var result = service.getFilenamesFromRemoteDirectory(pathAt);
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
 
         // then
         assertThat(result).containsExactly("file1.json");
+    }
+
+    @Test
+    void givenNullResponse_whenGetFilenames_thenEmptyResultIsReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(null);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void givenResponseWithNullValues_whenGetFilenames_thenEmptyResultIsReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(null);
+        response.setNextPageStart(null);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).isEmpty();
     }
 
     @Test
