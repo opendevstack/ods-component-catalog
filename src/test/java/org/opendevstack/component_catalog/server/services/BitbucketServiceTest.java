@@ -383,6 +383,52 @@ class BitbucketServiceTest {
     }
 
     @Test
+    void givenNullResponse_whenGetFilenames_thenEmptyResultIsReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(null);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void givenResponseWithNullValues_whenGetFilenames_thenEmptyResultIsReturned() {
+        // given
+        BitbucketPathAt pathAt = BitbucketPathAtMother.of();
+
+        StreamFiles200Response response = new StreamFiles200Response();
+        response.setValues(null);
+        response.setNextPageStart(null);
+
+        when(repositoryApi.streamFiles1(
+                pathAt.getSubPath(),
+                pathAt.getProjectKey(),
+                pathAt.getRepoSlug(),
+                pathAt.getAt(),
+                BigDecimal.ZERO,
+                null
+        )).thenReturn(response);
+
+        // when
+        var result = service.getFilenamesFromRemoteDirectory(pathAt, true);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void givenMultipleFiles_whenPushFilesInSeries_thenAllFilesUseCustomCommitMessage() {
         // given
         var firstPathAt = BitbucketPathAtMother.of();
