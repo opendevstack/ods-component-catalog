@@ -128,11 +128,12 @@ public class BitbucketService {
                 .map(values -> values.getFirst().getId());
     }
 
-    public List<String> getFilenamesFromRemoteDirectory(BitbucketPathAt pathAt, boolean recursive) {
+    public List<String> getFilenamesFromRemoteDirectory(BitbucketPathAt pathAt) {
         List<String> result = new ArrayList<>();
         BigDecimal start = BigDecimal.ZERO;
+        boolean keepFetching = true;
 
-        while (start != null) {
+        while (keepFetching) {
             StreamFiles200Response response = repositoryApi.streamFiles1(
                     pathAt.getSubPath(),
                     pathAt.getProjectKey(),
@@ -142,27 +143,20 @@ public class BitbucketService {
                     null
             );
 
-            if (response == null) {
-                break;
-            }
-
-            if (response.getValues() != null) {
+            if (response != null && response.getValues() != null) {
                 result.addAll(response.getValues().stream()
                         .map(Object::toString)
-                        .filter(filename -> recursive || isRootLevelFile(filename))
                         .toList());
+
+                start = Optional.ofNullable(response.getNextPageStart())
+                        .map(BigDecimal::valueOf)
+                        .orElse(null);
             }
 
-            start = Optional.ofNullable(response.getNextPageStart())
-                    .map(BigDecimal::valueOf)
-                    .orElse(null);
+            keepFetching = !result.isEmpty() && start != null;
         }
 
         return result;
-    }
-
-    private boolean isRootLevelFile(String filename) {
-        return filename != null && !filename.contains("/") && !filename.contains("\\");
     }
 
     public void pushFile(BitbucketPathAt pathAt, String sourceCommitId, String content) {
