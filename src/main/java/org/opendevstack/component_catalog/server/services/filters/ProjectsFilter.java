@@ -17,7 +17,7 @@ import java.util.Optional;
 public class ProjectsFilter implements CatalogItemsFilter {
     @Override
     public boolean filter(CatalogItem item, List<String> params) {
-        log.debug("filter. item: {}, params: {}", item, params);
+        log.debug("Projects filter. item: {}, params: {}", item, params);
 
         validate(params);
         String projectKey = params.getFirst();

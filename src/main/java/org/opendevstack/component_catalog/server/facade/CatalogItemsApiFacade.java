@@ -208,6 +208,7 @@ public class CatalogItemsApiFacade {
         );
     }
 
+    // We can not do workflowsFilter in here, because the parameters merge was already done
     protected boolean applyFilters(CatalogItem item, String projectKey) {
         var params = Collections.singletonList(projectKey);
 

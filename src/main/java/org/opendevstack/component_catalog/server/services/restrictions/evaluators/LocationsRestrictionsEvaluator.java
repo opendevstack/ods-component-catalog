@@ -1,15 +1,21 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
+import lombok.extern.slf4j.Slf4j;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictions;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,13 +24,13 @@ import java.util.stream.Collectors;
 public class LocationsRestrictionsEvaluator implements RestrictionsEvaluator {
 
     @Override
-    public Pair<Boolean, String> evaluate(EvaluationRestrictions restrictions, RestrictionsParams params) {
+    public RestrictionsEvaluatorResult evaluate(EvaluationRestrictions restrictions, RestrictionsParams params) {
         if (validate(params) && evaluateConditions(restrictions.restrictions(), params)) {
-            return Pair.of(true, "");
+            return new RestrictionsEvaluatorResult(true, true, "");
         } else {
             log.debug("Validation failed for restrictions: {}, and params: {}", restrictions, params);
 
-            return Pair.of(false, "This product is not provisionable in the project location.");
+            return new RestrictionsEvaluatorResult(false, true,"This product is not provisionable in the project location.");
         }
     }
 

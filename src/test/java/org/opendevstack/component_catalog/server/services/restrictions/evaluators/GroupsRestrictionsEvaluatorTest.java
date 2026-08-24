@@ -1,11 +1,10 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
+import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemUserActionGroupsRestriction;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemUserActionGroupsRestrictionMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictions;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -27,10 +26,10 @@ class GroupsRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // When
-        Pair<Boolean, String> evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // Then
-        assertThat(evaluateResult.getLeft()).isTrue();
+        assertThat(evaluateResult.requestable()).isTrue();
     }
 
     @Test
@@ -44,10 +43,10 @@ class GroupsRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // When
-        Pair<Boolean, String> evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // Then
-        assertThat(evaluateResult.getLeft()).isFalse();
+        assertThat(evaluateResult.requestable()).isFalse();
     }
 
     @Test
@@ -62,11 +61,11 @@ class GroupsRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // When
-        Pair<Boolean, String> evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // Then
-        assertThat(evaluateResult.getLeft()).isFalse();
-        assertThat(evaluateResult.getRight()).isEqualTo("Only project members with Manager or Team roles can provision components.");
+        assertThat(evaluateResult.requestable()).isFalse();
+        assertThat(evaluateResult.reason()).isEqualTo("Only project members with Manager or Team roles can provision components.");
     }
 
     @Test
@@ -80,10 +79,10 @@ class GroupsRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // When
-        Pair<Boolean, String> evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // Then
-        assertThat(evaluateResult.getLeft()).isFalse();
-        assertThat(evaluateResult.getRight()).isEqualTo("Only project members with Manager or Team roles can provision components.");
+        assertThat(evaluateResult.requestable()).isFalse();
+        assertThat(evaluateResult.reason()).isEqualTo("Only project members with Manager or Team roles can provision components.");
     }
 }

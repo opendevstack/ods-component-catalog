@@ -1,12 +1,12 @@
 package org.opendevstack.component_catalog.server.mappers;
 
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
-import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntityMother;
-import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntityMother;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +19,7 @@ class CatalogItemUserActionMapperTest {
 
     @BeforeEach
     void setUp() {
-        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
+        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> RestrictionsEvaluatorResultMother.of();
 
         var groupsRestrictionProps =
                 ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()

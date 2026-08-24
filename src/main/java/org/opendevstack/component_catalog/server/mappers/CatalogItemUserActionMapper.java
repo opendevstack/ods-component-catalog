@@ -1,5 +1,7 @@
 package org.opendevstack.component_catalog.server.mappers;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
@@ -9,10 +11,8 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserAction;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResult;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -65,8 +65,8 @@ public class CatalogItemUserActionMapper {
                 .url(catalogItemEntityUserAction.getUrl())
                 .triggerMessage(catalogItemEntityUserAction.getTriggerMessage())
                 .parameters(userActionParameters)
-                .requestable(requestableAndMessage.getLeft())
-                .restrictionMessage(requestableAndMessage.getRight())
+                .requestable(requestableAndMessage.requestable())
+                .restrictionMessage(requestableAndMessage.reason())
                 .build();
 
         log.debug("Resulting CatalogItemUserAction: {}", catalogItemUserAction);
@@ -110,12 +110,12 @@ public class CatalogItemUserActionMapper {
                 .url(userActionEntity.getUrl())
                 .triggerMessage(userActionEntity.getTriggerMessage())
                 .parameters(userActionEntityParameters)
-                .requestable(requestableAndMessage.getLeft())
-                .restrictionMessage(requestableAndMessage.getRight())
+                .requestable(requestableAndMessage.requestable())
+                .restrictionMessage(requestableAndMessage.reason())
                 .build();
     }
 
-    public Pair<Boolean, String> evaluateRestrictions(UserActionEntityRestrictions restrictions,
+    public RestrictionsEvaluatorResult evaluateRestrictions(UserActionEntityRestrictions restrictions,
                                                       List<String> clusters,
                                                       List<CatalogItemUserActionParameter> parameters,
                                                       List<String> userGroups,
@@ -130,17 +130,17 @@ public class CatalogItemUserActionMapper {
                 .catalogItemId(catalogItemId)
                 .build();
 
-        Pair<Boolean, String> evaluationResult = Pair.of(true, "");
+        RestrictionsEvaluatorResult evaluationResult = new RestrictionsEvaluatorResult(true, true, "");
 
         for (RestrictionsEvaluator restrictionsEvaluator : restrictionsEvaluators) {
             var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
             evaluationResult = restrictionsEvaluator.evaluate(evaluationRestrictions, restrictionsParams);
 
-            if (Boolean.TRUE.equals(evaluationResult.getLeft())) {
+            if (evaluationResult.requestable()) {
                 log.debug("Evaluation passed for evaluator {}, nothing to return", restrictionsEvaluator);
             } else {
-                log.debug("Evaluation failed for evaluator {}, returning error: {}",  restrictionsEvaluator, evaluationResult.getRight());
+                log.debug("Evaluation failed for evaluator {}, returning error: {}",  restrictionsEvaluator, evaluationResult.reason());
 
                 return evaluationResult;
             }

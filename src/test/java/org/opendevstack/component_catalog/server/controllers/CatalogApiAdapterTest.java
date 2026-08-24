@@ -1,5 +1,8 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.apache.logging.log4j.util.Strings;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionParameterMapper;
@@ -8,23 +11,45 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
-import org.opendevstack.component_catalog.server.mother.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
+import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
+import org.opendevstack.component_catalog.server.mother.CatalogEntityContextMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadataMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
+import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterLocationMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterValidationMother;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntitySpec;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityRestrictionsMother;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityParameter;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
-import org.opendevstack.component_catalog.server.services.catalog.entity.*;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityMother;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserAction;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.util.Strings;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +71,7 @@ class CatalogApiAdapterTest {
         metadata.setSpec(spec);
         defaultCatalogEntity.setMetadata(metadata);
 
-        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
+        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> RestrictionsEvaluatorResultMother.of();
 
         var groupsRestrictionProps =
                 ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()

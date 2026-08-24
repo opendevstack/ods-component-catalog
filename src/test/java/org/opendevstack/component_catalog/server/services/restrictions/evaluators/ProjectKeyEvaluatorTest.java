@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,11 +16,11 @@ class ProjectKeyEvaluatorTest {
                 new EvaluationRestrictions("PROJECT_123", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -32,11 +31,11 @@ class ProjectKeyEvaluatorTest {
                 new EvaluationRestrictions(null, null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("You need to have access to a project in order to provision components.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("You need to have access to a project in order to provision components.");
     }
 
     @Test
@@ -47,10 +46,10 @@ class ProjectKeyEvaluatorTest {
                 new EvaluationRestrictions("", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("You need to have access to a project in order to provision components.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("You need to have access to a project in order to provision components.");
     }
 }
