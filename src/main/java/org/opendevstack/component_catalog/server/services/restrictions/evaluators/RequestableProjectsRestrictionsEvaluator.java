@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 
 @Service
-@Order(40)
+@Order(50)
 @Slf4j
 public class RequestableProjectsRestrictionsEvaluator implements RestrictionsEvaluator{
 

@@ -7,7 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 @Service
-@Order(30)
+@Order(40)
 @AllArgsConstructor
 @Slf4j
 public class OneTimeOnlyRestrictionsEvaluator implements  RestrictionsEvaluator {

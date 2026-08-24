@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@Order(50)
+@Order(60)
 @Slf4j
 public class LocationsRestrictionsEvaluator implements RestrictionsEvaluator {
 

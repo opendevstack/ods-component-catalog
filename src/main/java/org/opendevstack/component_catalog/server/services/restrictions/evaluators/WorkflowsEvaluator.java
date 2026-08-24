@@ -6,7 +6,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 @Service
-@Order(60)
+@Order(10)
 @Slf4j
 public class WorkflowsEvaluator implements RestrictionsEvaluator {
     private static final String WORKFLOW_PARAM_NAME = "workflow";

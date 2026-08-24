@@ -6,7 +6,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 @Service
-@Order(20)
+@Order(30)
 @Slf4j
 public class GroupsRestrictionsEvaluator implements RestrictionsEvaluator {
 
