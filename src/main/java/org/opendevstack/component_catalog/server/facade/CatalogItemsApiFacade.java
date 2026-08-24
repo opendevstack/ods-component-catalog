@@ -11,7 +11,6 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
-import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
@@ -28,6 +27,7 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
@@ -60,6 +60,8 @@ public class CatalogItemsApiFacade {
 
     private final ProvisionerActionsService provisionerActionsService;
     private final AuthenticationFacade authenticationFacade;
+
+    private final List<CatalogItemsFilter> catalogItemFilters;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
@@ -157,7 +159,7 @@ public class CatalogItemsApiFacade {
                                             .build()
                             )
                     )
-                    .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
+                    .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
                     .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
                     .toList();
         else {
@@ -180,7 +182,7 @@ public class CatalogItemsApiFacade {
                                         .build()
                         )
                 )
-                .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
+                .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
                 .orElse(null);
     }
 
@@ -206,11 +208,11 @@ public class CatalogItemsApiFacade {
         );
     }
 
-    protected boolean filterByProject(CatalogItem item, String projectKey) {
-        var projects = Optional.ofNullable(item.getRestrictions())
-                .map(CatalogItemRestriction::getProjects)
-                .orElse(Collections.emptySet());
-        return projects.isEmpty() || (projectKey != null && projects.contains(projectKey));
+    protected boolean applyFilters(CatalogItem item, String projectKey) {
+        var params = Collections.singletonList(projectKey);
+
+        return catalogItemFilters.stream()
+                .allMatch(filter -> filter.filter(item, params));
     }
 
     protected boolean filterByContributingFileExists(String id) {
