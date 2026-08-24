@@ -1,10 +1,12 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemUserActionWrapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemRestrictionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionParameterMapper;
 import org.opendevstack.component_catalog.server.mappers.EntitiesMapper;
 import org.opendevstack.component_catalog.server.model.*;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityContext;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
@@ -45,10 +47,10 @@ public class CatalogApiAdapter {
         return entitiesMapper.asCatalogItemUserActionMessageDefinition(userActionEntityMessageTitles, userActionEntityMessageDefinition);
     }
 
-    public  CatalogItem asCatalogItem(CatalogRequestParams  catalogRequestParams,
-                                        List<String> clusters,
-                                        List<String> userGroups,
-                                        Integer componentCount) {
+    public CatalogItemWrapper asCatalogItem(CatalogRequestParams  catalogRequestParams,
+                                            List<String> clusters,
+                                            List<String> userGroups,
+                                            Integer componentCount) {
         log.debug("asCatalogItem. params: {}, clusters: {}, userGroups: {}, componentCount: {}",
                 catalogRequestParams, clusters, userGroups, componentCount);
 
@@ -67,9 +69,16 @@ public class CatalogApiAdapter {
             item.userActions(new ArrayList<>());
         }
 
-        var mergedCatalogItemUserActions = finalizeUserActions(item.getUserActions(),
+        var mergedCatalogItemUserActionsWrapper = finalizeUserActions(item.getUserActions(),
                 catalogRequestParams.getUserActionsEntity().getSpec().getActions(), clusters, userGroups,
                 catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemEntityContext().getId());
+
+        // Will define later on if item should be returned or not
+        var isValidItem = mergedCatalogItemUserActionsWrapper.stream().allMatch(CatalogItemUserActionWrapper::valid);
+        var mergedCatalogItemUserActions = mergedCatalogItemUserActionsWrapper.stream()
+                .map(CatalogItemUserActionWrapper::catalogItemUserAction)
+                .toList();
+
         item.setUserActions(mergedCatalogItemUserActions);
 
 
@@ -126,7 +135,7 @@ public class CatalogApiAdapter {
 
         item.setUpdatedAt(catalogRequestParams.getCatalogItemEntityContext().getLastCommitDateUTC().toInstant().toEpochMilli());
 
-        return item;
+        return new CatalogItemWrapper(item, isValidItem);
     }
 
     public  List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams,
@@ -150,6 +159,8 @@ public class CatalogApiAdapter {
                         userGroups,
                         componentCount
                 ))
+                .filter(CatalogItemWrapper::valid)
+                .map(CatalogItemWrapper::catalogItem)
                 .flatMap(item -> item.getTags().stream())
                 .collect(Collectors.groupingBy(CatalogItemTag::getLabel));
 
@@ -198,12 +209,16 @@ public class CatalogApiAdapter {
                 .toList();
     }
 
-    protected  List<CatalogItemUserAction> finalizeUserActions(List<CatalogItemUserAction> itemUserActions,
+    protected  List<CatalogItemUserActionWrapper> finalizeUserActions(List<CatalogItemUserAction> itemUserActions,
                                                                UserActionEntity[] userActionEntities,
                                                                List<String> clusters,
                                                                List<String> userGroups,
                                                                String projectKey,
                                                                String catalogItemId) {
+        var itemUserActionsWrapper = itemUserActions
+                .stream()
+                .map(ua -> new CatalogItemUserActionWrapper(ua, Boolean.TRUE))
+                .toList();
         var userActionEntitiesList = Arrays.asList(userActionEntities);
 
         var userActions = mapList(
@@ -224,8 +239,8 @@ public class CatalogApiAdapter {
         );
 
         var itemUserActionsPairs = fullJoin(
-                itemUserActions, CatalogItemUserAction::getId,
-                userActions, CatalogItemUserAction::getId
+                itemUserActionsWrapper, wrapper -> wrapper.catalogItemUserAction().getId(),
+                userActions, wrapper -> wrapper.catalogItemUserAction().getId()
         );
 
         var customizedItemUserActionsPairs = itemUserActionsPairs
@@ -240,8 +255,8 @@ public class CatalogApiAdapter {
         List<CatalogItemUserAction> customizedItemUserActions = new ArrayList<>();
 
         customizedItemUserActionsPairs.forEach(pair -> {
-            var userConfiguredUserAction = pair.getLeft();
-            var baseUserAction = pair.getRight();
+            var userConfiguredUserAction = pair.getLeft().catalogItemUserAction();
+            var baseUserAction = pair.getRight().catalogItemUserAction();
 
             List<CatalogItemUserActionParameter> mergedParameters = new ArrayList<>();
 
@@ -278,26 +293,31 @@ public class CatalogApiAdapter {
         var customizedItemUserActionsIds = select(customizedItemUserActions, CatalogItemUserAction::getId);
 
         var mandatoryNonCustomizedItemUserActions = mandatoryUserActionsEntities.stream()
-                .filter(ua -> !customizedItemUserActionsIds.contains(ua.getId()))
+                .filter(ua -> !customizedItemUserActionsIds.contains(ua.catalogItemUserAction().getId()))
                 .toList();
 
         // Sort according to the informal specification
         var itemUserActionsIds = select(itemUserActions, CatalogItemUserAction::getId);
-        var userActionsIds = select(userActions, CatalogItemUserAction::getId);
+        var userActionsIds = userActions.stream()
+                .map(wrapper -> wrapper.catalogItemUserAction().getId())
+                .toList();
 
         // 1. Actions customized on CatalogItem.yaml, same order as in CatalogItem.yaml
-        var sortedCustomizedItemUserActions = sortBy(customizedItemUserActions, CatalogItemUserAction::getId, itemUserActionsIds);
+        var sortedCustomizedItemUserActions = sortBy(customizedItemUserActions, CatalogItemUserAction::getId, itemUserActionsIds)
+                .stream()
+                .map(ua -> new CatalogItemUserActionWrapper(ua, Boolean.TRUE))
+                .toList();
 
         // 2. Actions not present in CatalogItem.yaml and mandatory=true, same order as in UserActions.yaml
-        var sortedMandatoryNonCustomizedItemUserActions = sortBy(mandatoryNonCustomizedItemUserActions, CatalogItemUserAction::getId, userActionsIds);
+        var sortedMandatoryNonCustomizedItemUserActions = sortBy(mandatoryNonCustomizedItemUserActions, wrapper -> wrapper.catalogItemUserAction().getId(), userActionsIds);
 
         // The final list of user actions is the union of the two lists, mandatory and not present at the end
-        List<CatalogItemUserAction> resultCatalogItemUserActions = new ArrayList<>();
+        List<CatalogItemUserActionWrapper> resultCatalogItemUserActionsWrapper = new ArrayList<>();
 
-        resultCatalogItemUserActions.addAll(sortedCustomizedItemUserActions);
-        resultCatalogItemUserActions.addAll(sortedMandatoryNonCustomizedItemUserActions);
+        resultCatalogItemUserActionsWrapper.addAll(sortedCustomizedItemUserActions);
+        resultCatalogItemUserActionsWrapper.addAll(sortedMandatoryNonCustomizedItemUserActions);
 
-        return resultCatalogItemUserActions;
+        return resultCatalogItemUserActionsWrapper;
     }
 
     private  List<CatalogItemUserActionParameter> finalizeUserActionParameters(List<CatalogItemUserActionParameter> userConfiguredCatalogItemUserActionParameters,

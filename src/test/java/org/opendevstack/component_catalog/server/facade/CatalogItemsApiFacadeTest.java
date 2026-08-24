@@ -20,6 +20,7 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
 import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
@@ -120,7 +121,7 @@ class CatalogItemsApiFacadeTest {
         Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
         when(projectsInfoService.getProjectClusters(projectKey, accessToken)).thenReturn(projectInfo);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
 
@@ -163,7 +164,7 @@ class CatalogItemsApiFacadeTest {
         Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // when
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -200,7 +201,7 @@ class CatalogItemsApiFacadeTest {
         Integer componentCount = null;
 
         when(catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -337,14 +338,14 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(itemB);
+                    .thenReturn(new CatalogItemWrapper(itemB, true));
 
             when(catalogApiAdapter.asCatalogItem(
                     argThat(p -> p != null && p.getCatalogItemEntityContext() == ctx2),
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(itemA);
+                    .thenReturn(new CatalogItemWrapper(itemA, true));
 
             var params = CatalogRequestParams.builder()
                     .catalogId(catalogId)
@@ -442,14 +443,14 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(keep);
+                    .thenReturn(new CatalogItemWrapper(keep, true));
 
             when(catalogApiAdapter.asCatalogItem(
                     argThat(p -> p != null && p.getCatalogItemEntityContext() == ctxDrop),
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(drop);
+                    .thenReturn(new CatalogItemWrapper(drop, true));
 
             doAnswer(inv -> {
                 CatalogItem it = inv.getArgument(0);
@@ -607,14 +608,14 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                .thenReturn(item1);
+                .thenReturn(new CatalogItemWrapper(item1, true));
 
             when(catalogApiAdapter.asCatalogItem(
                     argThat(p -> p != null && "catalog-2".equals(p.getCatalogId())),
                     anyList(),
                     anyList(),
                     any()))
-                .thenReturn(item2);
+                .thenReturn(new CatalogItemWrapper(item2, true));
 
             // when
             var result = catalogItemsApiFacade.fetchCatalogItems(params);
@@ -670,7 +671,7 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(item);
+                    .thenReturn(new CatalogItemWrapper(item, true));
 
             // when
             var result = catalogItemsApiFacade.fetchCatalogItems(params);
@@ -743,7 +744,7 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(new CatalogItem());
+                    .thenReturn(new CatalogItemWrapper(new CatalogItem(), true));
 
             // when
             catalogItemsApiFacade.fetchCatalogItems(params);
@@ -821,7 +822,7 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                    .thenReturn(new CatalogItem());
+                    .thenReturn(new CatalogItemWrapper(new CatalogItem(), true));
 
             // when
             catalogItemsApiFacade.fetchCatalogItems(params);
@@ -894,14 +895,14 @@ class CatalogItemsApiFacadeTest {
                     anyList(),
                     anyList(),
                     any()))
-                .thenReturn(zItem);
+                .thenReturn(new CatalogItemWrapper(zItem, true));
 
             when(catalogApiAdapter.asCatalogItem(
                     argThat(p -> p != null && "catalog-2".equals(p.getCatalogId())),
                     anyList(),
                     anyList(),
                     any()))
-                .thenReturn(aItem);
+                .thenReturn(new CatalogItemWrapper(aItem, true));
 
             doReturn(true)
                     .when(catalogItemsApiFacade)
@@ -1114,7 +1115,7 @@ class CatalogItemsApiFacadeTest {
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
         when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(1)))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -1175,7 +1176,7 @@ class CatalogItemsApiFacadeTest {
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
         when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0)))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -1226,7 +1227,7 @@ class CatalogItemsApiFacadeTest {
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
         when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0)))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -1262,7 +1263,7 @@ class CatalogItemsApiFacadeTest {
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
         when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(0)))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);
@@ -1324,7 +1325,7 @@ class CatalogItemsApiFacadeTest {
 
         CatalogItem expectedCatalogItem = CatalogItemMother.of();
         when(catalogApiAdapter.asCatalogItem(eq(catalogRequestParams), anyList(), eq(userGroups), eq(2)))
-                .thenReturn(expectedCatalogItem);
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
 
         // When
         var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams);

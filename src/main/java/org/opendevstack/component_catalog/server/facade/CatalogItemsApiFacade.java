@@ -11,6 +11,7 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
@@ -74,7 +75,14 @@ public class CatalogItemsApiFacade {
 
         var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
-        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+        var catalogItemWrapper = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+
+        if (catalogItemWrapper.valid()) {
+            return catalogItemWrapper.catalogItem();
+        } else {
+            log.warn("Catalog item {} is not valid", catalogRequestParams.getCatalogItemEntityContext().getId());
+            return null;
+        }
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {

@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.mappers;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemUserActionWrapper;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemUserActionGroupsRestriction;
@@ -31,11 +32,11 @@ public class CatalogItemUserActionMapper {
 
     private ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps  catalogItemUserActionGroupsRestrictionProps;
 
-    public CatalogItemUserAction asCatalogItemUserAction(CatalogItemEntityUserAction catalogItemEntityUserAction,
-                                                         List<String> clusters,
-                                                         List<String> userGroups,
-                                                         String projectKey,
-                                                         String catalogItemId) {
+    public CatalogItemUserActionWrapper asCatalogItemUserAction(CatalogItemEntityUserAction catalogItemEntityUserAction,
+                                                                List<String> clusters,
+                                                                List<String> userGroups,
+                                                                String projectKey,
+                                                                String catalogItemId) {
         log.debug("Mapping CatalogItemEntityUserAction to CatalogItemUserAction: {}", catalogItemEntityUserAction);
 
         var userActionParameters = Optional.ofNullable(catalogItemEntityUserAction.getParameters())
@@ -71,10 +72,10 @@ public class CatalogItemUserActionMapper {
 
         log.debug("Resulting CatalogItemUserAction: {}", catalogItemUserAction);
 
-        return catalogItemUserAction;
+        return new CatalogItemUserActionWrapper(catalogItemUserAction, requestableAndMessage.valid());
     }
 
-    public CatalogItemUserAction asCatalogItemUserAction(UserActionEntity userActionEntity,
+    public CatalogItemUserActionWrapper asCatalogItemUserAction(UserActionEntity userActionEntity,
                                                          List<String> clusters,
                                                          List<String> userGroups,
                                                          String projectKey,
@@ -104,7 +105,7 @@ public class CatalogItemUserActionMapper {
 
         var requestableAndMessage = evaluateRestrictions(restrictions, clusters, userActionEntityParameters, userGroups, projectKey, catalogItemId);
 
-        return CatalogItemUserAction.builder()
+        var catalogItemUserAction = CatalogItemUserAction.builder()
                 .id(userActionEntity.getId())
                 .displayName(userActionEntity.getDisplayName())
                 .url(userActionEntity.getUrl())
@@ -113,6 +114,8 @@ public class CatalogItemUserActionMapper {
                 .requestable(requestableAndMessage.requestable())
                 .restrictionMessage(requestableAndMessage.reason())
                 .build();
+
+        return new CatalogItemUserActionWrapper(catalogItemUserAction, requestableAndMessage.valid());
     }
 
     public RestrictionsEvaluatorResult evaluateRestrictions(UserActionEntityRestrictions restrictions,

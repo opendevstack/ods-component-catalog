@@ -47,19 +47,19 @@ class CatalogItemUserActionMapperTest {
                 clusters, userGroups, projectKey, catalogItemId);
 
         // Non-nullable fields
-        assertThat(customCatalogItemUserAction.getId()).isEqualTo(baseUserActionEntity.getId());
-        assertThat(customCatalogItemUserAction.getDisplayName()).isEqualTo(baseUserActionEntity.getDisplayName());
+        assertThat(customCatalogItemUserAction.catalogItemUserAction().getId()).isEqualTo(baseUserActionEntity.getId());
+        assertThat(customCatalogItemUserAction.catalogItemUserAction().getDisplayName()).isEqualTo(baseUserActionEntity.getDisplayName());
 
         // Nullable fields
         EntitiesMapperTest.assertToJsonNullable(
                 baseUserActionEntity.getTriggerMessage(),
-                customCatalogItemUserAction.getTriggerMessage()
+                customCatalogItemUserAction.catalogItemUserAction().getTriggerMessage()
         );
-        EntitiesMapperTest.assertToJsonNullable(baseUserActionEntity.getUrl(), customCatalogItemUserAction.getUrl());
+        EntitiesMapperTest.assertToJsonNullable(baseUserActionEntity.getUrl(), customCatalogItemUserAction.catalogItemUserAction().getUrl());
 
         // Check that the parameters are mapped correctly
         var entityParams = baseUserActionEntity.getParameters();
-        var itemParams = customCatalogItemUserAction.getParameters();
+        var itemParams = customCatalogItemUserAction.catalogItemUserAction().getParameters();
 
         assertThat(itemParams).isNotEmpty();
         assertThat(itemParams).hasSize(entityParams.length);

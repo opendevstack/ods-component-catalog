@@ -1,5 +1,6 @@
 package org.opendevstack.component_catalog.server.mappers;
 
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemUserActionWrapper;
 import org.opendevstack.component_catalog.server.model.*;
 import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
@@ -70,6 +71,8 @@ public class EntitiesMapper {
                 .map(actions -> Arrays.stream(catalogItemEntity.getSpec().getUserActions())
                         .map(entity ->
                                 catalogItemUserActionMapper.asCatalogItemUserAction(entity, clusters, userGroups, projectKey, catalogItemEntityCtx.getId()))
+                        .filter(CatalogItemUserActionWrapper::valid)
+                        .map(CatalogItemUserActionWrapper::catalogItemUserAction)
                         .toList())
                 .orElse(new ArrayList<>());
 
