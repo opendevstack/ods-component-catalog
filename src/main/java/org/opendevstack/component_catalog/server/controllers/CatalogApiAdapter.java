@@ -60,7 +60,7 @@ public class CatalogApiAdapter {
 
         var mappedItem = entitiesMapper.asCatalogItem(catalogRequestParams.getCatalogItemEntityContext(), clusters, userGroups, catalogRequestParams.getProjectKey(), componentCount);
 
-        var item = updateItemIfNoRepoAccess(mappedItem, hasRepoAccess);
+        var item = updateItemIfNoRepoAccess(mappedItem.catalogItem(), hasRepoAccess);
 
         // This his here just in case the "userActions" field is either not defined on CatalogItem.yaml,
         //  or is defined as null/missing, which is not expected, but it happens.
@@ -74,7 +74,7 @@ public class CatalogApiAdapter {
                 catalogRequestParams.getProjectKey(), catalogRequestParams.getCatalogItemEntityContext().getId());
 
         // Will define later on if item should be returned or not
-        var isValidItem = mergedCatalogItemUserActionsWrapper.stream().allMatch(CatalogItemUserActionWrapper::valid);
+        var isValidItem = mappedItem.valid();
         var mergedCatalogItemUserActions = mergedCatalogItemUserActionsWrapper.stream()
                 .map(CatalogItemUserActionWrapper::catalogItemUserAction)
                 .toList();
@@ -94,7 +94,7 @@ public class CatalogApiAdapter {
                 .filter(ua -> Objects.equals(CODE_ID, ua.getId()))
                 .findFirst()
                 .map(UserActionEntity::getUrl)
-                .orElse(mappedItem.getItemSrc());
+                .orElse(mappedItem.catalogItem().getItemSrc());
 
         var itemEntityCodeUrl = Optional
                 .ofNullable(catalogRequestParams.getCatalogItemEntityContext().getCatalogItemEntity().getSpec())

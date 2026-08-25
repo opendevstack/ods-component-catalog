@@ -22,11 +22,14 @@ public class ProjectsFilter implements CatalogItemsFilter {
         validate(params);
         String projectKey = params.getFirst();
 
-        var projects = Optional.ofNullable(item.getRestrictions())
+        var projects = Optional.ofNullable(item)
+                .map(CatalogItem::getRestrictions)
                 .map(CatalogItemRestriction::getProjects)
                 .orElse(Collections.emptySet());
 
-        log.debug("Projects {} for the catalog item {}", projects, item.getId());
+        var projectId = Optional.ofNullable(item).map(CatalogItem::getId).orElse("unknown");
+
+        log.debug("Projects {} for the catalog item {}", projects, projectId);
         return projects.isEmpty() || (projectKey != null && projects.contains(projectKey));
     }
 
