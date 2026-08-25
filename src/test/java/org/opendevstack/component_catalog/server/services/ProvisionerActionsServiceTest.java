@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
@@ -415,6 +416,9 @@ class ProvisionerActionsServiceTest {
         var sourceCommitId = "sourceCommitId";
 
         var projectComponents = ProjectComponentsMother.of();
+        projectComponents.getComponents().get(componentId).setWorkflowJobId("workflowJobId");
+        projectComponents.getComponents().get(componentId).setDeletionWorkflowJobId("deletionWorkflowJobId");
+
         var projectComponentsWithoutComponentId = ProjectComponentsMother.of();
 
         when(bitbucketService.pathAtBuilder()).thenReturn(pathAtBuilder);
@@ -431,10 +435,15 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetExistingProjectComponents(pathAt, projectComponents);
         prepareMocksForSave();
 
+        var projectComponentRequestCaptor = ArgumentCaptor.forClass(ProjectComponentRequest.class);
+
         // when
         provisionerActionsService.deleteComponentProvisioningStatus(projectKey, componentId, requester);
 
         // then
+        verify(projectComponentsService).addNewComponent(eq(projectComponents), projectComponentRequestCaptor.capture());
+        assertThat(projectComponentRequestCaptor.getValue().getWorkflowJobId()).isEqualTo("workflowJobId");
+        assertThat(projectComponentRequestCaptor.getValue().getDeletionWorkflowJobId()).isEqualTo("deletionWorkflowJobId");
         verify(bitbucketService).pushFilesAtomically(argThat(fileUpdates ->
                         fileUpdates != null && fileUpdates.size() == 2),
                 eq("Delete component and archive provisioning history"),
