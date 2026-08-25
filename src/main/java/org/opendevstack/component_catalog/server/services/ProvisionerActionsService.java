@@ -151,6 +151,8 @@ public class ProvisionerActionsService {
                     .componentUrl(componentToBeDeleted.getComponentUrl())
                     .createdAt(componentToBeDeleted.getCreatedAt())
                     .updatedAt(componentToBeDeleted.getUpdatedAt())
+                    .workflowJobId(componentToBeDeleted.getWorkflowJobId())
+                    .deletionWorkflowJobId(componentToBeDeleted.getDeletionWorkflowJobId())
                     .parameters(componentToBeDeleted.getParameters())
                     .build();
 
