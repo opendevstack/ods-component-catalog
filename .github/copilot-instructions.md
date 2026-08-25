@@ -61,7 +61,7 @@ If the project conventions change, update this document first so future edits st
 - Test framework: JUnit 5 (Jupiter).
 - Mocking: Mockito with `@ExtendWith(MockitoExtension.class)`.
 - Assertions: AssertJ.
-- Test naming commonly follows `given...when...then...` style.
+- Test naming commonly follows `given...when...then...` style. An example would be `GivenXXX_WhenYYY_ThenZZZ`.
 - Test body commonly contains `// given // when // then` blocks.
 - Test data helpers often use the `Mother` pattern.
 - Keep tests focused on behavior and readable without extra abstraction.

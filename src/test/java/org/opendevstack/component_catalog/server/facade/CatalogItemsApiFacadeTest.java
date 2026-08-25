@@ -21,6 +21,7 @@ import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
+import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
 import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
@@ -29,7 +30,9 @@ import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -88,6 +91,12 @@ class CatalogItemsApiFacadeTest {
     @Mock
     private AuthenticationFacade authenticationFacade;
 
+    @Mock
+    private AuthorizationInfo authInfo;
+
+    @Mock
+    private CatalogServiceAdapter catalogServiceAdapter;
+
     @Spy
     @InjectMocks
     private CatalogItemsApiFacade catalogItemsApiFacade;
@@ -95,7 +104,7 @@ class CatalogItemsApiFacadeTest {
     private static final String HUMAN_TOKEN = "humanToken";
 
     @Test
-    void asCatalogItem_returnsCatalogItemUsingClustersFromProjectsApi() {
+    void GivenProjectKeyAndAccessToken_WhenAsCatalogItem_ThenReturnsCatalogItemUsingProjectClusters() {
         // given
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var userActionsEntity = UserActionsEntityMother.of();
@@ -135,7 +144,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void asCatalogItem_whenProjectInfoHasNullClusters_usesEmptyList() {
+    void GivenProjectInfoWithNullClusters_WhenAsCatalogItem_ThenUsesEmptyClustersList() {
         // given
         var itemEntityCtx = CatalogItemEntityContextMother.of();
         var userActionsEntity = UserActionsEntityMother.of();
@@ -176,7 +185,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenANullAccessToken_whenAsCatalogItem_thenNoRequestToProjectsInfoService_AndEmptyClusters() {
+    void GivenNullAccessToken_WhenAsCatalogItem_ThenSkipsProjectsInfoServiceAndUsesEmptyClusters() {
         // Given
         var catalogItemEntityContext = CatalogItemEntityContextMother.of();
         var userActionsEntity = UserActionsEntityMother.of();
@@ -214,7 +223,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void catalogItemFiltersFrom_withProjectKeyAndToken_returnsFiltersUsingClustersFromProjectsApi() {
+    void GivenProjectKeyAndAccessToken_WhenCatalogItemFiltersFrom_ThenReturnsFiltersUsingProjectClusters() {
         // given
         var catalogEntity = mock(CatalogEntity.class);
         var catalogItemEntityContext = CatalogItemEntityContextMother.of();
@@ -259,7 +268,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void catalogItemFiltersFrom_withoutProjectKeyAndToken_usesEmptyClusters() {
+    void GivenNoProjectKeyAndNoAccessToken_WhenCatalogItemFiltersFrom_ThenUsesEmptyClusters() {
         // given
         var catalogEntity = CatalogEntityMother.of();
         var catalogItemEntityContext = CatalogItemEntityContextMother.of();
@@ -302,7 +311,7 @@ class CatalogItemsApiFacadeTest {
 
 
     @Test
-    void fetchCatalogItems_whenContributingCheckForCatalogTrue_mapsBuildsFiltersSortsAndReturnsList()
+    void GivenContributingFileExists_WhenFetchCatalogItems_ThenMapsFiltersSortsAndReturnsList()
             throws InvalidIdException, InvalidCatalogEntityException {
         try (var mockedJwt = mockHumanToken()) {
 
@@ -369,7 +378,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenContributingCheckForCatalogFalse_returnsEmptyListAndSkipsMapping()
+    void GivenContributingFileMissing_WhenFetchCatalogItems_ThenReturnsEmptyListAndSkipsMapping()
             throws InvalidIdException, InvalidCatalogEntityException {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
@@ -413,7 +422,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_filtersByProjectAndContributingPerItem_leavesOnlyMatchingOnes()
+    void GivenMixedItems_WhenFetchCatalogItems_ThenReturnsOnlyProjectMatchingItems()
             throws InvalidIdException, InvalidCatalogEntityException {
         try (var mockedJwt = mockHumanToken()) {
 
@@ -478,7 +487,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenAsCatalogItemThrows_propagatesInvalidCatalogEntityException()
+    void GivenMappingFailure_WhenFetchCatalogItems_ThenPropagatesInvalidCatalogEntityException()
             throws InvalidIdException {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
@@ -524,7 +533,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogsCollectionIsEmpty_throwsInvalidCatalogEntityException() throws Exception {
+    void GivenEmptyCatalogsCollection_WhenFetchCatalogItems_ThenThrowsInvalidCatalogEntityException() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
@@ -549,7 +558,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdProvided_thenFetchesAllCatalogItems() throws Exception {
+    void GivenNoCatalogId_WhenFetchCatalogItems_ThenFetchesItemsFromAllCatalogs() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
@@ -632,7 +641,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogIdProvided_thenFetchesOnlyCatalogItems() throws Exception {
+    void GivenCatalogId_WhenFetchCatalogItems_ThenFetchesOnlyItemsFromThatCatalog() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             var catalogId = "catalog-123";
@@ -685,7 +694,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdAndInvalidToken_throwsForbiddenException() {
+    void GivenNoCatalogIdAndInvalidOidToken_WhenFetchCatalogItems_ThenThrowsForbiddenException() {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("badToken", "oid"))
@@ -706,7 +715,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdAndValidToken_givesRepoReadPermission() throws InvalidIdException {
+    void GivenCatalogIdAndRepoReadPermission_WhenFetchCatalogItems_ThenPassesRepoReadPermissionToMapper() throws InvalidIdException {
         try (var mockedJwt = mockHumanToken()) {
 
             // given
@@ -761,7 +770,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogIdProvidedAndApplicationToken_thenThrowsForbidden()
+    void GivenCatalogIdAndApplicationToken_WhenFetchCatalogItems_ThenThrowsForbiddenException()
             throws InvalidIdException {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
@@ -784,7 +793,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenCatalogIdAndAccessTokenAreProvided_thenSameTokenIsUsedForMapping()
+    void GivenCatalogIdAndAccessToken_WhenFetchCatalogItems_ThenUsesSameTokenForMapping()
             throws Exception {
         try (var mockedJwt = mockHumanToken()) {
 
@@ -839,7 +848,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItems_whenNoCatalogIdProvided_sortsAllCatalogItemsAscendingByTitle() throws Exception {
+    void GivenNoCatalogId_WhenFetchCatalogItems_ThenSortsAllItemsAscendingByTitle() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
             mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
@@ -919,7 +928,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItem_whenEntityFoundAndPassesFilters_returnsOk()
+    void GivenExistingEntityAndPassingFilters_WhenFetchCatalogItem_ThenReturnsCatalogItem()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var catalogItemId = "item-123";
@@ -956,7 +965,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItem_whenEntityMissing_returnsNotFound()
+    void GivenMissingEntity_WhenFetchCatalogItem_ThenReturnsNull()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var catalogItemId = "unknown";
@@ -976,7 +985,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItem_whenFilteredOutByProject_returnsNotFound()
+    void GivenItemFilteredOutByProject_WhenFetchCatalogItem_ThenReturnsNull()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var catalogItemId = "item-456";
@@ -1008,7 +1017,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItem_whenAsCatalogItemThrows_propagatesInvalidCatalogItemEntityException()
+    void GivenMappingFailure_WhenFetchCatalogItem_ThenPropagatesInvalidCatalogItemEntityException()
             throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var catalogItemId = "item-ex";
@@ -1028,7 +1037,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItemBySlug_whenItemFound_returnsMappedCatalogItem()
+    void GivenExistingSlug_WhenFetchCatalogItemBySlug_ThenReturnsMappedCatalogItem()
             throws Exception {
         // given
         var slug = CatalogItemSlug.parse("myproject_my-repo");
@@ -1051,7 +1060,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void fetchCatalogItemBySlug_whenItemNotFound_returnsNull()
+    void GivenMissingSlug_WhenFetchCatalogItemBySlug_ThenReturnsNull()
             throws Exception {
         // given
         var slug = CatalogItemSlug.parse("myproject_my-repo");
@@ -1066,7 +1075,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenCatalogRequestWithMatchingComponents_whenAsCatalogItem_thenCalculatesComponentCountCorrectly() {
+    void GivenCatalogRequestWithMatchingComponents_WhenAsCatalogItem_ThenCalculatesComponentCountCorrectly() {
         // Given
         var catalogEntity = CatalogEntityMother.of();
         var userGroups = List.of("owner1", "group1");
@@ -1127,7 +1136,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenCatalogRequestWithNoMatchingComponents_whenAsCatalogItem_thenComponentCountIsZero() {
+    void GivenCatalogRequestWithNoMatchingComponents_WhenAsCatalogItem_ThenComponentCountIsZero() {
         // Given
         var catalogEntity = CatalogEntityMother.of();
         var userGroups = List.of("owner1", "group1");
@@ -1187,7 +1196,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenCatalogRequestWithInvalidEntityException_whenAsCatalogItem_thenHandlesExceptionAndContinues() {
+    void GivenCatalogRequestWithInvalidEntityException_WhenAsCatalogItem_ThenHandlesExceptionAndContinues() {
         // Given
         var catalogEntity = CatalogEntityMother.of();
         var userGroups = List.of("owner1", "group1");
@@ -1238,7 +1247,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenEmptyProjectComponentsList_whenAsCatalogItem_thenComponentCountIsZero() {
+    void GivenEmptyProjectComponentsList_WhenAsCatalogItem_ThenComponentCountIsZero() {
         // Given
         var catalogEntity = CatalogEntityMother.of();
         var userGroups = List.of("owner1", "group1");
@@ -1274,7 +1283,7 @@ class CatalogItemsApiFacadeTest {
     }
 
     @Test
-    void givenMultipleProjectsWithMultipleComponents_whenAsCatalogItem_thenCountsMatchingComponentsAcrossAllProjects() {
+    void GivenMultipleProjectsWithMultipleComponents_WhenAsCatalogItem_ThenCountsMatchingComponentsAcrossAllProjects() {
         // Given
         var catalogEntity = CatalogEntityMother.of();
         var userGroups = List.of("owner1", "group1");
@@ -1335,6 +1344,115 @@ class CatalogItemsApiFacadeTest {
         verify(provisionerActionsService, times(1)).getAllProjectComponentsProjectKeys();
         verify(provisionerActionsService).getProjectComponents("PRJ-1");
         verify(provisionerActionsService).getProjectComponents("PRJ-2");
+    }
+
+    @Test
+    void GivenInvalidIdException_WhenGettingCurrentPrincipalCatalogPermissions_ThenReturnsEmptySet() throws InvalidIdException {
+        // given
+        var catalogId = "catalog-invalid";
+        var principalName = "john.doe";
+
+        when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(catalogEntitiesService.catalogPrincipalPermissions(catalogId, principalName))
+                .thenThrow(new InvalidIdException("invalid id"));
+
+        // when
+        var result = catalogItemsApiFacade.currentPrincipalCatalogPermissions(catalogId);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void GivenExistingPermissions_WhenGettingCurrentPrincipalCatalogPermissions_ThenReturnsPermissions() throws InvalidIdException {
+        // given
+        var catalogId = "catalog-ok";
+        var principalName = "john.doe";
+        var permissions = Set.of(CatalogEntityPermissionEnum.REPO_READ);
+
+        when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
+        when(catalogEntitiesService.catalogPrincipalPermissions(catalogId, principalName)).thenReturn(permissions);
+
+        // when
+        var result = catalogItemsApiFacade.currentPrincipalCatalogPermissions(catalogId);
+
+        // then
+        assertThat(result).isEqualTo(permissions);
+    }
+
+    @Test
+    void GivenUserWithoutCatalogOwnerGroup_WhenAsCatalogItem_ThenDoesNotCalculateComponentCount() {
+        // given
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
+        var accessToken = "accessToken";
+        var userGroups = List.of("non-owner-group");
+
+        var metadata = mock(CatalogEntityMetadata.class);
+        var catalogEntity = mock(CatalogEntity.class);
+        when(metadata.getOwners()).thenReturn(List.of("owner-group"));
+        when(catalogEntity.getMetadata()).thenReturn(metadata);
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx))
+                .thenReturn(Optional.of(catalogEntity));
+        when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
+
+        var requestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(Set.of())
+                .accessToken(accessToken)
+                .build();
+
+        var expectedCatalogItem = CatalogItemMother.of();
+        when(catalogApiAdapter.asCatalogItem(eq(requestParams), anyList(), eq(userGroups), isNull()))
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
+
+        // when
+        var result = catalogItemsApiFacade.asCatalogItem(requestParams);
+
+        // then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(provisionerActionsService, never()).getAllProjectComponentsProjectKeys();
+        verify(projectComponentsService, never()).getRepoPathFromCatalogItemId(anyString());
+    }
+
+    @Test
+    void GivenInvalidCatalogItemWrapper_WhenAsCatalogItem_ThenReturnsNull() {
+        // given
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
+        when(authenticationFacade.getAccessToken()).thenReturn(null);
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx)).thenReturn(Optional.empty());
+
+        var requestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(Set.of())
+                .build();
+
+        when(catalogApiAdapter.asCatalogItem(eq(requestParams), anyList(), anyList(), isNull()))
+                .thenReturn(new CatalogItemWrapper(null, false));
+
+        // when
+        var result = catalogItemsApiFacade.asCatalogItem(requestParams);
+
+        // then
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void GivenCatalogId_WhenFilterByContributingFileExists_ThenDelegatesToCatalogServiceAdapter() {
+        // given
+        var catalogId = "catalog-1";
+        when(catalogServiceAdapter.contributingFileExists(catalogId)).thenReturn(true);
+
+        // when
+        var result = catalogItemsApiFacade.filterByContributingFileExists(catalogId);
+
+        // then
+        assertThat(result).isTrue();
+        verify(catalogServiceAdapter).contributingFileExists(catalogId);
     }
 
     private MockedStatic<JwtUtils> mockHumanToken() {
