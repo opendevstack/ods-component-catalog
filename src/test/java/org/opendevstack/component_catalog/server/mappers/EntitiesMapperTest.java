@@ -97,8 +97,8 @@ class EntitiesMapperTest {
                 componentCount
         );
 
-        assertThat(catalogItem.getTitle()).isEqualTo("Appshell in Angular");
-        assertThat(catalogItem.getUserActions()).hasSize(2);
+        assertThat(catalogItem.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(catalogItem.catalogItem().getUserActions()).hasSize(2);
     }
 
     @Test
