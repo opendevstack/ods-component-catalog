@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -36,11 +35,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 
     @Test
@@ -55,11 +54,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 
     @ParameterizedTest
@@ -77,11 +76,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo(NEITHER_PARAMS_SUCCESS);
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEqualTo(NEITHER_PARAMS_SUCCESS);
     }
 
     @Test
@@ -91,11 +90,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo(NEITHER_PARAMS_SUCCESS);
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEqualTo(NEITHER_PARAMS_SUCCESS);
     }
 
     @ParameterizedTest
@@ -115,11 +114,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(MISCONFIGURATION_ERROR);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(MISCONFIGURATION_ERROR);
     }
 
     @Test
@@ -135,11 +134,11 @@ class WorkflowsEvaluatorTest {
         var restrictions = new EvaluationRestrictions("PROJECT_KEY", null);
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(restrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(restrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEqualTo(BOTH_PARAMS_SUCCESS);
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEqualTo(BOTH_PARAMS_SUCCESS);
     }
 }
 

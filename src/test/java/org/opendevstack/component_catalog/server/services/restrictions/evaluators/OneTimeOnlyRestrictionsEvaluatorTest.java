@@ -1,23 +1,25 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
-import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
-import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
-import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OneTimeOnlyRestrictionsEvaluatorTest {
@@ -68,11 +70,11 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // when
-        Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(ONE_TIME_ONLY_MSG);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(ONE_TIME_ONLY_MSG);
         verify(provisionerActionsService, times(1))
                 .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }
@@ -102,11 +104,11 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // when
-        Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
         verify(provisionerActionsService, times(1))
                 .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }
@@ -132,11 +134,11 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // when
-        Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
         verifyNoInteractions(provisionerActionsService);
     }
 
@@ -164,11 +166,11 @@ class OneTimeOnlyRestrictionsEvaluatorTest {
         var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
 
         // when
-        Pair<Boolean, String> result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult result = oneTimeOnlyRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(ONE_TIME_ONLY_MSG);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(ONE_TIME_ONLY_MSG);
         verify(provisionerActionsService, times(1))
                 .isCatalogItemAlreadyProvisionedInProject(projectKey, catalogItemId);
     }

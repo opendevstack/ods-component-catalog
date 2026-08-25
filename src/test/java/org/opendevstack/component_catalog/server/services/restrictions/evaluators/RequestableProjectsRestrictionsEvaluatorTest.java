@@ -31,8 +31,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -50,8 +50,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -68,8 +68,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(INVITATION_MSG);
     }
 
     @Test
@@ -86,8 +86,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(INVITATION_MSG);
     }
 
     @Test
@@ -104,8 +104,8 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -122,7 +122,7 @@ class RequestableProjectsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo(INVITATION_MSG);
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo(INVITATION_MSG);
     }
 }

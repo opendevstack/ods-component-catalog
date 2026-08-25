@@ -1,8 +1,7 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import org.apache.commons.lang3.tuple.Pair;
-
+// Evaluators are triggered BEFORE merge parameters on items.
 public interface RestrictionsEvaluator {
 
-    Pair<Boolean, String> evaluate(EvaluationRestrictions restrictions, RestrictionsParams params);
+    RestrictionsEvaluatorResult evaluate(EvaluationRestrictions restrictions, RestrictionsParams params);
 }

@@ -11,7 +11,7 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
-import org.opendevstack.component_catalog.server.model.CatalogItemRestriction;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
 import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
@@ -28,6 +28,7 @@ import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalog
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,6 +63,8 @@ public class CatalogItemsApiFacade {
     private final ProvisionerActionsService provisionerActionsService;
     private final AuthenticationFacade authenticationFacade;
 
+    private final List<CatalogItemsFilter> catalogItemFilters;
+
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
         return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams);
@@ -72,7 +76,14 @@ public class CatalogItemsApiFacade {
 
         var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
-        return catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+        var catalogItemWrapper = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+
+        if (catalogItemWrapper.valid()) {
+            return catalogItemWrapper.catalogItem();
+        } else {
+            log.warn("Catalog item {} is not valid", catalogRequestParams.getCatalogItemEntityContext().getId());
+            return null;
+        }
     }
 
     public List<CatalogItemFilter> catalogItemFiltersFrom(CatalogRequestParams catalogRequestParams) {
@@ -157,7 +168,8 @@ public class CatalogItemsApiFacade {
                                             .build()
                             )
                     )
-                    .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
+                    .filter(Objects::nonNull)
+                    .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
                     .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
                     .toList();
         else {
@@ -180,7 +192,7 @@ public class CatalogItemsApiFacade {
                                         .build()
                         )
                 )
-                .filter(item -> filterByProject(item, catalogRequestParams.getProjectKey()))
+                .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
                 .orElse(null);
     }
 
@@ -206,11 +218,12 @@ public class CatalogItemsApiFacade {
         );
     }
 
-    protected boolean filterByProject(CatalogItem item, String projectKey) {
-        var projects = Optional.ofNullable(item.getRestrictions())
-                .map(CatalogItemRestriction::getProjects)
-                .orElse(Collections.emptySet());
-        return projects.isEmpty() || (projectKey != null && projects.contains(projectKey));
+    // We can not do workflowsFilter in here, because the parameters merge was already done
+    protected boolean applyFilters(CatalogItem item, String projectKey) {
+        var params = Collections.singletonList(projectKey);
+
+        return catalogItemFilters.stream()
+                .allMatch(filter -> filter.filter(item, params));
     }
 
     protected boolean filterByContributingFileExists(String id) {

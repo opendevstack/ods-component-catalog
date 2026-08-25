@@ -1,5 +1,9 @@
 package org.opendevstack.component_catalog.server.mappers;
 
+import org.apache.logging.log4j.util.Strings;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionMessageType;
@@ -13,19 +17,15 @@ import org.opendevstack.component_catalog.server.services.catalog.entity.Catalog
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserActionMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.UserActionRestrictionsMother;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.util.Strings;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.openapitools.jackson.nullable.JsonNullable;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.asCatalogItemUserAction;
 import static org.opendevstack.component_catalog.server.mappers.EntitiesMapper.overrideNullFields;
 import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isAbsent;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNull;
 
 class EntitiesMapperTest {
@@ -37,7 +37,7 @@ class EntitiesMapperTest {
     void setUp() {
         this.catalogItemUserActionParameterMapper =  new CatalogItemUserActionParameterMapper();
 
-        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
+        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> RestrictionsEvaluatorResultMother.of();
 
         var groupsRestrictionProps =
                 ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
@@ -97,8 +97,8 @@ class EntitiesMapperTest {
                 componentCount
         );
 
-        assertThat(catalogItem.getTitle()).isEqualTo("Appshell in Angular");
-        assertThat(catalogItem.getUserActions()).hasSize(2);
+        assertThat(catalogItem.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(catalogItem.catalogItem().getUserActions()).hasSize(2);
     }
 
     @Test

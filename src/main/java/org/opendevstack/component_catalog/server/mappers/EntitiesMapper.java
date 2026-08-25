@@ -1,6 +1,8 @@
 package org.opendevstack.component_catalog.server.mappers;
 
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemUserActionWrapper;
 import org.opendevstack.component_catalog.server.model.*;
+import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityMessageDefinition;
@@ -56,7 +58,7 @@ public class EntitiesMapper {
                 .build();
     }
 
-    public CatalogItem asCatalogItem(CatalogItemEntityContext catalogItemEntityCtx, List<String> clusters, List<String> userGroups, String projectKey, Integer componentCount) {
+    public CatalogItemWrapper asCatalogItem(CatalogItemEntityContext catalogItemEntityCtx, List<String> clusters, List<String> userGroups, String projectKey, Integer componentCount) {
         log.debug("Mapping CatalogItemEntityContext to CatalogItem: {}", catalogItemEntityCtx);
 
         var catalogItemEntity = catalogItemEntityCtx.getCatalogItemEntity();
@@ -65,13 +67,15 @@ public class EntitiesMapper {
                         .map(entry -> CatalogItemTag.builder().label(entry.getKey()).options(entry.getValue()).build())
                         .toList();
 
-        var catalogItemUserActions = Optional.ofNullable(catalogItemEntity.getSpec())
+        var catalogItemUserActionWrappers = Optional.ofNullable(catalogItemEntity.getSpec())
                 .map(CatalogItemEntitySpec::getUserActions)
                 .map(actions -> Arrays.stream(catalogItemEntity.getSpec().getUserActions())
                         .map(entity ->
                                 catalogItemUserActionMapper.asCatalogItemUserAction(entity, clusters, userGroups, projectKey, catalogItemEntityCtx.getId()))
                         .toList())
                 .orElse(new ArrayList<>());
+        var isValidTheCatalogItem = catalogItemUserActionWrappers.stream().allMatch(CatalogItemUserActionWrapper::valid);
+        var catalogItemUserActions = catalogItemUserActionWrappers.stream().map(CatalogItemUserActionWrapper::catalogItemUserAction).toList();
 
         var catalogItemRestrictions = Optional.ofNullable(catalogItemEntity.getSpec())
                 .map(CatalogItemEntitySpec::getRestrictions)
@@ -104,7 +108,7 @@ public class EntitiesMapper {
 
         log.debug("Resulting CatalogItem: {}", catalogItem);
 
-        return catalogItem;
+        return new CatalogItemWrapper(catalogItem, isValidTheCatalogItem);
     }
 
     public static CatalogItemRestriction asCatalogItemRestriction(CatalogItemEntityRestrictions source) {

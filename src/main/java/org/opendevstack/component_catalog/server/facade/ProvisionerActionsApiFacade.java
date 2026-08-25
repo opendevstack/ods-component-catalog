@@ -1,7 +1,6 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -12,12 +11,14 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResult;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Slf4j
@@ -82,7 +83,11 @@ public class ProvisionerActionsApiFacade {
                 .projectKey(projectKey)
                 .build();
 
-        if (Boolean.FALSE.equals(groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params).getLeft())) {
+        var requestable = Optional.ofNullable(groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params))
+                .map(RestrictionsEvaluatorResult::requestable)
+                .orElse(true);
+
+        if (!requestable) {
             log.error("The user has no permissions to perform this action based on group restrictions for project {}", projectKey);
             throw new ForbiddenException("User not allowed to perform this action");
         }

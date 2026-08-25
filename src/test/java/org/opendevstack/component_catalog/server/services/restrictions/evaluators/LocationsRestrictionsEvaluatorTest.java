@@ -1,11 +1,10 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameterLocation;
 import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
-import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,8 +36,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -59,8 +58,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -81,8 +80,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -115,8 +114,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isTrue();
-        assertThat(result.getRight()).isEmpty();
+        assertThat(result.requestable()).isTrue();
+        assertThat(result.reason()).isEmpty();
     }
 
     @Test
@@ -149,8 +148,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -171,8 +170,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -193,8 +192,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -215,8 +214,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -249,8 +248,8 @@ class LocationsRestrictionsEvaluatorTest {
         var result = evaluator.evaluate(evaluationRestrictions, params);
 
         //then
-        assertThat(result.getLeft()).isFalse();
-        assertThat(result.getRight()).isEqualTo("This product is not provisionable in the project location.");
+        assertThat(result.requestable()).isFalse();
+        assertThat(result.reason()).isEqualTo("This product is not provisionable in the project location.");
     }
 
     @Test
@@ -269,14 +268,14 @@ class LocationsRestrictionsEvaluatorTest {
         );
 
         // when
-        Pair<Boolean, String> result = evaluator.evaluate(evaluationRestrictions, params);
+        RestrictionsEvaluatorResult result = evaluator.evaluate(evaluationRestrictions, params);
 
         // then
-        assertThat(result.getLeft())
+        assertThat(result.requestable())
                 .as("Uppercase 'EU' should NOT match lowercase 'eu'")
                 .isFalse();
 
-        assertThat(result.getRight())
+        assertThat(result.reason())
                 .isEqualTo("This product is not provisionable in the project location.");
     }
 

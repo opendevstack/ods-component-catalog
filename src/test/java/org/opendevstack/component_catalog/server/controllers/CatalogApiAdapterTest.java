@@ -1,30 +1,54 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.apache.logging.log4j.util.Strings;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionParameterMapper;
 import org.opendevstack.component_catalog.server.mappers.EntitiesMapper;
-import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserActionParameter;
-import org.opendevstack.component_catalog.server.mother.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
+import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
+import org.opendevstack.component_catalog.server.mother.CatalogEntityContextMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadataMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionMother;
+import org.opendevstack.component_catalog.server.mother.CatalogItemUserActionParameterMother;
+import org.opendevstack.component_catalog.server.mother.CatalogsCollectionsEntityMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterLocationMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterMother;
+import org.opendevstack.component_catalog.server.mother.UserActionEntityParameterValidationMother;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntitySpec;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityRestrictionsMother;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityParameter;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictionsMother;
-import org.opendevstack.component_catalog.server.services.catalog.entity.*;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntity;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityMother;
+import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserAction;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.util.Strings;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +70,7 @@ class CatalogApiAdapterTest {
         metadata.setSpec(spec);
         defaultCatalogEntity.setMetadata(metadata);
 
-        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
+        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> RestrictionsEvaluatorResultMother.of();
 
         var groupsRestrictionProps =
                 ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
@@ -114,41 +138,41 @@ class CatalogApiAdapterTest {
                 "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hl"
                         + "YWRzL21hc3Rlcg==";
 
-        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+        var item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set from CatalogItemEntityContext.lastCommitDateUTC (milliseconds since epoch)
-        assertThat(item.getUpdatedAt()).isEqualTo(expectedUpdatedAt);
+        assertThat(item.catalogItem().getUpdatedAt()).isEqualTo(expectedUpdatedAt);
 
         // Mandatory fields
-        Optional<CatalogItemUserAction> codeActionOnItem = item.getUserActions().stream()
+        Optional<CatalogItemUserAction> codeActionOnItem = item.catalogItem().getUserActions().stream()
                 .filter(ua -> Objects.equals("CODE", ua.getId()))
                 .findFirst();
 
-        assertThat(item.getId()).isEqualTo("id");
-        assertThat(item.getTitle()).isEqualTo("Appshell in Angular");
-        assertThat(item.getShortDescription())
+        assertThat(item.catalogItem().getId()).isEqualTo("id");
+        assertThat(item.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(item.catalogItem().getShortDescription())
                 .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
 
         assertThat(codeActionOnItem).isPresent();
 
         assertThat(codeActionOnItem.get().getUrl().get()).isEqualTo("src");
-        assertThat(item.getTags()).hasSize(3);
-        assertThat(item.getDate()).isEqualTo(OffsetDateTime.parse("2000-01-01T00:00Z"));
+        assertThat(item.catalogItem().getTags()).hasSize(3);
+        assertThat(item.catalogItem().getDate()).isEqualTo(OffsetDateTime.parse("2000-01-01T00:00Z"));
 
         // Optional fields
-        assertThat(item.getAuthors()).hasSize(1);
-        assertThat(item.getAuthors()).contains("author");
+        assertThat(item.catalogItem().getAuthors()).hasSize(1);
+        assertThat(item.catalogItem().getAuthors()).contains("author");
 
         // Assert ids encoding
         // Source of the token: id(repoItemCtx.descriptionPath)
-        assertThat(item.getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
+        assertThat(item.catalogItem().getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
         // Source of the token:  id(repoItemCtx.imagePath)
-        assertThat(item.getImageFileId()).isEqualTo(expectedImageFileId);
+        assertThat(item.catalogItem().getImageFileId()).isEqualTo(expectedImageFileId);
 
-        assertThat(item.getUserActions()).hasSize(3);
-        assertThat(item.getUserActions().get(0).getId()).isEqualTo("CODE");
-        assertThat(item.getUserActions().get(1).getId()).isEqualTo("PROVISION");
-        assertThat(item.getUserActions().get(2).getId()).isEqualTo("ACTION_ID_1");
+        assertThat(item.catalogItem().getUserActions()).hasSize(3);
+        assertThat(item.catalogItem().getUserActions().get(0).getId()).isEqualTo("CODE");
+        assertThat(item.catalogItem().getUserActions().get(1).getId()).isEqualTo("PROVISION");
+        assertThat(item.catalogItem().getUserActions().get(2).getId()).isEqualTo("ACTION_ID_1");
     }
 
     @Test
@@ -197,38 +221,38 @@ class CatalogApiAdapterTest {
                 "cHJvamVjdHMvTVlQUk9KRUNUL3JlcG9zL3JlcG8tc2x1Zy9yYXcvc29tZS1wYWNrYWdlL2ltYWdlUGF0aD9hdD1yZWZzL2hl"
                         + "YWRzL21hc3Rlcg==";
 
-        CatalogItem item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
+        var item = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // updatedAt should be set even when the principal has no repo permissions
-        assertThat(item.getUpdatedAt()).isEqualTo(expectedUpdatedAt);
+        assertThat(item.catalogItem().getUpdatedAt()).isEqualTo(expectedUpdatedAt);
 
-        Optional<CatalogItemUserAction> codeAction = item.getUserActions().stream()
+        Optional<CatalogItemUserAction> codeAction = item.catalogItem().getUserActions().stream()
                 .filter(ua -> Objects.equals("CODE", ua.getId()))
                 .findFirst();
 
         // Removed fields due to lack of permissions
-        assertThat(item.getItemSrc()).isNull();
-        assertThat(item.getPath()).isNull();
+        assertThat(item.catalogItem().getItemSrc()).isNull();
+        assertThat(item.catalogItem().getPath()).isNull();
 
         // Mandatory fields
-        assertThat(item.getId()).isEqualTo("id");
-        assertThat(item.getTitle()).isEqualTo("Appshell in Angular");
-        assertThat(item.getShortDescription())
+        assertThat(item.catalogItem().getId()).isEqualTo("id");
+        assertThat(item.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
+        assertThat(item.catalogItem().getShortDescription())
                 .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
         assertThat(codeAction).isPresent();
         assertThat(codeAction.orElseThrow().getUrl().orElse(null)).isNull();
-        assertThat(item.getTags()).hasSize(3);
-        assertThat(item.getDate().toString()).isEqualTo("2000-01-01T00:00Z");
+        assertThat(item.catalogItem().getTags()).hasSize(3);
+        assertThat(item.catalogItem().getDate().toString()).isEqualTo("2000-01-01T00:00Z");
 
         // Optional fields
-        assertThat(item.getAuthors()).hasSize(1);
-        assertThat(item.getAuthors().getFirst()).isEqualTo("author");
+        assertThat(item.catalogItem().getAuthors()).hasSize(1);
+        assertThat(item.catalogItem().getAuthors().getFirst()).isEqualTo("author");
 
         // Assert ids encoding
         // id(repoItemCtx.descriptionPath)
-        assertThat(item.getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
+        assertThat(item.catalogItem().getDescriptionFileId()).isEqualTo(expectedDescriptionFileId);
         // id(repoItemCtx.imagePath)
-        assertThat(item.getImageFileId()).isEqualTo(expectedImageFileId);
+        assertThat(item.catalogItem().getImageFileId()).isEqualTo(expectedImageFileId);
     }
 
     @Test
@@ -248,7 +272,7 @@ class CatalogApiAdapterTest {
         var catalogItem = catalogApiAdapter.asCatalogItem(catalogRequestParams, clusters, userGroups, componentCount);
 
         // then
-        assertThat(catalogItem.getRestrictions().getProjects()).isEqualTo(new HashSet<>(projects));
+        assertThat(catalogItem.catalogItem().getRestrictions().getProjects()).isEqualTo(new HashSet<>(projects));
     }
 
     @Test
@@ -464,9 +488,12 @@ class CatalogApiAdapterTest {
 
         // then
         assertThat(mergedUserActions).hasSize(2);
-        assertThat(mergedUserActions).extracting("id").containsExactlyInAnyOrder("CODE", "PROVISION");
-        assertThat(mergedUserActions).extracting("id").doesNotContain("DUMMY");
-        assertThat(mergedUserActions).extracting("id").doesNotContain("TEST");
+        assertThat(mergedUserActions)
+                .extracting("catalogItemUserAction")
+                .extracting("id")
+                .containsExactlyInAnyOrder("CODE", "PROVISION")
+                .doesNotContain("DUMMY")
+                .doesNotContain("TEST");
     }
 
     @Test
@@ -497,7 +524,7 @@ class CatalogApiAdapterTest {
         // then
         assertThat(mergedUserActions).hasSize(1);
 
-        var parameters =  mergedUserActions.getFirst().getParameters();
+        var parameters =  mergedUserActions.getFirst().catalogItemUserAction().getParameters();
 
         assertThat(parameters).hasSize(3);
         var parameterNonCustomizable = parameters.stream()
@@ -556,7 +583,7 @@ class CatalogApiAdapterTest {
         // then
         assertThat(mergedUserActions).hasSize(1);
 
-        var parameters =  mergedUserActions.getFirst().getParameters();
+        var parameters =  mergedUserActions.getFirst().catalogItemUserAction().getParameters();
 
         assertThat(parameters).hasSize(4);
         var generatedExtraCustomizableParameter = parameters.stream()

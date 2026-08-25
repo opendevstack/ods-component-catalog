@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.facade;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +13,7 @@ import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.EvaluationRestrictions;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
 import org.opendevstack.component_catalog.util.JwtUtils;
 
@@ -104,7 +104,7 @@ class ProvisionerActionsApiFacadeTest {
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
-                 .thenReturn(Pair.of(true, "Allowed"));
+                 .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
 
          try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
              jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
@@ -127,7 +127,7 @@ class ProvisionerActionsApiFacadeTest {
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
-                 .thenReturn(Pair.of(false, "Forbidden"));
+                 .thenReturn(RestrictionsEvaluatorResultMother.of(false, "forbidden"));
 
          try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
              jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
@@ -152,7 +152,7 @@ class ProvisionerActionsApiFacadeTest {
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
-                 .thenReturn(Pair.of(null, "Unknown"));
+                 .thenReturn(null);
 
          try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
              jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
@@ -216,7 +216,7 @@ class ProvisionerActionsApiFacadeTest {
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
-                 .thenReturn(Pair.of(true, "Allowed"));
+                 .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
 
          try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
              jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))

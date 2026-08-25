@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -49,7 +50,7 @@ class UserActionsEntitiesServiceTest {
                 .suffix(List.of("suffix1", "suffix2", "suffix3"))
                 .build();
 
-        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> Pair.of(true, "");
+        RestrictionsEvaluator dummyEvaluator = (restrictions, params) -> RestrictionsEvaluatorResultMother.of();
 
         var catalogItemUserActionMapper = new CatalogItemUserActionMapper(new CatalogItemUserActionParameterMapper(),
                 List.of(dummyEvaluator), groupsRestrictionProps);
