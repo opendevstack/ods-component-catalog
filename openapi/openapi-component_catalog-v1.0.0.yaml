@@ -1629,15 +1629,15 @@ components:
               name:
                 type: string
                 description: Parameter name
-                example: "environment"
+                example: "deletion_requester"
               values:
                 type: array
                 description: Parameter values
                 items:
                   type: string
                 example:
-                  - "production"
-                  - "staging"
+                  - "any-user@example.com"
+                  - "ignored-parameter"
 
     ProjectComponentMetrics:
       type: object

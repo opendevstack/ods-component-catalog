@@ -239,6 +239,8 @@ public class BitbucketService {
 
             var createdPullRequest = pullRequestsApi.createPullRequest(projectKey, repoSlug, pullRequest);
 
+            log.debug("Created pull request: {}", createdPullRequest);
+
             pullRequestId = Optional.ofNullable(createdPullRequest)
                     .map(RestPullRequest::getId)
                     .map(String::valueOf)
@@ -250,7 +252,8 @@ public class BitbucketService {
 
             pullRequestsApi.merge(projectKey, pullRequestId, repoSlug, pullRequestVersion,
                     new RestPullRequestMergeRequest()
-                            .message(commitMessage)
+                            .autoSubject("none") // Required to force message to be title for the commit
+                            .message(pullRequestTitle)
                             .strategyId(squashStrategyId));
             mergedSuccessfully = true;
         } catch (Exception ex) {
