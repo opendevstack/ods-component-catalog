@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opendevstack.component_catalog.server.facade.ProvisionerActionsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequest;
+import org.opendevstack.component_catalog.server.model.ProvisioningDeleteRequestParametersInner;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
@@ -219,7 +220,7 @@ class ProvisionerActionsApiControllerTest {
         var projectKey = "projectKey";
         var componentId = "componentId";
         var requester = "test.user";
-        var requesterParam = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var requesterParam = ProvisioningDeleteRequestParametersInner.builder()
                 .name(ProvisionerActionsApiController.DELETION_REQUESTER)
                 .values(List.of(requester))
                 .build();
@@ -242,7 +243,7 @@ class ProvisionerActionsApiControllerTest {
         var projectKey = "projectKey";
         var componentId = "componentId";
         var requester = "test.user";
-        var requesterParam = ProvisioningStatusUpdateRequestParametersInner.builder()
+        var requesterParam = ProvisioningDeleteRequestParametersInner.builder()
                 .name(ProvisionerActionsApiController.DELETION_REQUESTER)
                 .values(List.of(requester))
                 .build();

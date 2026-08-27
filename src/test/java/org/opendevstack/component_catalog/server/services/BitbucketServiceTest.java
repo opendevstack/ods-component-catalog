@@ -529,6 +529,7 @@ class BitbucketServiceTest {
                 eq("7"),
                 mergeRequestCaptor.capture()
         );
+        assertThat(mergeRequestCaptor.getValue().getAutoSubject()).isEqualTo("none");
         assertThat(mergeRequestCaptor.getValue().getStrategyId()).isEqualTo("squash");
         assertThat(mergeRequestCaptor.getValue().getMessage()).isEqualTo("atomic commit message");
 
@@ -549,6 +550,77 @@ class BitbucketServiceTest {
                 argThat(request -> request != null
                         && request.getName() != null
                         && request.getName().startsWith("refs/heads/cc-atomic-"))
+        );
+    }
+
+    @Test
+    void givenCustomPullRequestTitle_whenPushFilesAtomically_thenMergeUsesTitleAndDisablesAutoSubject() throws Exception {
+        // given
+        var firstPathAt = BitbucketPathAtMother.of();
+        var secondPathAt = BitbucketPathAtMother.of("AnotherFileOrDir");
+        var fileUpdates = List.of(
+                new BitbucketService.BitbucketFileUpdate(firstPathAt, "ignored-1", "content-1"),
+                new BitbucketService.BitbucketFileUpdate(secondPathAt, "ignored-2", "content-2")
+        );
+
+        when(bitbucketServiceProps.getBaseRawUrl()).thenReturn(new URL("https://my-bitbucket-server.com"));
+        when(bitbucketServiceProps.getBaseRestUrl())
+                .thenReturn(new URL("https://my-bitbucket-server.com/rest/api/latest"));
+
+        var commit = new RestCommit().id("temp-commit");
+        var commitsResponse = new GetCommits200Response().values(List.of(commit));
+        when(repositoryApi.getCommitsWithHttpInfo(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        ))
+                .thenReturn(ResponseEntity.ok(commitsResponse));
+
+        var settings = new RestRepositoryPullRequestSettings()
+                .mergeConfig(new RestPullRequestSettingsMergeConfig().strategies(List.of(
+                        new RestPullRequestMergeStrategy(null, true, null, null).id("squash")
+                )));
+        when(repositoryApi.getPullRequestSettings1(firstPathAt.getProjectKey(), firstPathAt.getRepoSlug()))
+                .thenReturn(settings);
+
+        var createdPr = new RestPullRequest().id(124L).version(8);
+        when(pullRequestsApi.createPullRequest(
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                any(RestPullRequest.class)
+        ))
+                .thenReturn(createdPr);
+        when(pullRequestsApi.merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("124"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("8"),
+                any(RestPullRequestMergeRequest.class)
+        ))
+                .thenReturn(new RestPullRequest());
+
+        // when
+        service.pushFilesAtomically(fileUpdates, "atomic commit message", "Custom PR title");
+
+        // then
+        var mergeRequestCaptor = ArgumentCaptor.forClass(RestPullRequestMergeRequest.class);
+        verify(pullRequestsApi).merge(
+                eq(firstPathAt.getProjectKey()),
+                eq("124"),
+                eq(firstPathAt.getRepoSlug()),
+                eq("8"),
+                mergeRequestCaptor.capture()
+        );
+        assertThat(mergeRequestCaptor.getValue().getAutoSubject()).isEqualTo("none");
+        assertThat(mergeRequestCaptor.getValue().getMessage()).isEqualTo("Custom PR title");
+
+        verify(repositoryApi, times(2)).editFile(
+                anyString(),
+                eq(firstPathAt.getProjectKey()),
+                eq(firstPathAt.getRepoSlug()),
+                anyString(),
+                anyString(),
+                eq("atomic commit message"),
+                isNull(),
+                anyString()
         );
     }
 
