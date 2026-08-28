@@ -3,13 +3,16 @@ package org.opendevstack.component_catalog.util;
 import java.io.Serial;
 import java.text.DateFormat;
 import java.text.FieldPosition;
+import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.GregorianCalendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class RFC3339DateFormat extends DateFormat {
     @Serial
@@ -19,6 +22,11 @@ public class RFC3339DateFormat extends DateFormat {
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US);
 
     private static final DateTimeFormatter PARSER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+    public RFC3339DateFormat() {
+        calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.US);
+        numberFormat = NumberFormat.getInstance(Locale.US);
+    }
 
     @Override
     public StringBuffer format(Date date, StringBuffer toAppendTo, FieldPosition fieldPosition) {
@@ -46,8 +54,4 @@ public class RFC3339DateFormat extends DateFormat {
         }
     }
 
-    @Override
-    public Object clone() {
-        return new RFC3339DateFormat();
-    }
 }
