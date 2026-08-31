@@ -338,7 +338,7 @@ class ProvisionerActionsServiceTest {
 
         when(bitbucketPathAtBuilder.projectKey(provisionerActionsConfiguration.getProjectKey()))
                 .thenReturn(bitbucketPathAtBuilder);
-        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getRepositorySlug()))
+        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug()))
                 .thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.at(provisionerActionsConfiguration.getBranchName()))
                 .thenReturn(bitbucketPathAtBuilder);
@@ -867,7 +867,7 @@ class ProvisionerActionsServiceTest {
 
         when(bitbucketPathAtBuilder.projectKey(provisionerActionsConfiguration.getProjectKey()))
                 .thenReturn(bitbucketPathAtBuilder);
-        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getRepositorySlug()))
+        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug()))
                 .thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.at(provisionerActionsConfiguration.getBranchName()))
                 .thenReturn(bitbucketPathAtBuilder);
@@ -925,7 +925,7 @@ class ProvisionerActionsServiceTest {
         var branchName = "branchName";
 
         provisionerActionsConfiguration.setProjectKey(projectKey);
-        provisionerActionsConfiguration.setRepositorySlug(repoSlug);
+        provisionerActionsConfiguration.setProjectComponentsRepositorySlug(repoSlug);
         provisionerActionsConfiguration.setSubPath(subPath);
         provisionerActionsConfiguration.setProjectHistorySubPath(projectHistorySubPath);
         provisionerActionsConfiguration.setSubPathToken(subPathToken);
@@ -936,7 +936,7 @@ class ProvisionerActionsServiceTest {
         when(bitbucketService.pathAtBuilder()).thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.projectKey(provisionerActionsConfiguration.getProjectKey()))
                 .thenReturn(bitbucketPathAtBuilder);
-        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getRepositorySlug()))
+        when(bitbucketPathAtBuilder.repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug()))
                 .thenReturn(bitbucketPathAtBuilder);
         when(bitbucketPathAtBuilder.subPath(provisionerActionsConfiguration.getSubPath()))
                 .thenReturn(bitbucketPathAtBuilder);

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 @Setter
 public class ProvisionerActionsConfiguration {
     private String projectKey;
-    private String repositorySlug;
+    private String projectComponentsRepositorySlug;
+    private String projectConfigurationsRepositorySlug;
+    private String projectConfigurationsRolesWhitelistedPath;
     private String projectsPath;
     private String subPath;
     private String projectHistorySubPath;

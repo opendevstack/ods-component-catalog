@@ -278,7 +278,7 @@ public class ProvisionerActionsService {
     public List<String> listAllProjectsJsons() {
         var bitbucketProjectsDirectoryPathAt = bitbucketService.pathAtBuilder()
                 .projectKey(provisionerActionsConfiguration.getProjectKey())
-                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
+                .repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug())
                 .at(provisionerActionsConfiguration.getBranchName())
                 .subPath(provisionerActionsConfiguration.getProjectsPath())
                 .build();
@@ -318,7 +318,7 @@ public class ProvisionerActionsService {
     private BitbucketPathAt getProjectComponentBitbucketPathAt(String projectKey) {
         return bitbucketService.pathAtBuilder()
                 .projectKey(provisionerActionsConfiguration.getProjectKey())
-                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
+                .repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug())
                 .subPath(provisionerActionsConfiguration.getSubPath().replace(provisionerActionsConfiguration.getSubPathToken(), projectKey))
                 .at(provisionerActionsConfiguration.getBranchName())
                 .build();
@@ -327,7 +327,7 @@ public class ProvisionerActionsService {
     private BitbucketPathAt getProjectComponentHistoryBitbucketPathAt(String projectKey) {
         return bitbucketService.pathAtBuilder()
                 .projectKey(provisionerActionsConfiguration.getProjectKey())
-                .repoSlug(provisionerActionsConfiguration.getRepositorySlug())
+                .repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug())
                 .subPath(provisionerActionsConfiguration.getProjectHistorySubPath().replace(provisionerActionsConfiguration.getSubPathToken(), projectKey))
                 .at(provisionerActionsConfiguration.getBranchName())
                 .build();
