@@ -272,4 +272,36 @@ class CatalogItemsApiControllerTest {
         assertThat(response.getBody()).isNull();
     }
 
+    @Test
+    void givenValidCatalogItemId_WhenGetWhitelistedRolesByCatalogItemId_ThenReturnWhitelistedRoles() {
+        // Given
+        var whitelistedRoles = List.of("ROLE_1", "ROLE_2");
+
+        when(catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId(catalogItemId))
+                .thenReturn(whitelistedRoles);
+
+        // When
+        var response = catalogItemsApiController.getWhitelistedRolesByCatalogItemId(catalogItemId);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).containsExactly("ROLE_1", "ROLE_2");
+    }
+
+    @Test
+    void givenNoWhitelistedRoles_WhenGetWhitelistedRolesByCatalogItemId_ThenReturnEmptyList() {
+        // Given
+        when(catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId(catalogItemId))
+                .thenReturn(List.of());
+
+        // When
+        var response = catalogItemsApiController.getWhitelistedRolesByCatalogItemId(catalogItemId);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).isEmpty();
+    }
+
 }

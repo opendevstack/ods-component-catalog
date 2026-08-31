@@ -22,13 +22,7 @@ import org.opendevstack.component_catalog.server.model.SortOrder;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
-import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
-import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
-import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
-import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
-import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
-import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.*;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
@@ -96,6 +90,12 @@ class CatalogItemsApiFacadeTest {
 
     @Mock
     private CatalogServiceAdapter catalogServiceAdapter;
+
+    @Mock
+    private RolesWhitelistedService rolesWhitelistedService;
+
+    @Spy
+    private List<String> permittedOids = List.of("allowed-oid");
 
     @Spy
     @InjectMocks
@@ -1453,6 +1453,58 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isTrue();
         verify(catalogServiceAdapter).contributingFileExists(catalogId);
+    }
+
+    @Test
+    void GivenPermittedOid_WhenGetWhitelistedRolesByCatalogItemId_ThenReturnsRoles() {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+
+            // given
+            var catalogItemId = "catalog-item-id";
+            var token = "validToken";
+
+            when(authenticationFacade.getAccessToken()).thenReturn(token);
+
+            mockedJwt.when(() -> JwtUtils.extractClaim(token, "oid"))
+                    .thenReturn(Optional.of("allowed-oid"));
+
+            var expectedRoles = List.of("ROLE_ADMIN", "ROLE_USER");
+
+            when(rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId))
+                    .thenReturn(expectedRoles);
+
+            // when
+            var result = catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId(catalogItemId);
+
+            // then
+            assertThat(result).isEqualTo(expectedRoles);
+
+            verify(authenticationFacade).getAccessToken();
+            verify(rolesWhitelistedService)
+                    .resolveWhitelistedRolesForCatalogItemId(catalogItemId);
+        }
+    }
+
+    @Test
+    void GivenNotPermittedOid_WhenGetWhitelistedRolesByCatalogItemId_ThenThrowsForbiddenException() {
+        try (var mockedJwt = mockStatic(JwtUtils.class)) {
+
+            // given
+            var token = "invalidToken";
+
+            when(authenticationFacade.getAccessToken()).thenReturn(token);
+
+            mockedJwt.when(() -> JwtUtils.extractClaim(token, "oid"))
+                    .thenReturn(Optional.of("not-allowed-oid"));
+
+            // when / then
+            assertThatThrownBy(() ->
+                    catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId("catalog-item-id"))
+                    .isInstanceOf(ForbiddenException.class);
+
+            verify(rolesWhitelistedService, never())
+                    .resolveWhitelistedRolesForCatalogItemId(anyString());
+        }
     }
 
     private MockedStatic<JwtUtils> mockHumanToken() {
