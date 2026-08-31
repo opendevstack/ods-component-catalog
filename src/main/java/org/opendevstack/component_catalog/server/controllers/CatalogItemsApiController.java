@@ -1,5 +1,7 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.api.CatalogItemsApi;
@@ -18,6 +20,7 @@ import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.server.services.slug.InvalidCatalogItemSlugException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
@@ -133,6 +136,14 @@ public class CatalogItemsApiController implements CatalogItemsApi {
         }
     }
 
+    @Override
+    public ResponseEntity<List<String>> getWhitelistedRolesByCatalogItemId(String id) {
+        log.debug("Obtaining whitelisted roles for catalog item: {}", id);
+        var whitelistedRoles = catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId(id);
+
+        log.debug("Obtained these roles as whitelisted roles for catalog item: {}. {}", id, whitelistedRoles);
+        return ResponseEntity.ok(whitelistedRoles);
+    }
 
 }
 

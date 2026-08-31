@@ -13,13 +13,7 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
-import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
-import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
-import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
-import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
-import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
-import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.*;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
@@ -32,6 +26,7 @@ import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFi
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -59,11 +54,15 @@ public class CatalogItemsApiFacade {
     private final CatalogsCollectionService catalogsCollectionService;
     private final OdsApiServerServiceProps odsApiServerServiceProps;
     private final ProjectComponentsService projectComponentsService;
+    private final RolesWhitelistedService rolesWhitelistedService;
 
     private final ProvisionerActionsService provisionerActionsService;
     private final AuthenticationFacade authenticationFacade;
 
     private final List<CatalogItemsFilter> catalogItemFilters;
+
+    @Value("${devstack.marketplace-api.permitted-oids}")
+    private final List<String> permittedOids;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
@@ -329,6 +328,19 @@ public class CatalogItemsApiFacade {
         log.debug("Project components retrieved: {}", projectComponentsList);
 
         return projectComponentsList;
+    }
+
+    public List<String> getWhitelistedRolesByCatalogItemId(String catalogItemId) {
+        log.debug("Validating provided access token");
+        validateTokenPermittedOids(authenticationFacade.getAccessToken());
+        return rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId);
+    }
+
+    private void validateTokenPermittedOids(String accessToken) {
+        var oid = JwtUtils.extractClaim(accessToken, "oid");
+        if (!oid.map(permittedOids::contains).orElse(false)) {
+            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
+        }
     }
 
 }
