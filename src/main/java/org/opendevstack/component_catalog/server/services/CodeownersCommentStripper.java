@@ -113,46 +113,41 @@ public class CodeownersCommentStripper {
         for (int i = 0; i < line.length() && !commentStarted; i++) {
             char ch = line.charAt(i);
 
-            switch (ch) {
-                case '\\':
-                    pending++;
-                    break;
-
-                case '#':
-                    boolean escaped = (pending & 1) == 1;
-
-                    if (escaped) {
-                        // Emit (n-1) backslashes + '#'
-                        if (pending > 1) {
-                            sb.append("\\".repeat(pending - 1));
-                        }
-                        sb.append('#');
-                    } else {
-                        // End of useful content – emit pending and stop
-                        if (pending > 0) {
-                            sb.append("\\".repeat(pending));
-                        }
-                        commentStarted = true;
-                    }
+            if (ch == '\\') {
+                pending++;
+            } else if (ch == '#') {
+                if (isEscapedHash(pending)) {
+                    appendEscapedHash(sb, pending);
                     pending = 0;
-                    break;
-
-                default:
-                    // Normal char: flush backslashes, then char
-                    if (pending > 0) {
-                        sb.append("\\".repeat(pending));
-                        pending = 0;
-                    }
-                    sb.append(ch);
-                    break;
+                } else {
+                    appendBackslashes(sb, pending);
+                    pending = 0;
+                    commentStarted = true;
+                }
+            } else {
+                appendBackslashes(sb, pending);
+                pending = 0;
+                sb.append(ch);
             }
         }
 
-        // If the loop ended without hitting an unescaped '#'
-        if (!commentStarted && pending > 0) {
-            sb.append("\\".repeat(pending));
-        }
+        appendBackslashes(sb, pending);
 
         return sb.toString();
+    }
+
+    private static boolean isEscapedHash(int pendingBackslashes) {
+        return (pendingBackslashes & 1) == 1;
+    }
+
+    private static void appendEscapedHash(StringBuilder sb, int pendingBackslashes) {
+        appendBackslashes(sb, pendingBackslashes - 1);
+        sb.append('#');
+    }
+
+    private static void appendBackslashes(StringBuilder sb, int count) {
+        if (count > 0) {
+            sb.repeat('\\', count);
+        }
     }
 }

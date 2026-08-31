@@ -20,7 +20,7 @@ public class ProjectKeyEvaluator implements RestrictionsEvaluator {
 
     private boolean validate(String projectKey) {
         /*
-        TODO: Currently with this approach all user actions will require to have a project and defined the locations in the restrictions.
+        NOTE: Currently with this approach all user actions will require to have a project and defined the locations in the restrictions.
             Since the code action is later overridden to be always requestable, now it works. In the future we may need a way to make these
             restrictions checks more robust. Affected checks: projectKey && evaluateLocationRestrictions.
         */
