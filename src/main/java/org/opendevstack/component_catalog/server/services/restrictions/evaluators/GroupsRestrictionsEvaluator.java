@@ -1,6 +1,6 @@
 package org.opendevstack.component_catalog.server.services.restrictions.evaluators;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.services.RolesWhitelistedService;
 import org.opendevstack.component_catalog.server.services.catalog.common.UserActionEntityRestrictions;
@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 @Service
 @Order(30)
 @Slf4j
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class GroupsRestrictionsEvaluator implements RestrictionsEvaluator {
 
     private final RolesWhitelistedService rolesWhitelistedService;
@@ -34,11 +34,11 @@ public class GroupsRestrictionsEvaluator implements RestrictionsEvaluator {
         var whitelistedRoles = rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId);
 
         if (whitelistedRoles.isEmpty()) {
-            log.debug("No whitelisted roles where found for catalog item {}", Base64.getDecoder().decode(catalogItemId));
+            log.debug("No whitelisted roles where found for catalog item {}", catalogItemId);
             return restrictions;
         }
 
-        log.debug("Whitelisted roles found for catalog item {}: {}", Base64.getUrlDecoder().decode(catalogItemId), whitelistedRoles);
+        log.debug("Whitelisted roles found for catalog item {}: {}", catalogItemId, whitelistedRoles);
         var updatedSuffixes = Stream.concat(restrictions.getGroups().getSuffix().stream(), whitelistedRoles.stream()).distinct().toList();
 
         return restrictions.toBuilder()

@@ -1,6 +1,6 @@
 package org.opendevstack.component_catalog.server.services;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.config.ProvisionerActionsConfiguration;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class RolesWhitelistedService {
 
     private final CatalogServiceAdapter catalogServiceAdapter;

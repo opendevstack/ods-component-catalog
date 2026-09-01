@@ -16,7 +16,5 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 public class RolesWhitelisted {
-
     private Map<String, List<String>> roles;
-
 }
