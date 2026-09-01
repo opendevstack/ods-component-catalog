@@ -8,6 +8,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogService
 import org.opendevstack.component_catalog.server.services.catalog.entity.RolesWhitelisted;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,14 +32,14 @@ public class RolesWhitelistedService {
             throw new InvalidEntityException("Invalid catalogItemId: %s".formatted(catalogItemId));
         }
 
-        var itemSlug = catalogItemPathAt.getProjectKey().toLowerCase().concat("_").concat(catalogItemPathAt.getRepoSlug());
+        var itemSlug = new CatalogItemSlug(catalogItemPathAt.getProjectKey().toLowerCase(), catalogItemPathAt.getRepoSlug());
         BitbucketPathAt pathAt = buildRolesWhitelistedBitbucketPathAt();
 
         Optional<RolesWhitelisted> roles = catalogServiceAdapter.getYamlEntity(pathAt, RolesWhitelisted.class);
 
         return roles.orElseThrow(() -> new InvalidEntityException("Invalid RolesWhitelisted.yaml file, path: %s".formatted(pathAt.getPathAt())))
                 .getRoles().entrySet().stream()
-                .filter(role -> role.getValue().contains(itemSlug))
+                .filter(role -> role.getValue().contains(itemSlug.toString()))
                 .map(Map.Entry::getKey)
                 .toList();
     }
