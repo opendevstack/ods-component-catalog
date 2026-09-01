@@ -61,9 +61,6 @@ public class CatalogItemsApiFacade {
 
     private final List<CatalogItemsFilter> catalogItemFilters;
 
-    @Value("${devstack.marketplace-api.permitted-oids}")
-    private final List<String> permittedOids;
-
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
         return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams);
@@ -328,19 +325,6 @@ public class CatalogItemsApiFacade {
         log.debug("Project components retrieved: {}", projectComponentsList);
 
         return projectComponentsList;
-    }
-
-    public List<String> getWhitelistedRolesByCatalogItemId(String catalogItemId) {
-        log.debug("Validating provided access token");
-        validateTokenPermittedOids(authenticationFacade.getAccessToken());
-        return rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId);
-    }
-
-    private void validateTokenPermittedOids(String accessToken) {
-        var oid = JwtUtils.extractClaim(accessToken, "oid");
-        if (!oid.map(permittedOids::contains).orElse(false)) {
-            throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
-        }
     }
 
 }

@@ -431,68 +431,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
-  /catalog-items/{id}/whitelisted-roles:
-    get:
-      tags:
-        - CatalogItems
-      summary: Returns the collection of whitelisted roles for a certain catalog item
-      description: >
-        Returns the collection of whitelisted roles for a certain catalog item, unless:
-        <ul>
-        <li> The id is not associated to any CatalogItem. </li>
-        <li> Or the associated CatalogItem is invalid and can't be processed to create a response. </li>
-        </ul>
-      operationId: getWhitelistedRolesByCatalogItemId
-      parameters:
-        - name: id
-          in: path
-          description: id for the CatalogItem.
-          required: true
-          schema:
-            type: string
-            example: 'aSdFam...yCg=='
-      responses:
-        "200":
-          description: The collection of whitelisted roles for the given CatalogItem.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-                example:
-                  - 'ROLE A'
-                  - 'ROLE B'
-        "401":
-          description: Invalid client token on the request.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
-        "403":
-          description: Insufficient permissions for the client to access the resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
-        "404":
-          description: No CatalogItem associated to the provided id.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
-        "422":
-          description: Invalid CatalogItem associated to the provided id.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
-        "500":
-          description: Server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
   /catalog/{id}/activities:
     get:
       tags:

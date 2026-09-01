@@ -133,14 +133,5 @@ public class CatalogItemsApiController implements CatalogItemsApi {
         }
     }
 
-    @Override
-    public ResponseEntity<List<String>> getWhitelistedRolesByCatalogItemId(String id) {
-        log.debug("Obtaining whitelisted roles for catalog item: {}", id);
-        var whitelistedRoles = catalogItemsApiFacade.getWhitelistedRolesByCatalogItemId(id);
-
-        log.debug("Obtained these roles as whitelisted roles for catalog item: {}. {}", id, whitelistedRoles);
-        return ResponseEntity.ok(whitelistedRoles);
-    }
-
 }
 
