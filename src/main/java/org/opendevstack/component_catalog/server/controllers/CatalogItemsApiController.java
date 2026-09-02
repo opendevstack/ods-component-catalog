@@ -133,6 +133,5 @@ public class CatalogItemsApiController implements CatalogItemsApi {
         }
     }
 
-
 }
 

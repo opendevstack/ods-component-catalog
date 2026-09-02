@@ -87,7 +87,9 @@ catalog-item:
 provisioner:
   bitbucket:
     project-key: ${PROVISIONER_BITBUCKET_PROJECT_KEY}
-    repository-slug: ${PROVISIONER_BITBUCKET_REPOSITORY_SLUG}
+    project-components-repository-slug: ${PROVISIONER_BITBUCKET_PROJECT_COMPONENTS_REPOSITORY_SLUG}
+    project-configurations-repository-slug: ${PROVISIONER_BITBUCKET_PROJECT_CONFIGURATIONS_REPOSITORY_SLUG}
+    project-configurations-roles-whitelisted-path: ${PROVISIONER_BITBUCKET_PROJECT_CONFIGURATIONS_ROLES_WHITELISTED_PATH}
     projects-path: ${PROVISIONER_BITBUCKET_PROJECTS_PATH}
     sub-path: ${PROVISIONER_BITBUCKET_SUB_PATH}
     project-history-sub-path: ${PROVISIONER_BITBUCKET_PROJECT_HISTORY_SUB_PATH}
