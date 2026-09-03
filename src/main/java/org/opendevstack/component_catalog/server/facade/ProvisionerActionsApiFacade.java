@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogItemUserActionGroupsRestriction;
@@ -49,8 +50,15 @@ public class ProvisionerActionsApiFacade {
                 .toList();
     }
 
-    public void validateGroupRestrictions(String projectKey) {
+    public void validateGroupRestrictions(String projectKey, ProvisioningStatusUpdateRequest provisioningStatusUpdateRequest) {
         var accessToken = authenticationFacade.getAccessToken();
+        var catalogItemId = provisioningStatusUpdateRequest.getCatalogItemId();
+
+        if (catalogItemId == null) {
+            log.error("Catalog item id is null. Cannot validate group restrictions");
+
+            throw new InvalidRestEntityException("Catalog item id is null. Cannot validate group restrictions");
+        }
 
         var oid = JwtUtils.extractClaim(accessToken, "oid");
 
@@ -61,11 +69,11 @@ public class ProvisionerActionsApiFacade {
         } else {
             log.debug("Token with oid '{}' is NOT allowed to bypass group restrictions for project {}. Validating group restrictions", oid.orElse("unknown"), projectKey);
 
-            validateGroupRestrictions(projectKey, accessToken);
+            validateGroupRestrictions(projectKey, catalogItemId, accessToken);
         }
     }
 
-    private void validateGroupRestrictions(String projectKey, String accessToken) {
+    private void validateGroupRestrictions(String projectKey, String catalogItemId, String accessToken) {
         var groupRestriction = CatalogItemUserActionGroupsRestriction.builder()
                 .prefix(groupsRestrictionProps.getPrefix())
                 .suffix(groupsRestrictionProps.getSuffix())
@@ -81,6 +89,7 @@ public class ProvisionerActionsApiFacade {
         var params = RestrictionsParams.builder()
                 .userGroups(userGroups)
                 .projectKey(projectKey)
+                .catalogItemId(catalogItemId)
                 .build();
 
         var requestable = Optional.ofNullable(groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params))

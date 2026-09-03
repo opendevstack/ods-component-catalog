@@ -89,7 +89,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase(), request);
         verify(provisionerActionsService).updateComponentProvisioningStatus(projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATED, componentUrl, workflowJobId, deletionWorkflowJobId, parameters)
         );
@@ -129,7 +129,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase());
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(projectKey.toUpperCase(), request);
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATING, componentUrl, workflowJobId, deletionWorkflowJobId, parameters)
@@ -168,7 +168,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdatePartially(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
         verify(provisionerActionsService).updatePartiallyComponentProvisioningStatus(
                 projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, deletionWorkflowJobId, parameters)
@@ -207,7 +207,7 @@ class ProvisionerActionsApiControllerTest {
         provisionerActionsApiController.notifyProvisioningStatusUpdate(projectKey, status, request);
 
         // then
-        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()));
+        verify(provisionerActionsApiFacade).validateGroupRestrictions(eq(projectKey.toUpperCase()), eq(request));
         verify(provisionerActionsService).updateComponentProvisioningStatus(
                 projectKey.toUpperCase(),
                 request(componentId, catalogItemId, Status.CREATING, "", workflowJobId, deletionWorkflowJobId, parameters)
