@@ -11,30 +11,17 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
-import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
-import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
-import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,12 +41,8 @@ public class CatalogItemsApiFacade {
     private final CatalogsCollectionService catalogsCollectionService;
     private final OdsApiServerServiceProps odsApiServerServiceProps;
     private final ProjectComponentsService projectComponentsService;
-    private final RolesWhitelistedService rolesWhitelistedService;
-
     private final ProvisionerActionsService provisionerActionsService;
     private final AuthenticationFacade authenticationFacade;
-
-    private final List<CatalogItemsFilter> catalogItemFilters;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
@@ -165,7 +148,7 @@ public class CatalogItemsApiFacade {
                             )
                     )
                     .filter(Objects::nonNull)
-                    .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
+                    .filter(item -> applyVisibilityFilter(item, catalogRequestParams.isIgnoreVisibilityRestrictions()))
                     .sorted(fieldSorter(CatalogItem::getTitle, catalogRequestParams.getSortOrder()))
                     .toList();
         else {
@@ -188,7 +171,7 @@ public class CatalogItemsApiFacade {
                                         .build()
                         )
                 )
-                .filter(item -> applyFilters(item, catalogRequestParams.getProjectKey()))
+                .filter(item -> applyVisibilityFilter(item, catalogRequestParams.isIgnoreVisibilityRestrictions()))
                 .orElse(null);
     }
 
@@ -214,12 +197,8 @@ public class CatalogItemsApiFacade {
         );
     }
 
-    // We can not do workflowsFilter in here, because the parameters merge was already done
-    protected boolean applyFilters(CatalogItem item, String projectKey) {
-        var params = Collections.singletonList(projectKey);
-
-        return catalogItemFilters.stream()
-                .allMatch(filter -> filter.filter(item, params));
+    protected boolean applyVisibilityFilter(CatalogItem item, boolean ignoreVisibilityRestrictions) {
+        return ignoreVisibilityRestrictions || item.getVisible();
     }
 
     protected boolean filterByContributingFileExists(String id) {

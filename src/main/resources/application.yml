@@ -34,16 +34,18 @@ user-actions:
   default-message-definition-id: ${USER_ACTIONS_DEFAULT_MESSAGE_DEFINITION_ID}
 component-catalog:
   security:
-    provisioner:
-      username: ${SECURITY_PROVISIONER_USERNAME}
-      password: ${SECURITY_PROVISIONER_PASSWORD}
-      roles:
-        - PROVISIONER
-    cache-admin:
-      username: ${SECURITY_CACHE_ADMIN_USERNAME}
-      password: ${SECURITY_CACHE_ADMIN_PASSWORD}
-      roles:
-        - CACHE_ADMIN
+    shared-secret: ${SECURITY_SHARED_SECRET}
+    basic-auth:
+      provisioner:
+        username: ${SECURITY_PROVISIONER_USERNAME}
+        password: ${SECURITY_PROVISIONER_PASSWORD}
+        roles:
+          - PROVISIONER
+      cache-admin:
+        username: ${SECURITY_CACHE_ADMIN_USERNAME}
+        password: ${SECURITY_CACHE_ADMIN_PASSWORD}
+        roles:
+          - CACHE_ADMIN
   caching:
     bitbucket-service-cache:
       enabled: true

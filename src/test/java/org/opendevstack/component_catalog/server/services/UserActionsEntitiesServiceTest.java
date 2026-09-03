@@ -1,5 +1,11 @@
 package org.opendevstack.component_catalog.server.services;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionParameterMapper;
@@ -16,13 +22,8 @@ import org.opendevstack.component_catalog.server.services.catalog.entity.Catalog
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserAction;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserActionMother;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -40,6 +41,9 @@ class UserActionsEntitiesServiceTest {
     @Mock
     private CatalogServiceAdapter catalogServiceAdapter;
 
+    @Mock
+    private List<CatalogItemsFilter> catalogItemsFilters;
+
     private UserActionsEntitiesService userActionsEntitiesService;
 
     @BeforeEach
@@ -55,7 +59,7 @@ class UserActionsEntitiesServiceTest {
         var catalogItemUserActionMapper = new CatalogItemUserActionMapper(new CatalogItemUserActionParameterMapper(),
                 List.of(dummyEvaluator), groupsRestrictionProps);
 
-        var entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
+        var entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, catalogItemsFilters);
 
         this.userActionsEntitiesService = new UserActionsEntitiesService(catalogServiceAdapter, entitiesMapper);
         ReflectionTestUtils.setField(userActionsEntitiesService, "defaultUserActionsBitbucketId", "testId");

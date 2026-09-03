@@ -2,6 +2,7 @@ package org.opendevstack.component_catalog.server.controllers;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.SecurityProps;
 import org.opendevstack.component_catalog.server.api.CatalogItemsApi;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
@@ -31,6 +32,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     private final AuthorizationInfo authInfo;
     private final CatalogItemsApiFacade catalogItemsApiFacade;
     private final AuthenticationFacade authenticationFacade;
+    private final SecurityProps securityProps;
 
     @Override
     public ResponseEntity<List<CatalogItem>> getCatalogItems(SortOrder sortByTitle, String catalogId) {
@@ -52,7 +54,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
 
     @Override
     public ResponseEntity<List<CatalogItem>> getCatalogItemsForProjectKey(String catalogId, SortOrder sortByTitle,
-                                                                          String projectKey) {
+                                                                          String projectKey, String xSharedSecret) {
         log.debug("User '{}' requested catalog items for catalog id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), catalogId, projectKey);
         try {
@@ -63,6 +65,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
                     .sortOrder(sortByTitle)
                     .projectKey(projectKey)
                     .accessToken(accessToken)
+                    .ignoreVisibilityRestrictions(securityProps.getSharedSecret().equals(xSharedSecret))
                     .build();
 
             var items = catalogItemsApiFacade.fetchCatalogItems(catalogItemRequestParams);
@@ -74,11 +77,12 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     }
 
     @Override
-    public ResponseEntity<CatalogItem> getCatalogItemById(String id) {
+    public ResponseEntity<CatalogItem> getCatalogItemById(String id, String xSharedSecret) {
         log.debug("User '{}' requested catalog item with id: '{}'", authInfo.getCurrentPrincipalName(), id);
         try {
             var catalogRequestParams = CatalogRequestParams.builder()
                     .catalogItemId(id)
+                    .ignoreVisibilityRestrictions(securityProps.getSharedSecret().equals(xSharedSecret))
                     .build();
             var catItem = catalogItemsApiFacade.fetchCatalogItem(catalogRequestParams);
             if (catItem == null) {
@@ -93,7 +97,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
     }
 
     @Override
-    public ResponseEntity<CatalogItem> getCatalogItemByIdForProjectKey(String id, String projectKey) {
+    public ResponseEntity<CatalogItem> getCatalogItemByIdForProjectKey(String id, String projectKey, String xSharedSecret) {
         log.debug("User '{}' requested catalog item with id and projectKey: '{}', '{}'",
                 authInfo.getCurrentPrincipalName(), id, projectKey);
         try {
@@ -103,6 +107,7 @@ public class CatalogItemsApiController implements CatalogItemsApi {
                     .catalogItemId(id)
                     .projectKey(projectKey)
                     .accessToken(accessToken)
+                    .ignoreVisibilityRestrictions(securityProps.getSharedSecret().equals(xSharedSecret))
                     .build();
             var catItem = catalogItemsApiFacade.fetchCatalogItem(catalogRequestParams);
             if (catItem == null) {

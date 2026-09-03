@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.mappers;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
@@ -16,6 +17,7 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserActionMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.UserActionRestrictionsMother;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
@@ -50,8 +52,9 @@ class EntitiesMapperTest {
                 List.of(dummyEvaluator),
                 groupsRestrictionProps
         );
+        CatalogItemsFilter filter = Mockito.mock(CatalogItemsFilter.class);
 
-        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
+        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, List.of(filter));
     }
 
     @Test

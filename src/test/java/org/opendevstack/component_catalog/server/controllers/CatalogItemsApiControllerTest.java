@@ -105,7 +105,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -126,7 +126,8 @@ class CatalogItemsApiControllerTest {
                 () -> catalogItemsApiController.getCatalogItemsForProjectKey(
                         catalogId,
                         SortOrder.ASC,
-                        invalidProjectKey
+                        invalidProjectKey,
+                        null
                 )
         )
                 .isInstanceOf(BadRequestException.class)
@@ -139,7 +140,7 @@ class CatalogItemsApiControllerTest {
         when(authenticationFacade.getAccessToken()).thenReturn("access-token");
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -165,7 +166,7 @@ class CatalogItemsApiControllerTest {
 
 
         // When
-        var response = catalogItemsApiController.getCatalogItemById(catalogItemId);
+        var response = catalogItemsApiController.getCatalogItemById(catalogItemId, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -180,7 +181,7 @@ class CatalogItemsApiControllerTest {
                 .thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId, null))
                 .isInstanceOf(RestEntityNotFoundException.class)
                 .hasMessageContaining("Catalog item not found");
     }
@@ -193,7 +194,7 @@ class CatalogItemsApiControllerTest {
                 .thenThrow(new InvalidCatalogItemEntityException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId, null))
                 .isInstanceOf(InvalidRestEntityException.class)
                 .hasMessageContaining("Invalid catalog item");
     }
@@ -203,7 +204,7 @@ class CatalogItemsApiControllerTest {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
         // When
-        var response = catalogItemsApiController.getCatalogItemById(catalogItemId);
+        var response = catalogItemsApiController.getCatalogItemById(catalogItemId, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -220,7 +221,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(catalogItem);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -236,7 +237,7 @@ class CatalogItemsApiControllerTest {
 
         // When / Then
         assertThatThrownBy(
-                () -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey)
+                () -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey, null)
         )
                 .isInstanceOf(RestEntityNotFoundException.class)
                 .hasMessageContaining("Catalog item not found");
@@ -252,7 +253,7 @@ class CatalogItemsApiControllerTest {
 
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null))
                 .isInstanceOf(InvalidRestEntityException.class)
                 .hasMessageContaining("Invalid catalog item");
     }
@@ -265,7 +266,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
