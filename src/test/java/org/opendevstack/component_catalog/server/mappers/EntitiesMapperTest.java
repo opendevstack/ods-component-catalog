@@ -33,6 +33,7 @@ import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNu
 class EntitiesMapperTest {
 
     private CatalogItemUserActionParameterMapper catalogItemUserActionParameterMapper;
+    private CatalogItemsFilter catalogItemsFilter;
     private EntitiesMapper entitiesMapper;
 
     @BeforeEach
@@ -52,9 +53,9 @@ class EntitiesMapperTest {
                 List.of(dummyEvaluator),
                 groupsRestrictionProps
         );
-        CatalogItemsFilter filter = Mockito.mock(CatalogItemsFilter.class);
+        catalogItemsFilter = Mockito.mock(CatalogItemsFilter.class);
 
-        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, List.of(filter));
+        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, List.of(catalogItemsFilter));
     }
 
     @Test
@@ -102,6 +103,40 @@ class EntitiesMapperTest {
 
         assertThat(catalogItem.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
         assertThat(catalogItem.catalogItem().getUserActions()).hasSize(2);
+    }
+
+    @Test
+    void givenCatalogItemAcceptedByFilters_whenAsCatalogItem_thenItemIsVisible() {
+        var catalogItemEntityCtx = CatalogItemEntityContextMother.of();
+        var projectKey = "PROJECT-1";
+        Mockito.when(catalogItemsFilter.filter(Mockito.any(), Mockito.eq(List.of(projectKey)))).thenReturn(true);
+
+        var catalogItem = entitiesMapper.asCatalogItem(
+                catalogItemEntityCtx,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                projectKey,
+                null
+        );
+
+        assertThat(catalogItem.catalogItem().getVisible()).isTrue();
+    }
+
+    @Test
+    void givenCatalogItemRejectedByFilters_whenAsCatalogItem_thenItemIsNotVisible() {
+        var catalogItemEntityCtx = CatalogItemEntityContextMother.of();
+        var projectKey = "PROJECT-1";
+        Mockito.when(catalogItemsFilter.filter(Mockito.any(), Mockito.eq(List.of(projectKey)))).thenReturn(false);
+
+        var catalogItem = entitiesMapper.asCatalogItem(
+                catalogItemEntityCtx,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                projectKey,
+                null
+        );
+
+        assertThat(catalogItem.catalogItem().getVisible()).isFalse();
     }
 
     @Test

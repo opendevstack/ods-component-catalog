@@ -928,7 +928,7 @@ class CatalogItemsApiFacadeTest {
         item.setTitle("X");
         doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
 
-        doReturn(true).when(catalogItemsApiFacade).applyVisibilityFilter(item, anyBoolean());
+        doReturn(true).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(catalogItemId)
@@ -944,7 +944,7 @@ class CatalogItemsApiFacadeTest {
 
         verify(catalogEntitiesService, times(1)).getCatalogItemEntity(catalogItemId);
         verify(catalogItemsApiFacade, times(1)).asCatalogItem(any(CatalogRequestParams.class));
-        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(item, anyBoolean());
+        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(eq(item), anyBoolean());
         verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists(catalogItemId);
     }
 
@@ -984,7 +984,7 @@ class CatalogItemsApiFacadeTest {
         item.setId(catalogItemId);
         doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
 
-        doReturn(false).when(catalogItemsApiFacade).applyVisibilityFilter(item, anyBoolean());
+        doReturn(false).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(catalogItemId)
@@ -997,7 +997,27 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(response).isNull();
 
-        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(item, anyBoolean());
+        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(eq(item), anyBoolean());
+    }
+
+    @Test
+    void GivenInvisibleItemAndVisibilityRestrictions_WhenApplyingVisibilityFilter_ThenReturnFalse() {
+        var item = new CatalogItem();
+        item.setVisible(false);
+
+        var result = catalogItemsApiFacade.applyVisibilityFilter(item, false);
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void GivenInvisibleItemAndIgnoredVisibilityRestrictions_WhenApplyingVisibilityFilter_ThenReturnTrue() {
+        var item = new CatalogItem();
+        item.setVisible(false);
+
+        var result = catalogItemsApiFacade.applyVisibilityFilter(item, true);
+
+        assertThat(result).isTrue();
     }
 
     @Test
