@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatusUpdateRequestParametersInner;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProvisionerActionsApiFacadeTest {
+
+    private static final String PROJECT_KEY = "PROJECT";
+    private static final String CATALOG_ITEM_ID = "catalog-item-id";
 
     @Mock
     private ProjectsInfoService projectsInfoService;
@@ -92,12 +97,16 @@ class ProvisionerActionsApiFacadeTest {
         assertThat(result).isEmpty();
     }
 
+    private ProvisioningStatusUpdateRequest requestWithCatalogItemId(String catalogItemId) {
+        return new ProvisioningStatusUpdateRequest().catalogItemId(catalogItemId);
+    }
+
      @Test
      void validateGroupRestrictions_whenUserHasPermissions_doesNotThrow() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var userGroups = List.of("group1");
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
@@ -111,16 +120,23 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.empty());
 
              // when / then
-             provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
+             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
+
+             verify(groupsRestrictionsEvaluator)
+                     .evaluate(any(EvaluationRestrictions.class), eq(RestrictionsParams.builder()
+                             .userGroups(userGroups)
+                             .projectKey(PROJECT_KEY)
+                             .catalogItemId(CATALOG_ITEM_ID)
+                             .build()));
          }
      }
 
      @Test
      void validateGroupRestrictions_whenUserHasNoPermissions_throwsForbiddenException() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var userGroups = List.of("group1");
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
@@ -134,7 +150,7 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.empty());
 
              // when / then
-             assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(projectKey))
+             assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request))
                      .isInstanceOf(ForbiddenException.class)
                      .hasMessage("User not allowed to perform this action");
          }
@@ -143,9 +159,9 @@ class ProvisionerActionsApiFacadeTest {
      @Test
      void validateGroupRestrictions_whenEvaluatorReturnsNull_doesNotThrow() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var userGroups = List.of("group1");
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
@@ -159,16 +175,16 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.empty());
 
              // when / then
-             provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
+             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
          }
      }
 
      @Test
      void validateGroupRestrictions_whenPermittedOidsContainsExtractedOid_bypassesGroupRestrictions() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var permittedOid = "oid1";
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
 
@@ -177,7 +193,7 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.of(permittedOid));
 
              // when
-             provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
+              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
              // then - Verify that the group restrictions evaluator is never called when oid is in permittedOids
              verify(groupsRestrictionsEvaluator, never())
@@ -189,9 +205,9 @@ class ProvisionerActionsApiFacadeTest {
      @Test
      void validateGroupRestrictions_whenPermittedOidsContainsExtractedOid_doesNotThrow() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var permittedOid = "oid2";
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
 
@@ -200,16 +216,16 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.of(permittedOid));
 
              // when / then - should not throw any exception
-             provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
+              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
          }
      }
 
      @Test
      void validateGroupRestrictions_whenTokenHasNoOid_callsGroupRestrictionsEvaluation() {
          // given
-         var projectKey = "PROJECT";
          var accessToken = "accessToken";
          var userGroups = List.of("group1");
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
@@ -223,9 +239,52 @@ class ProvisionerActionsApiFacadeTest {
                      .thenReturn(Optional.empty());
 
              // when
-             provisionerActionsApiFacade.validateGroupRestrictions(projectKey);
+              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
              // then - Verify that the group restrictions evaluator is called when oid is not in permittedOids
+             verify(groupsRestrictionsEvaluator)
+                     .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
+             verify(projectsInfoService).getProjectGroups(accessToken);
+         }
+     }
+
+     @Test
+     void validateGroupRestrictions_whenCatalogItemIdIsNull_throwsInvalidRestEntityException() {
+         // given
+         var request = requestWithCatalogItemId(null);
+
+         // when / then
+         assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request))
+                 .isInstanceOf(InvalidRestEntityException.class)
+                 .hasMessage("Catalog item id is null. Cannot validate group restrictions");
+
+         verify(authenticationFacade).getAccessToken();
+         verify(groupsRestrictionsEvaluator, never()).evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
+         verify(projectsInfoService, never()).getProjectGroups(any());
+     }
+
+     @Test
+     void validateGroupRestrictions_whenExtractedOidIsNotPermitted_callsGroupRestrictionsEvaluation() {
+         // given
+         var accessToken = "accessToken";
+         var userGroups = List.of("group1");
+         var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
+
+         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
+         when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
+         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
+         when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
+                 .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
+
+         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
+             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
+                     .thenReturn(Optional.of("non-permitted-oid"));
+
+             // when
+             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
+
+             // then
              verify(groupsRestrictionsEvaluator)
                      .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
              verify(projectsInfoService).getProjectGroups(accessToken);

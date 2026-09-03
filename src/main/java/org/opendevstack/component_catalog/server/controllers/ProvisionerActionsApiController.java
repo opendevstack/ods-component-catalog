@@ -42,7 +42,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 projectKey, provisioningStatusUpdateRequest.toString());
 
         var normalizedProjectKey = projectKey.toUpperCase();
-        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey);
+        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey, provisioningStatusUpdateRequest);
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
@@ -68,7 +68,7 @@ public class ProvisionerActionsApiController implements ProvisionerActionsApi {
                 projectKey, provisioningStatusUpdateRequest.toString());
 
         var normalizedProjectKey = projectKey.toUpperCase();
-        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey);
+        provisionerActionsApiFacade.validateGroupRestrictions(normalizedProjectKey, provisioningStatusUpdateRequest);
         var normalizedComponentUrl = provisioningStatusUpdateRequest.getComponentUrl().orElse(Strings.EMPTY);
         var parameters = map(provisioningStatusUpdateRequest);
 
