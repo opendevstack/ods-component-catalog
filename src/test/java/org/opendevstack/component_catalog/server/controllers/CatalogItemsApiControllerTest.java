@@ -1,10 +1,12 @@
 package org.opendevstack.component_catalog.server.controllers;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.SecurityProps;
 import org.opendevstack.component_catalog.server.controllers.exceptions.BadRequestException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.InvalidRestEntityException;
 import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
@@ -23,8 +25,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogItemsApiControllerTest {
@@ -46,8 +47,20 @@ class CatalogItemsApiControllerTest {
     @Mock
     private AuthenticationFacade authenticationFacade;
 
-    @InjectMocks
     private CatalogItemsApiController catalogItemsApiController;
+
+    @BeforeEach
+    void setUp() {
+        var securityProps = SecurityProps.builder()
+            .sharedSecret("test-shared-secret")
+            .build();
+        catalogItemsApiController = new CatalogItemsApiController(
+            authInfo,
+            catalogItemsApiFacade,
+            authenticationFacade,
+            securityProps
+        );
+    }
 
     @Test
     void givenValidCatalogId_WhenGetCatalogItems_ThenReturnItemsList() throws InvalidIdException {
@@ -105,7 +118,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItems(any())).thenReturn(List.of(item));
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -126,7 +139,8 @@ class CatalogItemsApiControllerTest {
                 () -> catalogItemsApiController.getCatalogItemsForProjectKey(
                         catalogId,
                         SortOrder.ASC,
-                        invalidProjectKey
+                        invalidProjectKey,
+                        null
                 )
         )
                 .isInstanceOf(BadRequestException.class)
@@ -139,12 +153,41 @@ class CatalogItemsApiControllerTest {
         when(authenticationFacade.getAccessToken()).thenReturn("access-token");
 
         // When
-        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey);
+        var response = catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).isEmpty();
+    }
+
+    @Test
+    void givenMatchingSharedSecret_WhenGetCatalogItemsForProjectKey_ThenIgnoreVisibilityRestrictions()
+            throws InvalidCatalogEntityException, InvalidIdException {
+        when(authenticationFacade.getAccessToken()).thenReturn("access-token");
+
+        catalogItemsApiController.getCatalogItemsForProjectKey(
+            catalogId,
+            SortOrder.ASC,
+            projectKey,
+            "test-shared-secret"
+        );
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItems(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isTrue();
+    }
+
+    @Test
+    void givenInvalidSharedSecret_WhenGetCatalogItemsForProjectKey_ThenDoNotIgnoreVisibilityRestrictions()
+            throws InvalidCatalogEntityException, InvalidIdException {
+        when(authenticationFacade.getAccessToken()).thenReturn("access-token");
+
+        catalogItemsApiController.getCatalogItemsForProjectKey(catalogId, SortOrder.ASC, projectKey, "invalid-secret");
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItems(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isFalse();
     }
 
     @Test
@@ -165,7 +208,7 @@ class CatalogItemsApiControllerTest {
 
 
         // When
-        var response = catalogItemsApiController.getCatalogItemById(catalogItemId);
+        var response = catalogItemsApiController.getCatalogItemById(catalogItemId, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -180,7 +223,7 @@ class CatalogItemsApiControllerTest {
                 .thenThrow(new InvalidIdException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId, null))
                 .isInstanceOf(RestEntityNotFoundException.class)
                 .hasMessageContaining("Catalog item not found");
     }
@@ -193,7 +236,7 @@ class CatalogItemsApiControllerTest {
                 .thenThrow(new InvalidCatalogItemEntityException("Invalid ID"));
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemById(invalidCatalogItemId, null))
                 .isInstanceOf(InvalidRestEntityException.class)
                 .hasMessageContaining("Invalid catalog item");
     }
@@ -203,11 +246,31 @@ class CatalogItemsApiControllerTest {
         when(authInfo.getCurrentPrincipalName()).thenReturn(principalName);
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
         // When
-        var response = catalogItemsApiController.getCatalogItemById(catalogItemId);
+        var response = catalogItemsApiController.getCatalogItemById(catalogItemId, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    void givenMatchingSharedSecret_WhenGetCatalogItemById_ThenIgnoreVisibilityRestrictions()
+            throws InvalidCatalogItemEntityException, InvalidIdException {
+        catalogItemsApiController.getCatalogItemById(catalogItemId, "test-shared-secret");
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isTrue();
+    }
+
+    @Test
+    void givenInvalidSharedSecret_WhenGetCatalogItemById_ThenDoNotIgnoreVisibilityRestrictions()
+            throws InvalidCatalogItemEntityException, InvalidIdException {
+        catalogItemsApiController.getCatalogItemById(catalogItemId, "invalid-secret");
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isFalse();
     }
 
     @Test
@@ -220,7 +283,7 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(catalogItem);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -236,7 +299,7 @@ class CatalogItemsApiControllerTest {
 
         // When / Then
         assertThatThrownBy(
-                () -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey)
+                () -> catalogItemsApiController.getCatalogItemByIdForProjectKey(invalidCatalogId, projectKey, null)
         )
                 .isInstanceOf(RestEntityNotFoundException.class)
                 .hasMessageContaining("Catalog item not found");
@@ -252,7 +315,7 @@ class CatalogItemsApiControllerTest {
 
 
         // When / Then
-        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey))
+        assertThatThrownBy(() -> catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null))
                 .isInstanceOf(InvalidRestEntityException.class)
                 .hasMessageContaining("Invalid catalog item");
     }
@@ -265,11 +328,35 @@ class CatalogItemsApiControllerTest {
         when(catalogItemsApiFacade.fetchCatalogItem(any())).thenReturn(null);
 
         // When
-        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey);
+        var response = catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogId, projectKey, null);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNull();
+    }
+
+    @Test
+    void givenMatchingSharedSecret_WhenGetCatalogItemByIdForProjectKey_ThenIgnoreVisibilityRestrictions()
+            throws InvalidCatalogItemEntityException, InvalidIdException {
+        when(authenticationFacade.getAccessToken()).thenReturn("access-token");
+
+        catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogItemId, projectKey, "test-shared-secret");
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isTrue();
+    }
+
+    @Test
+    void givenInvalidSharedSecret_WhenGetCatalogItemByIdForProjectKey_ThenDoNotIgnoreVisibilityRestrictions()
+            throws InvalidCatalogItemEntityException, InvalidIdException {
+        when(authenticationFacade.getAccessToken()).thenReturn("access-token");
+
+        catalogItemsApiController.getCatalogItemByIdForProjectKey(catalogItemId, projectKey, "invalid-secret");
+
+        var requestParams = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestParams.capture());
+        assertThat(requestParams.getValue().isIgnoreVisibilityRestrictions()).isFalse();
     }
 
 }

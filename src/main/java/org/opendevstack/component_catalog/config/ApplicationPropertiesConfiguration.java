@@ -17,6 +17,12 @@ import java.util.List;
 public class ApplicationPropertiesConfiguration {
 
     @Bean("basicAuthUsersConfig")
+    @ConfigurationProperties(prefix = "component-catalog.security.basic-auth")
+    public BasicAuthSecurityProps basicAuthSecurityProps() {
+        return BasicAuthSecurityProps.builder().build();
+    }
+
+    @Bean("securityConfig")
     @ConfigurationProperties(prefix = "component-catalog.security")
     public SecurityProps securityProps() {
         return SecurityProps.builder().build();
@@ -72,13 +78,19 @@ public class ApplicationPropertiesConfiguration {
 
     @Bean("catalogItemDefaultConfig")
     @ConfigurationProperties(prefix = "catalog-item")
-    public CatalogItemDefaultProps  catalogItemDefaultConfig() {
+    public CatalogItemDefaultProps catalogItemDefaultConfig() {
         return CatalogItemDefaultProps.builder().build();
     }
 
     @Builder
     @Data
     public static class SecurityProps {
+        private String sharedSecret;
+    }
+
+    @Builder
+    @Data
+    public static class BasicAuthSecurityProps {
         private UserProps provisioner;
         private UserProps cacheAdmin;
     }

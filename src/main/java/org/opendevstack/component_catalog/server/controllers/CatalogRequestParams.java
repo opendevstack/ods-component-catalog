@@ -26,4 +26,6 @@ public class CatalogRequestParams {
     @Builder.Default
     String projectKey = Strings.EMPTY;
     String accessToken;
+    @Builder.Default
+    boolean ignoreVisibilityRestrictions = false;
 }

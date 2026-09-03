@@ -23,13 +23,7 @@ import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
 import org.opendevstack.component_catalog.server.org.opendevstack.component_catalog.server.model.wrapper.CatalogItemWrapper;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
 import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogsCollectionsEntity;
-import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
-import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
+import org.opendevstack.component_catalog.server.services.catalog.*;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntity;
 import org.opendevstack.component_catalog.server.services.catalog.business.UserActionsEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
@@ -42,11 +36,7 @@ import org.opendevstack.component_catalog.server.services.provisioner.Status;
 import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -326,7 +316,7 @@ class CatalogItemsApiFacadeTest {
 
             doReturn(permissions).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
             doReturn(true).when(catalogItemsApiFacade).filterByContributingFileExists(anyString());
-            doReturn(true).when(catalogItemsApiFacade).applyFilters(any(), eq(projectKey));
+            doReturn(true).when(catalogItemsApiFacade).applyVisibilityFilter(any(), anyBoolean());
 
             CatalogItem itemB = new CatalogItem();
             itemB.setId("B");
@@ -366,7 +356,7 @@ class CatalogItemsApiFacadeTest {
             assertThat(result.get(1).getId()).isEqualTo("B");
 
             verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
-            verify(catalogItemsApiFacade, times(2)).applyFilters(any(), eq(projectKey));
+            verify(catalogItemsApiFacade, times(2)).applyVisibilityFilter(any(), anyBoolean());
             verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
         }
     }
@@ -458,7 +448,7 @@ class CatalogItemsApiFacadeTest {
             doAnswer(inv -> {
                 CatalogItem it = inv.getArgument(0);
                 return "keep".equals(it.getId());
-            }).when(catalogItemsApiFacade).applyFilters(any(CatalogItem.class), eq(projectKey));
+            }).when(catalogItemsApiFacade).applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             var params = CatalogRequestParams.builder()
                     .catalogId(catalogId)
@@ -475,7 +465,7 @@ class CatalogItemsApiFacadeTest {
             assertThat(result.getFirst().getId()).isEqualTo("keep");
 
             verify(catalogApiAdapter, times(2)).asCatalogItem(any(), anyList(), anyList(), any());
-            verify(catalogItemsApiFacade, times(2)).applyFilters(any(CatalogItem.class), eq(projectKey));
+            verify(catalogItemsApiFacade, times(2)).applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
             verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists("keep");
         }
     }
@@ -596,7 +586,7 @@ class CatalogItemsApiFacadeTest {
             doReturn(true).when(catalogItemsApiFacade)
                     .filterByContributingFileExists(anyString());
             doReturn(true).when(catalogItemsApiFacade)
-                    .applyFilters(any(), any());
+                    .applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             CatalogItem item1 = new CatalogItem();
             item1.setId("item-1");
@@ -664,7 +654,7 @@ class CatalogItemsApiFacadeTest {
                     .filterByContributingFileExists(catalogId);
 
             doReturn(true).when(catalogItemsApiFacade)
-                    .applyFilters(any(), any());
+                    .applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             CatalogItem item = new CatalogItem();
             item.setId("item-1");
@@ -740,7 +730,7 @@ class CatalogItemsApiFacadeTest {
 
             doReturn(true)
                     .when(catalogItemsApiFacade)
-                    .applyFilters(any(), any());
+                    .applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             when(catalogApiAdapter.asCatalogItem(
                     any(),
@@ -818,7 +808,7 @@ class CatalogItemsApiFacadeTest {
 
             doReturn(true)
                     .when(catalogItemsApiFacade)
-                    .applyFilters(any(), any());
+                    .applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             when(catalogApiAdapter.asCatalogItem(
                     any(),
@@ -909,7 +899,7 @@ class CatalogItemsApiFacadeTest {
 
             doReturn(true)
                     .when(catalogItemsApiFacade)
-                    .applyFilters(any(), any());
+                    .applyVisibilityFilter(any(CatalogItem.class), anyBoolean());
 
             // when
             var result = catalogItemsApiFacade.fetchCatalogItems(params);
@@ -938,7 +928,7 @@ class CatalogItemsApiFacadeTest {
         item.setTitle("X");
         doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
 
-        doReturn(true).when(catalogItemsApiFacade).applyFilters(item, projectKey);
+        doReturn(true).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(catalogItemId)
@@ -954,7 +944,7 @@ class CatalogItemsApiFacadeTest {
 
         verify(catalogEntitiesService, times(1)).getCatalogItemEntity(catalogItemId);
         verify(catalogItemsApiFacade, times(1)).asCatalogItem(any(CatalogRequestParams.class));
-        verify(catalogItemsApiFacade, times(1)).applyFilters(item, projectKey);
+        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(eq(item), anyBoolean());
         verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists(catalogItemId);
     }
 
@@ -994,7 +984,7 @@ class CatalogItemsApiFacadeTest {
         item.setId(catalogItemId);
         doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
 
-        doReturn(false).when(catalogItemsApiFacade).applyFilters(item, projectKey);
+        doReturn(false).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
         var params = CatalogRequestParams.builder()
                 .catalogItemId(catalogItemId)
@@ -1007,7 +997,27 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(response).isNull();
 
-        verify(catalogItemsApiFacade, times(1)).applyFilters(item, projectKey);
+        verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(eq(item), anyBoolean());
+    }
+
+    @Test
+    void GivenInvisibleItemAndVisibilityRestrictions_WhenApplyingVisibilityFilter_ThenReturnFalse() {
+        var item = new CatalogItem();
+        item.setVisible(false);
+
+        var result = catalogItemsApiFacade.applyVisibilityFilter(item, false);
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void GivenInvisibleItemAndIgnoredVisibilityRestrictions_WhenApplyingVisibilityFilter_ThenReturnTrue() {
+        var item = new CatalogItem();
+        item.setVisible(false);
+
+        var result = catalogItemsApiFacade.applyVisibilityFilter(item, true);
+
+        assertThat(result).isTrue();
     }
 
     @Test

@@ -15,6 +15,7 @@ import org.opendevstack.component_catalog.server.services.catalog.entity.Catalog
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -31,6 +32,7 @@ import static org.opendevstack.component_catalog.server.services.common.IdEncode
 @AllArgsConstructor
 public class EntitiesMapper {
     private final CatalogItemUserActionMapper catalogItemUserActionMapper;
+    private final List<CatalogItemsFilter> catalogItemFilters;
 
     public Catalog asCatalog(CatalogEntityContext catalogEntityCtx) {
         log.debug("Mapping CatalogEntityContext to Catalog: {}", catalogEntityCtx);
@@ -89,6 +91,15 @@ public class EntitiesMapper {
                 ? CatalogItemSlug.normalise(catalogProject) + CatalogItemSlug.SEPARATOR + catalogItemEntityCtx.getRepoCatalogItemPathAt().getRepoSlug()
                 : null;
 
+        var isVisible = catalogItemFilters.stream()
+                .allMatch(filter ->
+                        filter.filter(
+                                CatalogItem.builder()
+                                    .id(catalogItemEntityCtx.getId())
+                                    .restrictions(catalogItemRestrictions)
+                                    .build(),
+                                List.of(projectKey)));
+
         var catalogItem = CatalogItem.builder()
                 .id(catalogItemEntityCtx.getId())
                 .slug(itemSlug)
@@ -104,6 +115,7 @@ public class EntitiesMapper {
                 .userActions(catalogItemUserActions)
                 .restrictions(catalogItemRestrictions)
                 .componentCount(componentCount)
+                .visible(isVisible)
                 .build();
 
         log.debug("Resulting CatalogItem: {}", catalogItem);

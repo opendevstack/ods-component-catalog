@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.controllers;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionMapper;
 import org.opendevstack.component_catalog.server.mappers.CatalogItemUserActionParameterMapper;
@@ -36,6 +37,7 @@ import org.opendevstack.component_catalog.server.services.catalog.entity.Catalog
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserAction;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
@@ -84,7 +86,9 @@ class CatalogApiAdapterTest {
                 List.of(dummyEvaluator),
                 groupsRestrictionProps
         );
-        var entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
+        CatalogItemsFilter filter = Mockito.mock(CatalogItemsFilter.class);
+
+        var entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, List.of(filter));
 
         catalogApiAdapter = new CatalogApiAdapter(
                 entitiesMapper,

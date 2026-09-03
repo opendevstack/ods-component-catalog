@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.mappers;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.model.CatalogItemUserAction;
@@ -16,6 +17,7 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContextMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityUserActionMother;
 import org.opendevstack.component_catalog.server.services.catalog.entity.UserActionRestrictionsMother;
+import org.opendevstack.component_catalog.server.services.filters.CatalogItemsFilter;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 
@@ -31,6 +33,7 @@ import static org.opendevstack.component_catalog.server.mappers.MapperUtils.isNu
 class EntitiesMapperTest {
 
     private CatalogItemUserActionParameterMapper catalogItemUserActionParameterMapper;
+    private CatalogItemsFilter catalogItemsFilter;
     private EntitiesMapper entitiesMapper;
 
     @BeforeEach
@@ -50,8 +53,9 @@ class EntitiesMapperTest {
                 List.of(dummyEvaluator),
                 groupsRestrictionProps
         );
+        catalogItemsFilter = Mockito.mock(CatalogItemsFilter.class);
 
-        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper);
+        this.entitiesMapper = new EntitiesMapper(catalogItemUserActionMapper, List.of(catalogItemsFilter));
     }
 
     @Test
@@ -99,6 +103,40 @@ class EntitiesMapperTest {
 
         assertThat(catalogItem.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
         assertThat(catalogItem.catalogItem().getUserActions()).hasSize(2);
+    }
+
+    @Test
+    void givenCatalogItemAcceptedByFilters_whenAsCatalogItem_thenItemIsVisible() {
+        var catalogItemEntityCtx = CatalogItemEntityContextMother.of();
+        var projectKey = "PROJECT-1";
+        Mockito.when(catalogItemsFilter.filter(Mockito.any(), Mockito.eq(List.of(projectKey)))).thenReturn(true);
+
+        var catalogItem = entitiesMapper.asCatalogItem(
+                catalogItemEntityCtx,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                projectKey,
+                null
+        );
+
+        assertThat(catalogItem.catalogItem().getVisible()).isTrue();
+    }
+
+    @Test
+    void givenCatalogItemRejectedByFilters_whenAsCatalogItem_thenItemIsNotVisible() {
+        var catalogItemEntityCtx = CatalogItemEntityContextMother.of();
+        var projectKey = "PROJECT-1";
+        Mockito.when(catalogItemsFilter.filter(Mockito.any(), Mockito.eq(List.of(projectKey)))).thenReturn(false);
+
+        var catalogItem = entitiesMapper.asCatalogItem(
+                catalogItemEntityCtx,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                projectKey,
+                null
+        );
+
+        assertThat(catalogItem.catalogItem().getVisible()).isFalse();
     }
 
     @Test
