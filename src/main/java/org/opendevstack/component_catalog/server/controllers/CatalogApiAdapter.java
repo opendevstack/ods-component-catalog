@@ -466,6 +466,7 @@ public class CatalogApiAdapter {
                     .authors(sourceItem.getAuthors())
                     .date(sourceItem.getDate())
                     .userActions(sourceItem.getUserActions())
+                    .visible(sourceItem.getVisible())
                     .build();
         }
     }

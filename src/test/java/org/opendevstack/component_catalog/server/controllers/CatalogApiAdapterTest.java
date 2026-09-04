@@ -237,6 +237,7 @@ class CatalogApiAdapterTest {
         // Removed fields due to lack of permissions
         assertThat(item.catalogItem().getItemSrc()).isNull();
         assertThat(item.catalogItem().getPath()).isNull();
+        assertThat(item.catalogItem().getVisible()).isFalse();
 
         // Mandatory fields
         assertThat(item.catalogItem().getId()).isEqualTo("id");
