@@ -166,7 +166,7 @@ public class ProjectComponentsService {
                 .catalogItemId(entry.getValue().getCatalogItemId())
                 .status(request.getStatus())
                 .catalogItemRef(resolveCatalogItemRef(entry.getValue(), request.getCatalogItemId()))
-                .componentUrl(resolveComponentUrl(entry.getValue(), request.getComponentUrl()))
+                .componentUrl(request.getComponentUrl()) // When a provision fails it should be able to update it to ""
                 .workflowJobId(resolveWorkflowJobId(entry.getValue(), request.getWorkflowJobId()))
                 .deletionWorkflowJobId(resolveDeletionWorkflowJobId(entry.getValue(), request.getDeletionWorkflowJobId()))
                 .createdAt(request.getCreatedAt())
@@ -179,12 +179,6 @@ public class ProjectComponentsService {
         return StringUtils.isBlank(catalogItemId)
                 ? value.getCatalogItemRef()
                 : getBranchRefFromCatalogItemId(catalogItemId);
-    }
-
-    private String resolveComponentUrl(ProjectComponent value, String newUrl) {
-        return StringUtils.isBlank(newUrl)
-                ? value.getComponentUrl()
-                : newUrl;
     }
 
     private List<Parameter> resolveParameters(ProjectComponent value, List<Parameter> params) {

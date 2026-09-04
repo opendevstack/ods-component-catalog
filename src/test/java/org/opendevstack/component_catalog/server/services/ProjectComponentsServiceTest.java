@@ -294,14 +294,14 @@ class ProjectComponentsServiceTest {
         //when
         ProjectComponents updated = service.updatePartiallyExistingComponent(
                 pc,
-                request("comp1", encodedFull, Status.CREATED, null, null, "created", "updated", parameters)
+                request("comp1", encodedFull, Status.CREATED, "", null, "created", "updated", parameters)
         );
 
         //then
         ProjectComponent result = updated.getComponents().get("comp1");
 
         assertThat(result.getStatus()).isEqualTo(Status.CREATED);
-        assertThat(result.getComponentUrl()).isEqualTo("oldUrl"); // unchanged
+        assertThat(result.getComponentUrl()).isEqualTo("");
         assertThat(result.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/dev"));
         assertThat(result.getCreatedAt()).isEqualTo("created");
         assertThat(result.getUpdatedAt()).isEqualTo("updated");
