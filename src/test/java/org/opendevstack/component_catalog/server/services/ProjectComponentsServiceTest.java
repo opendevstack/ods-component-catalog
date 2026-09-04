@@ -301,7 +301,7 @@ class ProjectComponentsServiceTest {
         ProjectComponent result = updated.getComponents().get("comp1");
 
         assertThat(result.getStatus()).isEqualTo(Status.CREATED);
-        assertThat(result.getComponentUrl()).isEqualTo("oldUrl"); // unchanged
+        assertThat(result.getComponentUrl()).isEqualTo(null);
         assertThat(result.getCatalogItemRef()).isEqualTo(base64("?at=refs/heads/dev"));
         assertThat(result.getCreatedAt()).isEqualTo("created");
         assertThat(result.getUpdatedAt()).isEqualTo("updated");
