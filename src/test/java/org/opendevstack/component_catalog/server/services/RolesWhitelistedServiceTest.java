@@ -125,24 +125,32 @@ class RolesWhitelistedServiceTest {
 		verifyNoInteractions(bitbucketService, provisionerActionsConfiguration);
     }
 
-    @Test
-    void givenMissingRolesWhitelistedFile_whenResolveWhitelistedRoles_thenThrowsInvalidEntityException()
+	@Test
+	void givenRolesWhitelistedWithNullRoles_whenResolveWhitelistedRoles_thenReturnsEmptyList()
 			throws InvalidIdException {
 		// given
 		var catalogItemId = "catalog-item-id";
 		var catalogItemPathAt = mock(BitbucketPathAt.class);
+
 		when(catalogItemPathAt.getProjectKey()).thenReturn("MYPROJECT");
 		when(catalogItemPathAt.getRepoSlug()).thenReturn("my-repo");
 		when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId)).thenReturn(catalogItemPathAt);
-		configureRolesWhitelistedPath();
-		when(catalogServiceAdapter.getYamlEntity(any(BitbucketPathAt.class), eq(RolesWhitelisted.class)))
-				.thenReturn(Optional.empty());
 
-		// when // then
-		assertThatThrownBy(() -> rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId))
-				.isInstanceOf(InvalidEntityException.class)
-				.hasMessageContaining("Invalid RolesWhitelisted.yaml file, path: projects/PROVISIONER/repos/");
-    }
+		configureRolesWhitelistedPath();
+
+		var rolesWhitelisted = RolesWhitelisted.builder()
+				.roles(null)
+				.build();
+
+		when(catalogServiceAdapter.getYamlEntity(any(BitbucketPathAt.class), eq(RolesWhitelisted.class)))
+				.thenReturn(Optional.of(rolesWhitelisted));
+
+		// when
+		var result = rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId);
+
+		// then
+		assertThat(result).isEmpty();
+	}
 
     private void configureRolesWhitelistedPath() {
 		when(provisionerActionsConfiguration.getProjectKey()).thenReturn("PROVISIONER");

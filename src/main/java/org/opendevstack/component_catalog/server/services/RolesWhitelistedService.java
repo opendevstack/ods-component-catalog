@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -37,9 +38,11 @@ public class RolesWhitelistedService {
 
         Optional<RolesWhitelisted> roles = catalogServiceAdapter.getYamlEntity(pathAt, RolesWhitelisted.class);
 
-        return roles.orElseThrow(() -> new InvalidEntityException("Invalid RolesWhitelisted.yaml file, path: %s".formatted(pathAt.getPathAt())))
-                .getRoles().entrySet().stream()
-                .filter(role -> role.getValue().contains(itemSlug.toString()))
+        return roles.stream()
+                .map(RolesWhitelisted::getRoles)
+                .filter(Objects::nonNull)
+                .flatMap(map -> map.entrySet().stream())
+                .filter(entry -> entry.getValue().contains(itemSlug.toString()))
                 .map(Map.Entry::getKey)
                 .toList();
     }
