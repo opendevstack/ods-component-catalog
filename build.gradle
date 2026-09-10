@@ -206,6 +206,39 @@ tasks.register("openApiGenerateBitbucketClient", GenerateTask) {
     ]
 }
 
+tasks.register("openApiGenerateGithubClient", GenerateTask) {
+    generatorName = "java"
+    outputDir = "$projectDir/target/generated-sources/openapi-client-github"
+    inputSpec = "$projectDir/openapi/openapi-github-v114.yaml"
+    library = "resttemplate"
+    cleanupOutput = true
+
+    globalProperties = [
+        generateAliasAsModel: "true",
+        apiDocs             : "true",
+        modelDocs           : "true",
+        apiTests            : "false",
+        modelTests          : "false"
+    ]
+
+    additionalProperties = [
+        serializableModel              : "true",
+        useJakartaEe                   : "true",
+        java8                          : "true",
+        groupId                        : "github",
+        artifactId                     : "github-v114-client",
+        artifactVersion                : "0.0.0-SNAPSHOT",
+        invokerPackage                 : "org.opendevstack.component_catalog.client.github.v114",
+        apiPackage                     : "org.opendevstack.component_catalog.client.github.v114.api",
+        modelPackage                   : "org.opendevstack.component_catalog.client.github.v114.model",
+        additionalModelTypeAnnotations : "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+        generateBuilders                : "true",
+        generateClientAsBean            : "true",
+        useSingleRequestParameter       : "true",
+        hideGenerationTimestamp         : "true"
+    ]
+}
+
 tasks.register("openApiGenerateProjectInfoServicesClient", GenerateTask) {
     generatorName = "java"
     outputDir = "$projectDir/target/generated-sources/openapi-client-projects-info-service"
@@ -247,7 +280,8 @@ tasks.named("compileJava") {
     dependsOn(
             tasks.named("openApiGenerate"),
             tasks.named("openApiGenerateBitbucketClient"),
-            tasks.named("openApiGenerateProjectInfoServicesClient")
+            tasks.named("openApiGenerateProjectInfoServicesClient"),
+            tasks.named("openApiGenerateGithubClient")
     )
 }
 
@@ -264,7 +298,8 @@ sourceSets {
                     "src/main/java",
                     "$projectDir/target/generated-sources/openapi-server-component_catalog/src/main/java",
                     "$projectDir/target/generated-sources/openapi-client-bitbucket/src/main/java",
-                    "$projectDir/target/generated-sources/openapi-client-projects-info-service/src/main/java"
+                    "$projectDir/target/generated-sources/openapi-client-projects-info-service/src/main/java",
+                    "$projectDir/target/generated-sources/openapi-client-github/src/main/java"
             ]
         }
         resources {
