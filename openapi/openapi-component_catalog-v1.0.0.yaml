@@ -36,7 +36,418 @@ tags:
     description: Provisioning notifications from AWX/Provisioner
   - name: CacheAdministration
     description: Internal cache administration operations.
+  - name: Github
+    description: GitHub integration test operations.
 paths:
+  /github/repository:
+    get:
+      operationId: getGithubRepository
+      summary: Get the configured GitHub repository.
+      tags:
+        - Github
+      responses:
+        "200":
+          description: GitHub repository.
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/branch:
+    get:
+      operationId: getGithubBranch
+      summary: Get a GitHub branch.
+      tags:
+        - Github
+      parameters:
+        - name: branch
+          in: query
+          required: true
+          description: Branch name.
+          schema:
+            type: string
+            example: main
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/content:
+    get:
+      operationId: getGithubContent
+      summary: Get repository content.
+      tags:
+        - Github
+      parameters:
+        - name: path
+          in: query
+          required: true
+          description: File or directory path.
+          schema:
+            type: string
+            example: README.md
+        - name: ref
+          in: query
+          required: false
+          description: Branch, tag, or commit SHA.
+          schema:
+            type: string
+            example: main
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/branches:
+    get:
+      operationId: listGithubBranches
+      summary: List repository branches.
+      tags:
+        - Github
+      parameters:
+        - name: protected
+          in: query
+          required: false
+          schema:
+            type: boolean
+            example: false
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/commits:
+    get:
+      operationId: listGithubCommits
+      summary: List repository commits.
+      tags:
+        - Github
+      parameters:
+        - name: sha
+          in: query
+          required: false
+          schema:
+            type: string
+            example: main
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+            example: README.md
+        - name: author
+          in: query
+          required: false
+          schema:
+            type: string
+            example: octocat
+        - name: committer
+          in: query
+          required: false
+          schema:
+            type: string
+            example: octocat
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/pull-requests:
+    get:
+      operationId: listGithubPullRequests
+      summary: List repository pull requests.
+      tags:
+        - Github
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - open
+              - closed
+              - all
+            example: open
+        - name: head
+          in: query
+          required: false
+          schema:
+            type: string
+            example: opendevstack:github-api-test-123456789
+        - name: base
+          in: query
+          required: false
+          schema:
+            type: string
+            example: main
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - created
+              - updated
+              - popularity
+              - long-running
+            example: updated
+        - name: direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            example: desc
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2026-01-01T00:00:00Z
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/collaborator-permission:
+    get:
+      operationId: getGithubCollaboratorPermission
+      summary: Get a collaborator permission level.
+      tags:
+        - Github
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            example: octocat
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/tree:
+    get:
+      operationId: getGithubTree
+      summary: Get a Git tree.
+      tags:
+        - Github
+      parameters:
+        - name: treeSha
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 9fb037999f264ba9a468b42495a3c3f4c8c5e6f
+        - name: recursive
+          in: query
+          required: false
+          schema:
+            type: boolean
+            example: true
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/ref:
+    post:
+      operationId: createGithubRef
+      summary: Create a Git reference.
+      tags:
+        - Github
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubCreateRefRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+    delete:
+      operationId: deleteGithubRef
+      summary: Delete a Git reference.
+      description: Accepts a branch name, heads/<branch>, tags/<tag>, or refs/<type>/<name>.
+      tags:
+        - Github
+      parameters:
+        - name: ref
+          in: query
+          required: true
+          schema:
+            type: string
+            example: github-api-test-123456789
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+  /github/file:
+    put:
+      operationId: createOrUpdateGithubFile
+      summary: Create or update a repository file.
+      tags:
+        - Github
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: github-api-test.txt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubFileRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+  /github/pull-request:
+    post:
+      operationId: createGithubPullRequest
+      summary: Create a pull request.
+      tags:
+        - Github
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubCreatePullRequestRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+  /github/pull-request/{number}:
+    parameters:
+      - name: number
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 42
+    patch:
+      operationId: updateGithubPullRequest
+      summary: Update a pull request.
+      tags:
+        - Github
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubUpdatePullRequestRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+  /github/pull-request/{number}/merge:
+    post:
+      operationId: mergeGithubPullRequest
+      summary: Merge a pull request.
+      tags:
+        - Github
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 42
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubMergePullRequestRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
   /project/components:
     get:
       operationId: getAllProjectComponents
@@ -1076,7 +1487,129 @@ components:
       type: http
       scheme: basic
       description: Basic authentication for internal provisioning endpoint
+  responses:
+    GithubJsonResult:
+      description: Serialized result returned by GitHub.
+      content:
+        application/json:
+          schema:
+            type: string
+    Unauthorized:
+      description: Invalid client token on the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RestErrorMessage"
+    Forbidden:
+      description: Insufficient permissions for the client to access the resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RestErrorMessage"
+    InternalServerError:
+      description: GitHub call failed or the server could not process the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RestErrorMessage"
   schemas:
+    GithubCreateRefRequest:
+      type: object
+      required:
+        - ref
+        - sha
+      properties:
+        ref:
+          type: string
+          description: Full Git reference to create.
+          example: refs/heads/github-api-test-123456789
+        sha:
+          type: string
+          description: SHA to which the new reference points.
+          example: 9fb037999f264ba9a468b42495a3c3f4c8c5e6f
+    GithubFileRequest:
+      type: object
+      required:
+        - message
+        - content
+        - branch
+      properties:
+        message:
+          type: string
+          example: GitHub API integration test
+        content:
+          type: string
+          description: Base64-encoded file contents.
+          example: SGVsbG8gZnJvbSB0aGUgR2l0SHViIEFQSSB0ZXN0
+        branch:
+          type: string
+          example: github-api-test-123456789
+        sha:
+          type: string
+          description: Existing file SHA when updating a file.
+          example: 95b966ae1c166bd92f8ae7d1c313e738c731dfc3
+    GithubCreatePullRequestRequest:
+      type: object
+      required:
+        - title
+        - head
+        - base
+      properties:
+        title:
+          type: string
+          example: GitHub API integration test
+        head:
+          type: string
+          example: github-api-test-123456789
+        base:
+          type: string
+          example: main
+        body:
+          type: string
+          example: Pull request created by the GitHub API integration test.
+        draft:
+          type: boolean
+          example: true
+        maintainerCanModify:
+          type: boolean
+          example: false
+    GithubUpdatePullRequestRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: GitHub API integration test (updated)
+        body:
+          type: string
+          example: Pull request updated by the GitHub API integration test.
+        state:
+          type: string
+          enum:
+            - open
+            - closed
+          example: open
+        base:
+          type: string
+          example: main
+        maintainerCanModify:
+          type: boolean
+          example: false
+    GithubMergePullRequestRequest:
+      type: object
+      properties:
+        commitTitle:
+          type: string
+          example: GitHub API integration test
+        commitMessage:
+          type: string
+          example: Merged by the GitHub API integration test.
+        mergeMethod:
+          type: string
+          enum:
+            - merge
+            - squash
+            - rebase
+          example: squash
     Catalog:
       properties:
         name:

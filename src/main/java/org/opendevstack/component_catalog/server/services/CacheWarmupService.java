@@ -49,8 +49,8 @@ public class CacheWarmupService implements ApplicationRunner {
     @Async
     public void run(ApplicationArguments args) {
         log.info("Cache warmup: starting asynchronously after application startup...");
-        warmupCatalogsBitbucketServiceCache();
-        warmupProjectComponentsCache();
+        //warmupCatalogsBitbucketServiceCache();
+        //warmupProjectComponentsCache();
     }
 
     /**

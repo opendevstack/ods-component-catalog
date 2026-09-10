@@ -64,6 +64,12 @@ component-catalog:
       base-rest-url: ${BITBUCKET_SERVICE_BASE_REST_URL}
       base-raw-url: ${BITBUCKET_SERVICE_BASE_RAW_URL}
       bearer-token: ${BITBUCKET_SERVICE_BEARER_TOKEN}
+  github:
+    service:
+      bearer-token: ${GITHUB_SERVICE_BEARER_TOKEN}
+      owner: ${GITHUB_SERVICE_OWNER:BI-EDPPlatform}
+      repository: ${GITHUB_SERVICE_REPOSITORY:devstack-component-catalog}
+      base-branch: ${GITHUB_SERVICE_BASE_BRANCH:main}
   projects-info-service:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}

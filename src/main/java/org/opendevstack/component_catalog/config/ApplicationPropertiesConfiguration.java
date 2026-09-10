@@ -34,6 +34,12 @@ public class ApplicationPropertiesConfiguration {
         return BitbucketServiceProps.builder().build();
     }
 
+    @Bean("githubSpikeServiceConfig")
+    @ConfigurationProperties(prefix = "component-catalog.github.service")
+    public GithubSpikeServiceProps githubSpikeServiceProps() {
+        return GithubSpikeServiceProps.builder().build();
+    }
+
     @Bean("bitbucketServiceCacheConfig")
     @ConfigurationProperties(prefix = "component-catalog.caching.bitbucket-service-cache")
     public BitbucketServiceCacheProps bitbucketServiceCacheProps() {
@@ -115,6 +121,15 @@ public class ApplicationPropertiesConfiguration {
         private String bearerToken;
         private URL baseRestUrl;
         private URL baseRawUrl;
+    }
+
+    @Builder // useful for unit testing
+    @Data
+    public static class GithubSpikeServiceProps {
+        private String bearerToken;
+        private String owner;
+        private String repository;
+        private String baseBranch;
     }
 
     @Builder // useful for unit testing
