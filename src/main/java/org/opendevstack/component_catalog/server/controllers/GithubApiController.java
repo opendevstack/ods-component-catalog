@@ -71,6 +71,33 @@ public class GithubApiController implements GithubApi {
     }
 
     @Override
+    public ResponseEntity<String> listGithubTeams(
+            String organization, Integer perPage, Integer page) {
+        return ResponseEntity.ok(githubSpikeService.listTeams(organization, perPage, page));
+    }
+
+    @Override
+    public ResponseEntity<String> listGithubTeamMembers(
+            String organization,
+            String teamSlug,
+            String role,
+            Integer perPage,
+            Integer page) {
+        return ResponseEntity.ok(githubSpikeService.listTeamMembers(
+                organization, teamSlug, role, perPage, page));
+    }
+
+    @Override
+    public ResponseEntity<String> listGithubTeamRepositories(
+            String organization,
+            String teamSlug,
+            Integer perPage,
+            Integer page) {
+        return ResponseEntity.ok(githubSpikeService.listTeamRepositories(
+                organization, teamSlug, perPage, page));
+    }
+
+    @Override
     public ResponseEntity<String> getGithubCollaboratorPermission(String username) {
         return ResponseEntity.ok(githubSpikeService.getCollaboratorPermission(username));
     }

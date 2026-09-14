@@ -39,6 +39,130 @@ tags:
   - name: Github
     description: GitHub integration test operations.
 paths:
+  /github/teams:
+    get:
+      operationId: listGithubTeams
+      summary: List teams in a GitHub organization.
+      tags:
+        - Github
+      parameters:
+        - name: organization
+          in: query
+          required: true
+          schema:
+            type: string
+            example: opendevstack
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/team-members:
+    get:
+      operationId: listGithubTeamMembers
+      summary: List members of a GitHub team.
+      tags:
+        - Github
+      parameters:
+        - name: organization
+          in: query
+          required: true
+          schema:
+            type: string
+            example: opendevstack
+        - name: teamSlug
+          in: query
+          required: true
+          schema:
+            type: string
+            example: backend
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - all
+              - member
+              - maintainer
+            example: all
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /github/team-repositories:
+    get:
+      operationId: listGithubTeamRepositories
+      summary: List repositories accessible to a GitHub team.
+      tags:
+        - Github
+      parameters:
+        - name: organization
+          in: query
+          required: true
+          schema:
+            type: string
+            example: opendevstack
+        - name: teamSlug
+          in: query
+          required: true
+          schema:
+            type: string
+            example: backend
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 30
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          $ref: "#/components/responses/GithubJsonResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /github/repository:
     get:
       operationId: getGithubRepository

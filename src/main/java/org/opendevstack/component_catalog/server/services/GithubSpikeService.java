@@ -7,6 +7,7 @@ import org.opendevstack.component_catalog.client.github.v114.ApiClient;
 import org.opendevstack.component_catalog.client.github.v114.api.GitApi;
 import org.opendevstack.component_catalog.client.github.v114.api.PullsApi;
 import org.opendevstack.component_catalog.client.github.v114.api.ReposApi;
+import org.opendevstack.component_catalog.client.github.v114.api.TeamsApi;
 import org.opendevstack.component_catalog.client.github.v114.auth.HttpBearerAuth;
 import org.opendevstack.component_catalog.client.github.v114.model.GitCreateRefRequest;
 import org.opendevstack.component_catalog.client.github.v114.model.PullsCreateRequest;
@@ -77,6 +78,28 @@ public class GithubSpikeService {
             Integer page) {
         return serialize(pullsApi().pullsList(
                 owner(), repository(), state, head, base, sort, direction, since, perPage, page));
+    }
+
+    public String listTeams(String organization, Integer perPage, Integer page) {
+        return serialize(teamsApi().teamsList(organization, perPage, page));
+    }
+
+    public String listTeamMembers(
+            String organization,
+            String teamSlug,
+            String role,
+            Integer perPage,
+            Integer page) {
+        return serialize(teamsApi().teamsListMembers(
+                organization, teamSlug, role, perPage, page));
+    }
+
+    public String listTeamRepositories(
+            String organization,
+            String teamSlug,
+            Integer perPage,
+            Integer page) {
+        return serialize(teamsApi().teamsListRepos(organization, teamSlug, perPage, page));
     }
 
     public String getCollaboratorPermission(String username) {
@@ -152,6 +175,10 @@ public class GithubSpikeService {
 
     private PullsApi pullsApi() {
         return new PullsApi(apiClient());
+    }
+
+    private TeamsApi teamsApi() {
+        return new TeamsApi(apiClient());
     }
 
     private ApiClient apiClient() {
