@@ -8,10 +8,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ComponentNotFoundException;
 import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentParameter;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,21 +25,25 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProjectComponentExtendedInfoMapperTest {
 
-    @Mock
-    private ProvisioningStatusMapper provisioningStatusMapper;
+    private static final String ACCESS_TOKEN = "access-token";
+    private static final String PROJECT_KEY = "project-key";
+    private static final List<String> USER_GROUPS = List.of("project-key-team");
 
     @Mock
     private ProjectComponentParameterMapper projectComponentParameterMapper;
+
+    @Mock
+    private ProjectComponentsInfoMapper projectComponentsInfoMapper;
 
     private ProjectComponentExtendedInfoMapper mapper;
 
     @BeforeEach
     void setUp() {
-        mapper = new ProjectComponentExtendedInfoMapper(provisioningStatusMapper, projectComponentParameterMapper);
+        mapper = new ProjectComponentExtendedInfoMapper(projectComponentParameterMapper, projectComponentsInfoMapper);
     }
 
     @Test
-    void givenComponentWithParameters_whenMap_thenReturnExtendedInfo() {
+    void givenComponentWithParameters_whenMap_thenReturnExtendedInfo() throws InvalidIdException {
         // given
         Parameter param1 = Parameter.builder()
                 .name("p1")
@@ -74,30 +80,39 @@ class ProjectComponentExtendedInfoMapperTest {
         );
         component.setParameters(List.of(param1, param2));
 
-        when(provisioningStatusMapper.asProvisioningStatus(Status.CREATED)).thenReturn(ProvisioningStatus.CREATED);
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+            .thenReturn(Optional.of(ProjectComponentInfo.builder()
+                .componentId("C1")
+                .componentUrl(component.getComponentUrl())
+                .status(ProvisioningStatus.CREATED)
+                .canBeDeleted(true)
+                .build()));
 
         // when
         Optional<ProjectComponentExtendedInfo> result =
-                mapper.mapToProjectComponentExtendedInfo(component);
+            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
 
         // then
         assertThat(result).isPresent();
         var info = result.get();
 
         assertThat(info.getComponentId()).isEqualTo("C1");
+        assertThat(info.getComponentUrl()).isEqualTo(component.getComponentUrl());
         assertThat(info.getCatalogItemId()).isEqualTo("CAT-1");
         assertThat(info.getCatalogItemRef()).isEqualTo("REF-1");
         assertThat(info.getStatus()).isEqualTo(ProvisioningStatus.CREATED);
+        assertThat(info.getCanBeDeleted()).isTrue();
 
         assertThat(info.getParameters()).hasSize(2);
         assertThat(info.getParameters()).containsExactly(mappedParam1, mappedParam2);
 
         verify(projectComponentParameterMapper).mapToProjectComponentParameter(param1);
         verify(projectComponentParameterMapper).mapToProjectComponentParameter(param2);
+        verify(projectComponentsInfoMapper).mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
     }
 
     @Test
-    void givenComponentWithNullParameters_whenMap_thenReturnEmptyParametersList() {
+    void givenComponentWithNullParameters_whenMap_thenReturnEmptyParametersList() throws InvalidIdException {
         // given
         ProjectComponent component = ProjectComponentMother.of(
                 "C2",
@@ -106,10 +121,16 @@ class ProjectComponentExtendedInfoMapperTest {
                 Status.CREATING
         );
         component.setParameters(null);
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+            .thenReturn(Optional.of(ProjectComponentInfo.builder()
+                .componentId(component.getComponentId())
+                .status(ProvisioningStatus.CREATING)
+                .canBeDeleted(false)
+                .build()));
 
         // when
         Optional<ProjectComponentExtendedInfo> result =
-                mapper.mapToProjectComponentExtendedInfo(component);
+            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
 
         // then
         assertThat(result).isPresent();
@@ -119,7 +140,7 @@ class ProjectComponentExtendedInfoMapperTest {
     }
 
     @Test
-    void givenParameterMappingReturnsEmptyOptional_whenMap_thenThrowComponentNotFoundException() {
+    void givenParameterMappingReturnsEmptyOptional_whenMap_thenThrowComponentNotFoundException() throws InvalidIdException {
         // given
         Parameter param = Parameter.builder()
                 .name("bad-param")
@@ -139,10 +160,34 @@ class ProjectComponentExtendedInfoMapperTest {
 
         // when / then
         assertThatThrownBy(() ->
-                mapper.mapToProjectComponentExtendedInfo(component)
+            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS)
         ).isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining("C404");
 
         verify(projectComponentParameterMapper).mapToProjectComponentParameter(param);
+    }
+
+    @Test
+    void givenProjectComponentInfoMapperReturnsEmpty_whenMap_thenReturnEmpty() throws InvalidIdException {
+        // given
+        ProjectComponent component = ProjectComponentMother.of();
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+                .thenReturn(Optional.empty());
+
+        // when / then
+        assertThat(mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+                .isEmpty();
+    }
+
+    @Test
+    void givenProjectComponentInfoMapperThrowsInvalidIdException_whenMap_thenReturnEmpty() throws InvalidIdException {
+        // given
+        ProjectComponent component = ProjectComponentMother.of();
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+                .thenThrow(new InvalidIdException("invalid id"));
+
+        // when / then
+        assertThat(mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+                .isEmpty();
     }
 }
