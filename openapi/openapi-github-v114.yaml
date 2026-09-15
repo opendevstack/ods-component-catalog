@@ -479,7 +479,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/content-file'
+                {}
               examples:
                 response-if-content-is-a-file:
                   $ref: '#/components/examples/content-file-response-if-content-is-a-file'
