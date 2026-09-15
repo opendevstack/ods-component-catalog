@@ -1156,6 +1156,9 @@ components:
         deletionWorkflowJobId:
           type: string
           example: '123456'
+        canBeDeleted:
+          type: boolean
+          example: 'true'
         parameters:
           type: array
           items:

@@ -290,7 +290,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
@@ -330,7 +330,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
                 .thenReturn(Optional.empty());
 
         // when / then
@@ -489,7 +489,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-PRJ-123"));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when

@@ -88,7 +88,7 @@ public class ProjectComponentsFacade {
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
-                .flatMap(projectComponentExtendedInfoMapper::mapToProjectComponentExtendedInfo)
+                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups))
                 .orElseThrow(() ->
                     new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey)
                 );

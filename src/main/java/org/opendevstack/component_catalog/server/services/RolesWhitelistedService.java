@@ -24,18 +24,17 @@ public class RolesWhitelistedService {
     private final CatalogServiceAdapter catalogServiceAdapter;
     private final BitbucketService bitbucketService;
     private final ProvisionerActionsConfiguration provisionerActionsConfiguration;
+    private final CatalogItemSlugResolver catalogItemSlugResolver;
 
     public List<String> resolveWhitelistedRolesForCatalogItemId(String catalogItemId) {
-        BitbucketPathAt catalogItemPathAt;
+        CatalogItemSlug itemSlug;
         try {
-            catalogItemPathAt = catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId);
+            itemSlug = catalogItemSlugResolver.resolve(catalogItemId);
         } catch (InvalidIdException e) {
-            throw new InvalidEntityException("Invalid catalogItemId: %s".formatted(catalogItemId));
+            throw new InvalidEntityException("Invalid catalogItemId: %s".formatted(catalogItemId), e);
         }
 
-        var itemSlug = new CatalogItemSlug(catalogItemPathAt.getProjectKey().toLowerCase(), catalogItemPathAt.getRepoSlug());
         BitbucketPathAt pathAt = buildRolesWhitelistedBitbucketPathAt();
-
         Optional<RolesWhitelisted> roles = catalogServiceAdapter.getYamlEntity(pathAt, RolesWhitelisted.class);
 
         return roles.stream()

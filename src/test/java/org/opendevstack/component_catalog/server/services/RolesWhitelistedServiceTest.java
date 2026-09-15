@@ -13,6 +13,7 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogService
 import org.opendevstack.component_catalog.server.services.catalog.entity.RolesWhitelisted;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RolesWhitelistedServiceTest {
@@ -42,6 +39,9 @@ class RolesWhitelistedServiceTest {
 
     @Mock
     private ProvisionerActionsConfiguration provisionerActionsConfiguration;
+
+	@Mock
+	private CatalogItemSlugResolver catalogItemSlugResolver;
 
     @InjectMocks
     private RolesWhitelistedService rolesWhitelistedService;
@@ -60,10 +60,7 @@ class RolesWhitelistedServiceTest {
 			throws InvalidIdException {
 		// given
 		var catalogItemId = "catalog-item-id";
-		var catalogItemPathAt = mock(BitbucketPathAt.class);
-		when(catalogItemPathAt.getProjectKey()).thenReturn("MYPROJECT");
-		when(catalogItemPathAt.getRepoSlug()).thenReturn("my-repo");
-		when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId)).thenReturn(catalogItemPathAt);
+		when(catalogItemSlugResolver.resolve(catalogItemId)).thenReturn(new CatalogItemSlug("myproject", "my-repo"));
 		configureRolesWhitelistedPath();
 
 		var rolesWhitelisted = RolesWhitelisted.builder()
@@ -94,10 +91,7 @@ class RolesWhitelistedServiceTest {
 			throws InvalidIdException {
 		// given
 		var catalogItemId = "catalog-item-id";
-		var catalogItemPathAt = mock(BitbucketPathAt.class);
-		when(catalogItemPathAt.getProjectKey()).thenReturn("MYPROJECT");
-		when(catalogItemPathAt.getRepoSlug()).thenReturn("my-repo");
-		when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId)).thenReturn(catalogItemPathAt);
+		when(catalogItemSlugResolver.resolve(catalogItemId)).thenReturn(new CatalogItemSlug("myproject", "my-repo"));
 		configureRolesWhitelistedPath();
 		when(catalogServiceAdapter.getYamlEntity(any(BitbucketPathAt.class), eq(RolesWhitelisted.class)))
 				.thenReturn(Optional.of(RolesWhitelisted.builder()
@@ -116,13 +110,13 @@ class RolesWhitelistedServiceTest {
 			throws InvalidIdException {
 		// given
 		var catalogItemId = "invalid-catalog-item-id";
-		when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId)).thenThrow(new InvalidIdException(catalogItemId));
+		when(catalogItemSlugResolver.resolve(catalogItemId)).thenThrow(new InvalidIdException(catalogItemId));
 
 		// when // then
 		assertThatThrownBy(() -> rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(catalogItemId))
 				.isInstanceOf(InvalidEntityException.class)
 				.hasMessage("Invalid catalogItemId: invalid-catalog-item-id");
-		verifyNoInteractions(bitbucketService, provisionerActionsConfiguration);
+		verifyNoInteractions(bitbucketService, provisionerActionsConfiguration, catalogServiceAdapter);
     }
 
 	@Test
@@ -130,11 +124,8 @@ class RolesWhitelistedServiceTest {
 			throws InvalidIdException {
 		// given
 		var catalogItemId = "catalog-item-id";
-		var catalogItemPathAt = mock(BitbucketPathAt.class);
 
-		when(catalogItemPathAt.getProjectKey()).thenReturn("MYPROJECT");
-		when(catalogItemPathAt.getRepoSlug()).thenReturn("my-repo");
-		when(catalogServiceAdapter.bitbucketPathAtFromId(catalogItemId)).thenReturn(catalogItemPathAt);
+		when(catalogItemSlugResolver.resolve(catalogItemId)).thenReturn(new CatalogItemSlug("myproject", "my-repo"));
 
 		configureRolesWhitelistedPath();
 
