@@ -11,7 +11,8 @@ spring:
     client:
       factory: jdk
   jackson:
-    date-format: org.opendevstack.component_catalog.util.RFC3339DateFormat
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+    time-zone: UTC
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   cloud:
