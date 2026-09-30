@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -20,7 +21,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Slf4j
 @Validated
-public class ProjectComponentsController implements ProjectComponentsApi {
+public class ProjectComponentsApiController implements ProjectComponentsApi {
     private final ProjectComponentsFacade projectComponentsFacade;
     private final AuthenticationFacade authenticationFacade;
 
@@ -53,4 +54,14 @@ public class ProjectComponentsController implements ProjectComponentsApi {
         var response = projectComponentsFacade.getAllProjectComponentsMetrics(accessToken, page, size, baseUrl);
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    public ResponseEntity<Void> updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> requestBody) {
+        var accessToken = authenticationFacade.getAccessToken();
+
+        projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestBody, accessToken);
+
+        return ResponseEntity.ok().build();
+    }
+
 }

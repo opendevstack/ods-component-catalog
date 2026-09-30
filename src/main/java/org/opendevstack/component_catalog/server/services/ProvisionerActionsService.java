@@ -16,7 +16,6 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
-import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -55,7 +54,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         validate(projectComponents, request.getComponentId(), request.getStatus());
 
@@ -96,7 +95,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(request.getComponentId())) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
@@ -133,8 +132,8 @@ public class ProvisionerActionsService {
 
             var projectComponentsHistorySourceCommitId = bitbucketService.getLastCommit(projectComponentHistoryPathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-            var projectComponents = getProjectComponents(projectComponentPathAt);
-            var projectComponentsHistory = getProjectComponents(projectComponentHistoryPathAt);
+            var projectComponents = projectComponentsService.getProjectComponents(projectComponentPathAt);
+            var projectComponentsHistory = projectComponentsService.getProjectComponents(projectComponentHistoryPathAt);
 
             var componentToBeDeleted = projectComponents.getComponents().get(componentId);
 
@@ -180,7 +179,7 @@ public class ProvisionerActionsService {
         log.debug("Checking if provisioning completed for projectKey: {}, componentId: {}",
                 projectKey, catalogItemId);
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         return isProvisioned(projectComponents, catalogItemId);
     }
@@ -294,25 +293,7 @@ public class ProvisionerActionsService {
     @Synchronized
     @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
     public ProjectComponents getProjectComponents(String projectKey) {
-        return getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
-    }
-
-    @Synchronized
-    public ProjectComponents getProjectComponents(BitbucketPathAt pathAt) {
-        log.info("Retrieving project components from project {} via Bitbucket API...", pathAt.getProjectKeyFromSubPath());
-        return bitbucketService.getTextFileContents(pathAt)
-                .map( content -> {
-                    try {
-                        return objectMapper.readValue(content.getValue(), ProjectComponents.class);
-                    } catch (JsonProcessingException e) {
-                        throw new UnableToDeserializeEntityException("Unable to deserialize ProjectComponents.", e);
-                    }
-                })
-                .orElseGet( () -> {
-                    log.debug("Project components file not found for pathAt: {}", pathAt);
-
-                    return projectComponentsService.createNewComponent();
-                });
+        return projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
     }
 
     private BitbucketPathAt getProjectComponentBitbucketPathAt(String projectKey) {

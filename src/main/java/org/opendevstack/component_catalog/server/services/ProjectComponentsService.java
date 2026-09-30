@@ -1,10 +1,16 @@
 package org.opendevstack.component_catalog.server.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
+import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.*;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +22,35 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 @Slf4j
 public class ProjectComponentsService {
 
     public static final String REFS_HEADS_MASTER = "refs/heads/master";
 
+    private final BitbucketService bitbucketService;
+    private final ObjectMapper objectMapper;
+
     public ProjectComponents createNewComponent() {
         return new ProjectComponents();
+    }
+
+    @Synchronized
+    public ProjectComponents getProjectComponents(BitbucketPathAt pathAt) {
+        log.info("Retrieving project components from project {} via Bitbucket API...", pathAt.getProjectKeyFromSubPath());
+        return bitbucketService.getTextFileContents(pathAt)
+                .map( content -> {
+                    try {
+                        return objectMapper.readValue(content.getValue(), ProjectComponents.class);
+                    } catch (JsonProcessingException e) {
+                        throw new UnableToDeserializeEntityException("Unable to deserialize ProjectComponents.", e);
+                    }
+                })
+                .orElseGet( () -> {
+                    log.debug("Project components file not found for pathAt: {}", pathAt);
+
+                    return createNewComponent();
+                });
     }
 
     @SneakyThrows

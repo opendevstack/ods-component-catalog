@@ -11,7 +11,11 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMetricsMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
-import org.opendevstack.component_catalog.server.model.*;
+import org.opendevstack.component_catalog.server.model.Pagination;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
+import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -24,8 +28,14 @@ import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -233,4 +243,7 @@ public class ProjectComponentsFacade {
         return Pair.of(data, pagination);
     }
 
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> parameters, String accessToken) {
+
+    }
 }

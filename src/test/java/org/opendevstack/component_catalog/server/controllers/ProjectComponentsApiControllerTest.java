@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProjectComponentsControllerTest {
+class ProjectComponentsApiControllerTest {
 
     private final String projectKey = "PRJ-123";
     private final String accessToken = "token";
@@ -36,7 +36,7 @@ class ProjectComponentsControllerTest {
     private ProjectComponentsFacade projectComponentsFacade;
 
     @InjectMocks
-    private ProjectComponentsController projectComponentsController;
+    private ProjectComponentsApiController projectComponentsApiController;
 
     @Test
     void givenValidProjectKey_whenGetProjectComponents_thenReturnOkWithItems() {
@@ -60,7 +60,7 @@ class ProjectComponentsControllerTest {
         when(projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken)).thenReturn(components);
 
         // when
-        var response = projectComponentsController.getProjectComponents(projectKey);
+        var response = projectComponentsApiController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -79,7 +79,7 @@ class ProjectComponentsControllerTest {
 
         // when
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        var response = projectComponentsController.getProjectComponents(projectKey);
+        var response = projectComponentsApiController.getProjectComponents(projectKey);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -97,7 +97,7 @@ class ProjectComponentsControllerTest {
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsController.getProjectComponents(projectKey))
+        assertThatThrownBy(() -> projectComponentsApiController.getProjectComponents(projectKey))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Unexpected error");
 
@@ -117,7 +117,7 @@ class ProjectComponentsControllerTest {
                 .thenReturn(extendedInfo);
 
         // when
-        var response = projectComponentsController.getProjectComponentById(projectKey, componentId);
+        var response = projectComponentsApiController.getProjectComponentById(projectKey, componentId);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -140,7 +140,7 @@ class ProjectComponentsControllerTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsController.getProjectComponentById(projectKey, componentId)
+                projectComponentsApiController.getProjectComponentById(projectKey, componentId)
         ).isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining("Not found");
 
@@ -159,7 +159,7 @@ class ProjectComponentsControllerTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsController.getProjectComponentById(projectKey, componentId)
+                projectComponentsApiController.getProjectComponentById(projectKey, componentId)
         ).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid arguments");
     }
@@ -187,7 +187,7 @@ class ProjectComponentsControllerTest {
         )).thenReturn(responseBody);
 
         // when
-        var response = projectComponentsController.getAllProjectComponents(page, size);
+        var response = projectComponentsApiController.getAllProjectComponents(page, size);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -224,7 +224,7 @@ class ProjectComponentsControllerTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsController.getAllProjectComponents(page, size)
+                projectComponentsApiController.getAllProjectComponents(page, size)
         ).isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Error");
     }
