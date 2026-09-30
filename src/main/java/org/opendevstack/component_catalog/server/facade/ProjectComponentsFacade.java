@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,12 +17,14 @@ import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedI
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.util.JwtUtils;
@@ -36,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @AllArgsConstructor
@@ -51,6 +56,7 @@ public class ProjectComponentsFacade {
 
     @Value("${devstack.marketplace-api.permitted-oids}")
     private final List<String> permittedOids;
+    private final ProjectComponentsService projectComponentsService;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -243,7 +249,39 @@ public class ProjectComponentsFacade {
         return Pair.of(data, pagination);
     }
 
+    @SneakyThrows
     public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> parameters, String accessToken) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = projectComponentsService.getProjectComponents(projectcomponentByProjectKeyBitbucketPathAt);
 
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
+
+        var requestParameters = new HashMap<String, Parameter>();
+
+        for (Map.Entry<String, String> entry : parameters.entrySet()) {
+            var localParam = Parameter.builder().name(entry.getKey()).values(Collections.singletonList(entry.getValue())).build();
+
+            requestParameters.put(entry.getKey(), localParam);
+        }
+
+        Map<String, String> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues().get(0)), HashMap::putAll);
+
+        var mergedParameters = Stream.concat(requestParameters.entrySet().stream(), projectComponentParameters.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (oldValue, newValue) -> newValue,
+                        HashMap::new
+                ));
+
+        projectComponent.setParameters((List<Parameter>) mergedParameters.values());
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
     }
 }

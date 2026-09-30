@@ -17,6 +17,7 @@ import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedI
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -64,6 +65,9 @@ class ProjectComponentsFacadeTest {
     @Mock
     private ProjectComponentMetricsMapper projectComponentListItemMapper;
 
+    @Mock
+    private ProjectComponentsService projectComponentsService;
+
     @BeforeEach
     void setUp() {
         var permittedOids = List.of("oid1", "oid2", "oid3");
@@ -71,7 +75,7 @@ class ProjectComponentsFacadeTest {
                 catalogItemDefaultProps);
         projectComponentsFacade = new ProjectComponentsFacade(provisionerActionsService, projectComponentsInfoMapper,
                 projectsInfoService, projectComponentExtendedInfoMapper, catalogGroupsRestrictionProps,
-                projectComponentListItemMapper, permittedOids);
+                projectComponentListItemMapper, permittedOids, projectComponentsService);
 
         lenient().when(authenticationFacade.getAccessToken()).thenReturn("accessToken");
         lenient().when(catalogGroupsRestrictionProps.getPrefix()).thenReturn(List.of("BI-AS-ATLASSIAN-P-"));

@@ -8,11 +8,15 @@ import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
+import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -29,6 +33,7 @@ public class ProjectComponentsService {
     public static final String REFS_HEADS_MASTER = "refs/heads/master";
 
     private final BitbucketService bitbucketService;
+    private final ProjectComponentsCacheService projectComponentsCacheService;
     private final ObjectMapper objectMapper;
 
     public ProjectComponents createNewComponent() {
@@ -125,6 +130,13 @@ public class ProjectComponentsService {
                 .build();
     }
 
+    public ProjectComponents updateExistingComponent(ProjectComponents projectComponents,
+                                                     ProjectComponent projectComponent) {
+        projectComponents.getComponents().put(projectComponent.getComponentId(), projectComponent);
+
+        return projectComponents;
+    }
+
     @SneakyThrows
     public ProjectComponents updatePartiallyExistingComponent(ProjectComponents projectComponents,
                                                               ProjectComponentRequest request) {
@@ -142,6 +154,28 @@ public class ProjectComponentsService {
         return ProjectComponents.builder()
                 .components(updatedMap)
                 .build();
+    }
+
+    // We need to prevent there is no update if some other is in the middle of it
+    // Pending to discuss ISO levels and how to block in deep
+    @Synchronized
+    public void saveProjectComponents(BitbucketPathAt pathAt, String sourceCommitId, ProjectComponents updatedProjectComponents) throws JsonProcessingException {
+        try {
+            String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
+            bitbucketService.pushFile(pathAt, sourceCommitId, jsonUpdatedProjectComponents);
+
+            projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
+            projectComponentsCacheService.evict("allProjectKeys");
+        } catch (HttpClientErrorException httpClientErrorException) {
+            log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
+
+            if (httpClientErrorException.getStatusCode() == HttpStatus.CONFLICT &&
+                    httpClientErrorException.getMessage().contains("com.atlassian.bitbucket.content.FileContentUnmodifiedException")) {
+                log.info("Bitbucket rejected update as there were no changes to be pushed. Ignoring exception");
+            } else {
+                throw  httpClientErrorException;
+            }
+        }
     }
 
     private void validateComponentExists(ProjectComponents projectComponents, String componentId) {
@@ -259,5 +293,11 @@ public class ProjectComponentsService {
 
     private static byte[] decodeId(String id) {
         return Base64.getUrlDecoder().decode(id);
+    }
+
+    public String getLastCommit(BitbucketPathAt projectcomponentByProjectKeyBitbucketPathAt) {
+        // If no sourceCommitId, that means is a new file
+        return bitbucketService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt)
+                .orElseThrow(() -> new ElementNotFoundException("No sourceCommitId found"));
     }
 }
