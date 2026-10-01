@@ -57,9 +57,7 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
 
     @Override
     public ResponseEntity<Void> updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> requestBody) {
-        var accessToken = authenticationFacade.getAccessToken();
-
-        projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestBody, accessToken);
+        projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestBody);
 
         return ResponseEntity.ok().build();
     }

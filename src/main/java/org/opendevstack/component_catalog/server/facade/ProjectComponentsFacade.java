@@ -250,7 +250,7 @@ public class ProjectComponentsFacade {
     }
 
     @SneakyThrows
-    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> parameters, String accessToken) {
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> requestParameters) {
         var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
         var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
         var projectComponents = projectComponentsService.getProjectComponents(projectcomponentByProjectKeyBitbucketPathAt);
@@ -258,14 +258,6 @@ public class ProjectComponentsFacade {
         var projectComponent = Optional.ofNullable(projectComponents.getComponents())
                 .map(components -> components.get(componentId))
                 .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
-
-        var requestParameters = new HashMap<String, Parameter>();
-
-        for (Map.Entry<String, String> entry : parameters.entrySet()) {
-            var localParam = Parameter.builder().name(entry.getKey()).values(Collections.singletonList(entry.getValue())).build();
-
-            requestParameters.put(entry.getKey(), localParam);
-        }
 
         Map<String, String> projectComponentParameters = projectComponent.getParameters().stream()
                 .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues().get(0)), HashMap::putAll);
@@ -278,7 +270,12 @@ public class ProjectComponentsFacade {
                         HashMap::new
                 ));
 
-        projectComponent.setParameters((List<Parameter>) mergedParameters.values());
+        var mergedParametersList = mergedParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), Collections.singletonList(entry.getValue())))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(mergedParametersList);
 
         var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
 
