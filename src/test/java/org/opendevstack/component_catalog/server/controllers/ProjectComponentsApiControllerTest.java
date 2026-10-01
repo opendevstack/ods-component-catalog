@@ -234,7 +234,7 @@ class ProjectComponentsApiControllerTest {
     void givenValidRequestBody_whenUpdateProjectComponentParameters_thenReturnOkAndDelegateToFacade() {
         // given
         var componentId = "C1";
-        var requestBody = Map.of("alpha", "value-a", "beta", "value-b");
+        var requestBody = Map.of("alpha", List.of("value-a"), "beta", List.of("value-b"));
 
         // when
         var response = projectComponentsApiController.updateProjectComponentParameters(projectKey, componentId, requestBody);

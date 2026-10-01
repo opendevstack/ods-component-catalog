@@ -56,7 +56,7 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> requestBody) {
+    public ResponseEntity<Void> updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestBody) {
         projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestBody);
 
         return ResponseEntity.ok().build();

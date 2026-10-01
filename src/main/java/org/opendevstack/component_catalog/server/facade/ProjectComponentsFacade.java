@@ -250,7 +250,7 @@ public class ProjectComponentsFacade {
     }
 
     @SneakyThrows
-    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, String> requestParameters) {
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
         var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
         var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
         var projectComponents = projectComponentsService.getProjectComponents(projectcomponentByProjectKeyBitbucketPathAt);
@@ -259,8 +259,8 @@ public class ProjectComponentsFacade {
                 .map(components -> components.get(componentId))
                 .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
 
-        Map<String, String> projectComponentParameters = projectComponent.getParameters().stream()
-                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues().get(0)), HashMap::putAll);
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
 
         var mergedParameters = Stream.concat(requestParameters.entrySet().stream(), projectComponentParameters.entrySet().stream())
                 .collect(Collectors.toMap(
@@ -271,7 +271,7 @@ public class ProjectComponentsFacade {
                 ));
 
         var mergedParametersList = mergedParameters.entrySet().stream()
-                .map(entry -> new Parameter(entry.getKey(), Collections.singletonList(entry.getValue())))
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
                 .sorted()
                 .toList();
 

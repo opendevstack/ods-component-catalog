@@ -200,7 +200,9 @@ paths:
             schema:
               type: object
               additionalProperties:
-                type: string
+                 type: array
+                 items:
+                   type: string
       responses:
         "200":
           description: The updated parameters of a project component.

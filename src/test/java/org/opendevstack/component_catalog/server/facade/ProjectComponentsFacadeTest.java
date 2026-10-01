@@ -723,9 +723,9 @@ class ProjectComponentsFacadeTest {
         var projectComponents = ProjectComponents.builder()
                 .components(new LinkedHashMap<>(Map.of(componentId, projectComponent)))
                 .build();
-        var requestParameters = new LinkedHashMap<String, String>();
-        requestParameters.put("alpha", "request-alpha");
-        requestParameters.put("beta", "request-beta");
+        var requestParameters = new LinkedHashMap<String, List<String>>();
+        requestParameters.put("alpha", List.of("request-alpha"));
+        requestParameters.put("beta", List.of("request-beta"));
 
         when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
         when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
@@ -767,7 +767,7 @@ class ProjectComponentsFacadeTest {
         when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, Map.of("alpha", "value")))
+        assertThatThrownBy(() -> projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, Map.of("alpha", List.of("value"))))
                 .isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining(componentId)
                 .hasMessageContaining(projectKey);
