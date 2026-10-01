@@ -249,11 +249,9 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties:
-                type: array
-                items:
-                  type: string
+              type: array
+              items:
+                type: string
       responses:
         "204":
           description: Parameters deleted from the project component.

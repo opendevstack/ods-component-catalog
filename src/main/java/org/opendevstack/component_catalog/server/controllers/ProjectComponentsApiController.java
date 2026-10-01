@@ -66,7 +66,7 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
     }
 
     @Override
-    public ResponseEntity<Void> deleteProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestBody) {
+    public ResponseEntity<Void> deleteProjectComponentParameters(String projectKey, String componentId, List<String> requestBody) {
         projectComponentsFacade.deleteProjectComponentParameters(projectKey, componentId, requestBody);
 
         return ResponseEntity.noContent()

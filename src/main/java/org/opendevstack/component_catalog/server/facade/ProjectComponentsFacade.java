@@ -283,7 +283,7 @@ public class ProjectComponentsFacade {
     }
 
     @SneakyThrows
-    public void deleteProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestBody) {
+    public void deleteProjectComponentParameters(String projectKey, String componentId, List<String> requestBody) {
         var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
         var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -295,7 +295,7 @@ public class ProjectComponentsFacade {
         Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
                 .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
 
-        requestBody.keySet().forEach(projectComponentParameters::remove);
+        requestBody.forEach(projectComponentParameters::remove);
 
         var updatedParametersList = projectComponentParameters.entrySet().stream()
                 .map(entry -> new Parameter(entry.getKey(), entry.getValue()))

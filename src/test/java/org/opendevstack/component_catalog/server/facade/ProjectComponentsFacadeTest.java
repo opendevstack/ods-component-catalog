@@ -753,6 +753,47 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
+    void givenExistingComponentParameters_whenDeleteProjectComponentParameters_thenRemoveMatchingParametersAndSave()
+            throws Exception {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "component-1";
+        var sourceCommitId = "commit-123";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponent = ProjectComponent.builder()
+                .componentId(componentId)
+                .parameters(List.of(
+                        new Parameter("alpha", List.of("existing-alpha")),
+                        new Parameter("beta", List.of("existing-beta")),
+                        new Parameter("gamma", List.of("existing-gamma"))
+                ))
+                .build();
+        var projectComponents = ProjectComponents.builder()
+                .components(new LinkedHashMap<>(Map.of(componentId, projectComponent)))
+                .build();
+        var requestParameters = List.of("alpha", "gamma");
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+        when(projectComponentsService.updateExistingComponent(projectComponents, projectComponent)).thenReturn(projectComponents);
+
+        // when
+        projectComponentsFacade.deleteProjectComponentParameters(projectKey, componentId, requestParameters);
+
+        // then
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getName)
+                .containsExactly("beta");
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getValues)
+                .containsExactly(List.of("existing-beta"));
+
+        verify(projectComponentsService).updateExistingComponent(projectComponents, projectComponent);
+        verify(projectComponentsService).saveProjectComponents(pathAt, sourceCommitId, projectComponents);
+    }
+
+    @Test
     void givenExistingParameterWithSameName_whenUpdateProjectComponentParameters_thenRequestValueOverridesExistingValue()
             throws Exception {
         // given
@@ -767,8 +808,10 @@ class ProjectComponentsFacadeTest {
                         new Parameter("b", List.of("existing-b"))
                 ))
                 .build();
+        var projectComponentsMap = new LinkedHashMap<String, ProjectComponent>();
+        projectComponentsMap.put(componentId, projectComponent);
         var projectComponents = ProjectComponents.builder()
-                .components(new LinkedHashMap<>(Map.of(componentId, projectComponent)))
+                .components(projectComponentsMap)
                 .build();
         var requestParameters = new LinkedHashMap<String, List<String>>();
         requestParameters.put("a", List.of("request-value"));
