@@ -262,7 +262,7 @@ public class ProjectComponentsFacade {
         Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
                 .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
 
-        var mergedParameters = Stream.concat(requestParameters.entrySet().stream(), projectComponentParameters.entrySet().stream())
+        var mergedParameters = Stream.concat(projectComponentParameters.entrySet().stream(), requestParameters.entrySet().stream())
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -276,6 +276,33 @@ public class ProjectComponentsFacade {
                 .toList();
 
         projectComponent.setParameters(mergedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
+
+    @SneakyThrows
+    public void deleteProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestBody) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        requestBody.keySet().forEach(projectComponentParameters::remove);
+
+        var updatedParametersList = projectComponentParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(updatedParametersList);
 
         var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
 
