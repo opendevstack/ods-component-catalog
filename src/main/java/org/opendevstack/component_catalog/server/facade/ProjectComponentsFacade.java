@@ -253,7 +253,7 @@ public class ProjectComponentsFacade {
     public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
         var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
         var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
-        var projectComponents = projectComponentsService.getProjectComponents(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
 
         var projectComponent = Optional.ofNullable(projectComponents.getComponents())
                 .map(components -> components.get(componentId))

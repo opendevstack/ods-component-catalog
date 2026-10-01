@@ -729,7 +729,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
         when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
-        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
         when(projectComponentsService.updateExistingComponent(projectComponents, projectComponent)).thenReturn(projectComponents);
 
         // when
@@ -764,7 +764,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
         when(projectComponentsService.getLastCommit(pathAt)).thenReturn("commit-123");
-        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
 
         // when / then
         assertThatThrownBy(() -> projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, Map.of("alpha", List.of("value"))))
