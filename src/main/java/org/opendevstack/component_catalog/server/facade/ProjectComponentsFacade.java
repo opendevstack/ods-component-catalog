@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -11,21 +12,35 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMetricsMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
-import org.opendevstack.component_catalog.server.model.*;
+import org.opendevstack.component_catalog.server.model.Pagination;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
+import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @AllArgsConstructor
@@ -41,6 +56,7 @@ public class ProjectComponentsFacade {
 
     @Value("${devstack.marketplace-api.permitted-oids}")
     private final List<String> permittedOids;
+    private final ProjectComponentsService projectComponentsService;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -233,4 +249,36 @@ public class ProjectComponentsFacade {
         return Pair.of(data, pagination);
     }
 
+    @SneakyThrows
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        var mergedParameters = Stream.concat(requestParameters.entrySet().stream(), projectComponentParameters.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (oldValue, newValue) -> newValue,
+                        HashMap::new
+                ));
+
+        var mergedParametersList = mergedParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(mergedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
 }

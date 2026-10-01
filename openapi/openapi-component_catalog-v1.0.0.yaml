@@ -171,6 +171,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
+
+  /project/{projectKey}/component/{componentId}/parameters:
+    post:
+      tags:
+        - Project-components
+      summary: Update the parameters of a project component given both its project key and component ID in the Bitbucket repository.
+      description: >
+        Updates the parameters of a project component given both its project key and component ID in the Bitbucket repository.
+      operationId: updateProjectComponentParameters
+      parameters:
+        - name: projectKey
+          in: path
+          description: project key.
+          required: true
+          schema:
+            type: string
+        - name: componentId
+          in: path
+          description: component ID.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                 type: array
+                 items:
+                   type: string
+      responses:
+        "201":
+          description: New parameters added to the project component.
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+
   /catalog-descriptors:
     get:
       tags:

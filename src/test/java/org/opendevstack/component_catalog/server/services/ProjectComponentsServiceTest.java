@@ -1,19 +1,58 @@
 package org.opendevstack.component_catalog.server.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
+import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
-import org.opendevstack.component_catalog.server.services.provisioner.*;
+import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
+import org.opendevstack.component_catalog.server.services.provisioner.Status;
+import org.springframework.http.MediaType;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ProjectComponentsServiceTest {
 
-    private final ProjectComponentsService service = new ProjectComponentsService();
+    @Mock
+    private BitbucketService bitbucketService;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
+    private ObjectWriter objectWriter;
+
+    @Mock
+    private ProjectComponentsCacheService projectComponentsCacheService;
+
+    @InjectMocks
+    private ProjectComponentsService service;
 
     private String base64(String val) {
         return Base64.getUrlEncoder().encodeToString(val.getBytes(StandardCharsets.UTF_8));
@@ -516,6 +555,138 @@ class ProjectComponentsServiceTest {
 
         assertThat(result.getCreatedAt()).isNull();
         assertThat(result.getUpdatedAt()).isNull();
+    }
+
+    @Test
+    void givenMissingProjectComponentsFile_whenGetProjectComponents_thenReturnNewEmptyComponents() {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.empty());
+
+        // when
+        var result = service.getProjectComponents(pathAt);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getComponents()).isNull();
+    }
+
+    @Test
+    void givenInvalidProjectComponentsJson_whenGetProjectComponents_thenThrowUnableToDeserializeEntityException()
+            throws JsonProcessingException {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+        var serializedProjectComponents = "{ invalid-json";
+        var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
+
+        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.of(bitbucketFileContent));
+        when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class))
+                .thenThrow(new JsonProcessingException("boom") {});
+
+        // when // then
+        assertThatThrownBy(() -> service.getProjectComponents(pathAt))
+                .isInstanceOf(UnableToDeserializeEntityException.class)
+                .hasMessage("Unable to deserialize ProjectComponents.");
+    }
+
+    @Test
+    void givenValidProjectComponentsJson_whenGetProjectComponents_thenDeserializeAndReturnIt() throws JsonProcessingException {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+        var serializedProjectComponents = "{ \"components\": {} }";
+        var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
+        var projectComponents = ProjectComponents.builder().components(Map.of()).build();
+
+        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.of(bitbucketFileContent));
+        when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class)).thenReturn(projectComponents);
+
+        // when
+        var result = service.getProjectComponents(pathAt);
+
+        // then
+        assertThat(result).isSameAs(projectComponents);
+    }
+
+    @Test
+    void givenUpdatedProjectComponents_whenSaveProjectComponents_thenPushAndEvictCaches() throws JsonProcessingException {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+        var updatedProjectComponents = ProjectComponents.builder().components(Map.of()).build();
+        var serializedProjectComponents = "{ \"components\": {} }";
+
+        when(objectMapper.writerWithDefaultPrettyPrinter()).thenReturn(objectWriter);
+        when(objectWriter.writeValueAsString(updatedProjectComponents)).thenReturn(serializedProjectComponents);
+        when(pathAt.getProjectKeyFromSubPath()).thenReturn("PRJ-123");
+
+        // when
+        service.saveProjectComponents(pathAt, "commit-123", updatedProjectComponents);
+
+        // then
+        verify(bitbucketService).pushFile(pathAt, "commit-123", serializedProjectComponents);
+        verify(projectComponentsCacheService).evict("PRJ-123");
+        verify(projectComponentsCacheService).evict("allProjectKeys");
+    }
+
+    @Test
+    void givenParametersWithNullNames_whenCompareTo_thenNullOrderBranchesAreHandled() {
+        // given
+        var nullNameParameter = new Parameter(null, List.of("value"));
+
+        // when / then
+        assertThat(nullNameParameter.compareTo(new Parameter(null, List.of("other")))).isZero();
+        assertThat(nullNameParameter.compareTo(new Parameter("alpha", List.of("other")))).isNegative();
+    }
+
+    @Test
+    void givenExistingProjectComponent_whenUpdateExistingComponentOverload_thenReplaceEntryInSameContainer() {
+        // given
+        var existing = ProjectComponent.builder()
+                .componentId("comp1")
+                .componentUrl("old-url")
+                .build();
+        var replacement = ProjectComponent.builder()
+                .componentId("comp1")
+                .componentUrl("new-url")
+                .parameters(List.of(new Parameter("alpha", List.of("value"))))
+                .build();
+        var projectComponents = ProjectComponents.builder()
+                .components(new HashMap<>(Map.of("comp1", existing)))
+                .build();
+
+        // when
+        var updated = service.updateExistingComponent(projectComponents, replacement);
+
+        // then
+        assertThat(updated).isSameAs(projectComponents);
+        assertThat(updated.getComponents()).containsEntry("comp1", replacement);
+    }
+
+    @Test
+    void givenLastCommitExists_whenGetLastCommit_thenReturnIt() {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.of("commit-123"));
+
+        // when
+        var result = service.getLastCommit(pathAt);
+
+        // then
+        assertThat(result).isEqualTo("commit-123");
+    }
+
+    @Test
+    void givenLastCommitMissing_whenGetLastCommit_thenThrowElementNotFoundException() {
+        // given
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(bitbucketService.getLastCommit(pathAt)).thenReturn(Optional.empty());
+
+        // when // then
+        assertThatThrownBy(() -> service.getLastCommit(pathAt))
+                .isInstanceOf(ElementNotFoundException.class)
+                .hasMessage("No sourceCommitId found");
     }
 
 }

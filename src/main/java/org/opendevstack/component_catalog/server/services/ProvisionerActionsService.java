@@ -16,7 +16,6 @@ import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPat
 import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
-import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponentRequest;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -42,8 +41,8 @@ public class ProvisionerActionsService {
     private final BitbucketService bitbucketService;
     private final ObjectMapper objectMapper;
     private final ProjectComponentsService projectComponentsService;
-    private final ProvisionerActionsConfiguration provisionerActionsConfiguration;
     private final ProjectComponentsCacheService projectComponentsCacheService;
+    private final ProvisionerActionsConfiguration provisionerActionsConfiguration;
 
     @Synchronized
     public void updateComponentProvisioningStatus(String projectKey,
@@ -55,7 +54,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         validate(projectComponents, request.getComponentId(), request.getStatus());
 
@@ -82,7 +81,7 @@ public class ProvisionerActionsService {
         }
 
         // Update file with new status
-        saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
+        projectComponentsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
         log.debug("{} component with timestamp {}", (existsComponent ? "Updated" : "Created"), currentTimestamp);
     }
 
@@ -96,7 +95,7 @@ public class ProvisionerActionsService {
 
         var sourceCommitId = bitbucketService.getLastCommit(pathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         if (projectComponents == null || projectComponents.getComponents() == null || !projectComponents.getComponents().containsKey(request.getComponentId())) {
             throw new ElementNotFoundException("In a partial update, the projectComponent should exist.");
@@ -112,7 +111,7 @@ public class ProvisionerActionsService {
                 projectComponents, request);
 
         // Update file with new status
-        saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
+        projectComponentsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents);
         log.debug("Updated component with timestamp {}", currentTimestamp);
     }
 
@@ -133,8 +132,8 @@ public class ProvisionerActionsService {
 
             var projectComponentsHistorySourceCommitId = bitbucketService.getLastCommit(projectComponentHistoryPathAt).orElse(null); // If no sourceCommitId, that means is a new file
 
-            var projectComponents = getProjectComponents(projectComponentPathAt);
-            var projectComponentsHistory = getProjectComponents(projectComponentHistoryPathAt);
+            var projectComponents = projectComponentsService.getProjectComponents(projectComponentPathAt);
+            var projectComponentsHistory = projectComponentsService.getProjectComponents(projectComponentHistoryPathAt);
 
             var componentToBeDeleted = projectComponents.getComponents().get(componentId);
 
@@ -180,7 +179,7 @@ public class ProvisionerActionsService {
         log.debug("Checking if provisioning completed for projectKey: {}, componentId: {}",
                 projectKey, catalogItemId);
 
-        var projectComponents = getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        var projectComponents = projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
 
         return isProvisioned(projectComponents, catalogItemId);
     }
@@ -190,28 +189,6 @@ public class ProvisionerActionsService {
             validateComponentDoesNotExistsWhenCreating(projectComponents, componentId);
         } else {
             log.debug("No creating status, skipping validation.");
-        }
-    }
-
-    // We need to prevent there is no update if some other is in the middle of it
-    // Pending to discuss ISO levels and how to block in deep
-    @Synchronized
-    protected void saveProjectComponents(BitbucketPathAt pathAt, String sourceCommitId, ProjectComponents updatedProjectComponents) throws JsonProcessingException {
-        try {
-            String jsonUpdatedProjectComponents = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(updatedProjectComponents);
-            bitbucketService.pushFile(pathAt, sourceCommitId, jsonUpdatedProjectComponents);
-
-            projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
-            projectComponentsCacheService.evict("allProjectKeys");
-        } catch (HttpClientErrorException httpClientErrorException) {
-            log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
-
-            if (httpClientErrorException.getStatusCode() == HttpStatus.CONFLICT &&
-                httpClientErrorException.getMessage().contains("com.atlassian.bitbucket.content.FileContentUnmodifiedException")) {
-                log.info("Bitbucket rejected update as there were no changes to be pushed. Ignoring exception");
-            } else {
-                throw  httpClientErrorException;
-            }
         }
     }
 
@@ -294,28 +271,10 @@ public class ProvisionerActionsService {
     @Synchronized
     @Cacheable(cacheNames = ProvisionedComponentsCacheProps.CACHE_NAME, key = "#projectKey")
     public ProjectComponents getProjectComponents(String projectKey) {
-        return getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
+        return projectComponentsService.getProjectComponents(getProjectComponentBitbucketPathAt(projectKey));
     }
 
-    @Synchronized
-    public ProjectComponents getProjectComponents(BitbucketPathAt pathAt) {
-        log.info("Retrieving project components from project {} via Bitbucket API...", pathAt.getProjectKeyFromSubPath());
-        return bitbucketService.getTextFileContents(pathAt)
-                .map( content -> {
-                    try {
-                        return objectMapper.readValue(content.getValue(), ProjectComponents.class);
-                    } catch (JsonProcessingException e) {
-                        throw new UnableToDeserializeEntityException("Unable to deserialize ProjectComponents.", e);
-                    }
-                })
-                .orElseGet( () -> {
-                    log.debug("Project components file not found for pathAt: {}", pathAt);
-
-                    return projectComponentsService.createNewComponent();
-                });
-    }
-
-    private BitbucketPathAt getProjectComponentBitbucketPathAt(String projectKey) {
+    public BitbucketPathAt getProjectComponentBitbucketPathAt(String projectKey) {
         return bitbucketService.pathAtBuilder()
                 .projectKey(provisionerActionsConfiguration.getProjectKey())
                 .repoSlug(provisionerActionsConfiguration.getProjectComponentsRepositorySlug())

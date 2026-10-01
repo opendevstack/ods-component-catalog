@@ -88,7 +88,7 @@ class ProvisionerActionsServiceTest {
         populateProvisionerActionsConfiguration();
 
         provisionerActionsService = new ProvisionerActionsService(bitbucketService, objectMapper,
-                projectComponentsService, provisionerActionsConfiguration, projectComponentsCacheService);
+                projectComponentsService, projectComponentsCacheService, provisionerActionsConfiguration);
     }
 
     @Test
@@ -137,8 +137,6 @@ class ProvisionerActionsServiceTest {
                 any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave();
-
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 projectKey,
@@ -146,10 +144,10 @@ class ProvisionerActionsServiceTest {
         );
 
         // then
-        verify(bitbucketService).pushFile(
+        verify(projectComponentsService).saveProjectComponents(
                 pathAt,
                 sourceCommitId,
-                serializedUpdatedProjectComponents
+                updatedProjectComponents
         );
     }
 
@@ -181,8 +179,6 @@ class ProvisionerActionsServiceTest {
                 any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave();
-
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 projectKey,
@@ -190,10 +186,10 @@ class ProvisionerActionsServiceTest {
         );
 
         // then
-        verify(bitbucketService).pushFile(
+        verify(projectComponentsService).saveProjectComponents(
                 pathAt,
                 sourceCommitId,
-                serializedUpdatedProjectComponents
+                updatedProjectComponents
         );
     }
 
@@ -317,13 +313,14 @@ class ProvisionerActionsServiceTest {
         var pathAt = BitbucketPathAtMother.of();
         var serializedProjectComponents = "{ invalid-json";
         var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.of(bitbucketFileContent));
         when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class))
                 .thenThrow(new JsonProcessingException("boom") {});
 
         // then
-        assertThatThrownBy(() -> provisionerActionsService.getProjectComponents(pathAt))
+        assertThatThrownBy(() -> localProjectComponentsService.getProjectComponents(pathAt))
                 .isInstanceOf(UnableToDeserializeEntityException.class)
                 .hasMessage("Unable to deserialize ProjectComponents.");
     }
@@ -500,9 +497,10 @@ class ProvisionerActionsServiceTest {
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
         prepareMocksForSave();
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         // when
-        assertThatCode(() -> provisionerActionsService.saveProjectComponents(
+        assertThatCode(() -> localProjectComponentsService.saveProjectComponents(
                 pathAt,
                 sourceCommitId,
                 updatedProjectComponents
@@ -523,10 +521,11 @@ class ProvisionerActionsServiceTest {
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
         prepareMocksForSave();
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         // then
         assertThatThrownBy(
-                () -> provisionerActionsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents)
+                () -> localProjectComponentsService.saveProjectComponents(pathAt, sourceCommitId, updatedProjectComponents)
         )
                 .isInstanceOf(HttpClientErrorException.class)
                 .isEqualTo(httpClientErrorException);
@@ -568,8 +567,6 @@ class ProvisionerActionsServiceTest {
                 any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serializedUpdatedProjectComponents = prepareMocksForSave();
-
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 projectKey,
@@ -586,15 +583,15 @@ class ProvisionerActionsServiceTest {
         );
 
         // then
-        verify(bitbucketService).pushFile(
+        verify(projectComponentsService).saveProjectComponents(
                 pathAt,
                 sourceCommitId,
-                serializedUpdatedProjectComponents
+                updatedProjectComponents
         );
     }
 
     @Test
-    void givenNoProjectComponents_whenUpdatePartiallyComponentProvisioningStatus_thenThrowException(){
+    void givenNoProjectComponents_whenUpdatePartiallyComponentProvisioningStatus_thenThrowException() {
 
         // given
         var projectKey = "projectKey";
@@ -611,8 +608,7 @@ class ProvisionerActionsServiceTest {
         prepareMocksForGetBitbucketPathAt(pathAt);
 
         // Simulate null projectComponents
-        when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.empty());
-        when(projectComponentsService.createNewComponent()).thenReturn(null);
+        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(null);
 
         var request = request(
                 componentId,
@@ -665,8 +661,6 @@ class ProvisionerActionsServiceTest {
                 any(ProjectComponentRequest.class)
         )).thenReturn(updatedProjectComponents);
 
-        var serialized = prepareMocksForSave();
-
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
                 projectKey,
@@ -683,7 +677,7 @@ class ProvisionerActionsServiceTest {
         );
 
         // then
-        verify(bitbucketService).pushFile(pathAt, null, serialized);
+        verify(projectComponentsService).saveProjectComponents(pathAt, null, updatedProjectComponents);
     }
     @Test
     void givenExistingComponent_whenUpdate_thenCreatedAtIsPreserved() throws Exception {
@@ -709,8 +703,6 @@ class ProvisionerActionsServiceTest {
                 any(), any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
-        prepareMocksForSave();
-
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 "projectKey",
@@ -719,7 +711,7 @@ class ProvisionerActionsServiceTest {
 
         verify(projectComponentsService).updateExistingComponent(
                 eq(projectComponents),
-                argThat(req -> "originalCreatedAt".equals(req.getCreatedAt()))
+                argThat((ProjectComponentRequest req) -> "originalCreatedAt".equals(req.getCreatedAt()))
         );
     }
 
@@ -747,8 +739,6 @@ class ProvisionerActionsServiceTest {
                 any(), any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
 
-        prepareMocksForSave();
-
         // when
         provisionerActionsService.updateComponentProvisioningStatus(
                 "projectKey",
@@ -758,7 +748,7 @@ class ProvisionerActionsServiceTest {
         // then
         verify(projectComponentsService).updateExistingComponent(
                 any(),
-                argThat(req -> {
+                argThat((ProjectComponentRequest req) -> {
                     try {
                         return Long.parseLong(req.getUpdatedAt()) > 0;
                     } catch (Exception e) {
@@ -795,8 +785,6 @@ class ProvisionerActionsServiceTest {
         )).thenReturn(ProjectComponents.builder().components(
                 Map.of(componentId, component)
         ).build());
-
-        prepareMocksForSave();
 
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
@@ -835,8 +823,6 @@ class ProvisionerActionsServiceTest {
                 any(),
                 any(ProjectComponentRequest.class)
         )).thenReturn(ProjectComponentsMother.of());
-
-        prepareMocksForSave();
 
         // when
         provisionerActionsService.updatePartiallyComponentProvisioningStatus(
@@ -887,6 +873,24 @@ class ProvisionerActionsServiceTest {
         verify(bitbucketService).getFilenamesFromRemoteDirectory(pathAt, false);
     }
 
+    @Test
+    void givenProjectKey_whenGetProjectComponents_thenDelegateToProjectComponentsService() {
+        // given
+        var projectKey = "PROJECT_A";
+        var pathAt = BitbucketPathAtMother.of();
+        var projectComponents = ProjectComponentsMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+
+        // when
+        var result = provisionerActionsService.getProjectComponents(projectKey);
+
+        // then
+        assertThat(result).isSameAs(projectComponents);
+        verify(projectComponentsService).getProjectComponents(pathAt);
+    }
+
     private String prepareMocksForSave() throws JsonProcessingException {
         var serializedUpdatedProjectComponents = "{ serialized-updated-json: true }";
 
@@ -900,20 +904,14 @@ class ProvisionerActionsServiceTest {
             BitbucketPathAt bitbucketPathAt,
             ProjectComponents projectComponents
     ) {
-        when(bitbucketService.getTextFileContents(bitbucketPathAt)).thenReturn(Optional.empty());
-        when(projectComponentsService.createNewComponent()).thenReturn(projectComponents);
+        when(projectComponentsService.getProjectComponents(bitbucketPathAt)).thenReturn(projectComponents);
     }
 
     private void prepareMocksForGetExistingProjectComponents(
             BitbucketPathAt bitbucketPathAt,
             ProjectComponents projectComponents
-    ) throws JsonProcessingException {
-        var serializedProjectComponents = "{ serialized-json: true }";
-        var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
-
-        when(bitbucketService.getTextFileContents(bitbucketPathAt)).thenReturn(Optional.of(bitbucketFileContent));
-        when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class))
-                .thenReturn(projectComponents);
+    ) {
+        when(projectComponentsService.getProjectComponents(bitbucketPathAt)).thenReturn(projectComponents);
     }
 
     private void populateProvisionerActionsConfiguration() {
@@ -945,3 +943,4 @@ class ProvisionerActionsServiceTest {
         when(bitbucketPathAtBuilder.build()).thenReturn(bitbucketPathAt);
     }
 }
+
