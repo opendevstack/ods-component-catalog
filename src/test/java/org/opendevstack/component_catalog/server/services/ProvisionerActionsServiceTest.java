@@ -873,6 +873,24 @@ class ProvisionerActionsServiceTest {
         verify(bitbucketService).getFilenamesFromRemoteDirectory(pathAt, false);
     }
 
+    @Test
+    void givenProjectKey_whenGetProjectComponents_thenDelegateToProjectComponentsService() {
+        // given
+        var projectKey = "PROJECT_A";
+        var pathAt = BitbucketPathAtMother.of();
+        var projectComponents = ProjectComponentsMother.of();
+
+        prepareMocksForGetBitbucketPathAt(pathAt);
+        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+
+        // when
+        var result = provisionerActionsService.getProjectComponents(projectKey);
+
+        // then
+        assertThat(result).isSameAs(projectComponents);
+        verify(projectComponentsService).getProjectComponents(pathAt);
+    }
+
     private String prepareMocksForSave() throws JsonProcessingException {
         var serializedUpdatedProjectComponents = "{ serialized-updated-json: true }";
 

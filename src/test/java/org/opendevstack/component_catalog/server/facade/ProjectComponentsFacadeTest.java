@@ -20,9 +20,12 @@ import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
 import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.server.services.provisioner.Status;
 
 import java.util.LinkedHashMap;
@@ -700,6 +703,74 @@ class ProjectComponentsFacadeTest {
 
         // then
         assertThat(keys).containsExactly("A", "B", "c");
+    }
+
+    @Test
+    void givenExistingComponentParameters_whenUpdateProjectComponentParameters_thenMergedValuesAreSortedAndSaved() throws Exception {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "component-1";
+        var sourceCommitId = "commit-123";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponent = ProjectComponent.builder()
+                .componentId(componentId)
+                .parameters(List.of(
+                        new Parameter("zeta", List.of("existing-zeta")),
+                        new Parameter(null, List.of("existing-null")),
+                        new Parameter("beta", List.of("existing-beta"))
+                ))
+                .build();
+        var projectComponents = ProjectComponents.builder()
+                .components(new LinkedHashMap<>(Map.of(componentId, projectComponent)))
+                .build();
+        var requestParameters = new LinkedHashMap<String, String>();
+        requestParameters.put("alpha", "request-alpha");
+        requestParameters.put("beta", "request-beta");
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
+        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+        when(projectComponentsService.updateExistingComponent(projectComponents, projectComponent)).thenReturn(projectComponents);
+
+        // when
+        projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestParameters);
+
+        // then
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getName)
+                .containsExactly(null, "alpha", "beta", "zeta");
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getValues)
+                .containsExactly(
+                        List.of("existing-null"),
+                        List.of("request-alpha"),
+                        List.of("existing-beta"),
+                        List.of("existing-zeta")
+                );
+
+        verify(projectComponentsService).updateExistingComponent(projectComponents, projectComponent);
+        verify(projectComponentsService).saveProjectComponents(pathAt, sourceCommitId, projectComponents);
+    }
+
+    @Test
+    void givenMissingComponent_whenUpdateProjectComponentParameters_thenThrowComponentNotFoundException() {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "missing-component";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponents = ProjectComponents.builder()
+                .components(new LinkedHashMap<>())
+                .build();
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn("commit-123");
+        when(projectComponentsService.getProjectComponents(pathAt)).thenReturn(projectComponents);
+
+        // when / then
+        assertThatThrownBy(() -> projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, Map.of("alpha", "value")))
+                .isInstanceOf(ComponentNotFoundException.class)
+                .hasMessageContaining(componentId)
+                .hasMessageContaining(projectKey);
     }
 
 }

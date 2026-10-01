@@ -18,6 +18,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -227,6 +228,23 @@ class ProjectComponentsApiControllerTest {
                 projectComponentsApiController.getAllProjectComponents(page, size)
         ).isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Error");
+    }
+
+    @Test
+    void givenValidRequestBody_whenUpdateProjectComponentParameters_thenReturnOkAndDelegateToFacade() {
+        // given
+        var componentId = "C1";
+        var requestBody = Map.of("alpha", "value-a", "beta", "value-b");
+
+        // when
+        var response = projectComponentsApiController.updateProjectComponentParameters(projectKey, componentId, requestBody);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNull();
+
+        verify(projectComponentsFacade).updateProjectComponentParameters(projectKey, componentId, requestBody);
+        verifyNoInteractions(authenticationFacade);
     }
 
 }
