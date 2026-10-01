@@ -247,4 +247,21 @@ class ProjectComponentsApiControllerTest {
         verifyNoInteractions(authenticationFacade);
     }
 
+    @Test
+    void givenValidRequestBody_whenDeleteProjectComponentParameters_thenReturnNoContentAndDelegateToFacade() {
+        // given
+        var componentId = "C1";
+        var requestBody = List.of("alpha", "beta");
+
+        // when
+        var response = projectComponentsApiController.deleteProjectComponentParameters(projectKey, componentId, requestBody);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
+
+        verify(projectComponentsFacade).deleteProjectComponentParameters(projectKey, componentId, requestBody);
+        verifyNoInteractions(authenticationFacade);
+    }
+
 }

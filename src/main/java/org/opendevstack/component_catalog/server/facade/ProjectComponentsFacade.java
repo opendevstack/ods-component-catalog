@@ -47,6 +47,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class ProjectComponentsFacade {
 
+    private static final String USER_MUST_BELONG_TO_PROJECT_MESSAGE = "User must belong to the project to get its components";
+    private static final String COMPONENT_NOT_FOUND_MESSAGE_TEMPLATE = "Component with ID %s not found in project %s";
+
     private final ProvisionerActionsService provisionerActionsService;
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
     private final ProjectsInfoService projectsInfoService;
@@ -68,7 +71,7 @@ public class ProjectComponentsFacade {
         List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         if (!userBelongsToProjectGroups(userGroups, projectKey)) {
-            throw new ForbiddenException("User must belong to the project to get its components");
+            throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
         }
 
         return projectComponents.getComponents()
@@ -95,7 +98,7 @@ public class ProjectComponentsFacade {
 
         List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
         if (!userBelongsToProjectGroups(userGroups, projectKey)) {
-            throw new ForbiddenException("User must belong to the project to get its components");
+            throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
         }
 
         return Optional.ofNullable(projectComponents.getComponents())
@@ -105,9 +108,7 @@ public class ProjectComponentsFacade {
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
                 .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups))
-                .orElseThrow(() ->
-                    new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey)
-                );
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
     }
 
     public ProjectComponentsMetrics getAllProjectComponentsMetrics(String accessToken, int page, int size, String paginationBaseUrl) {
@@ -154,6 +155,66 @@ public class ProjectComponentsFacade {
 
     }
 
+    @SneakyThrows
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        var mergedParameters = Stream.concat(projectComponentParameters.entrySet().stream(), requestParameters.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (oldValue, newValue) -> newValue,
+                        HashMap::new
+                ));
+
+        var mergedParametersList = mergedParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(mergedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
+
+    @SneakyThrows
+    public void deleteProjectComponentParameters(String projectKey, String componentId, List<String> requestBody) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        requestBody.forEach(projectComponentParameters::remove);
+
+        var updatedParametersList = projectComponentParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(updatedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
+
     private @NonNull List<String> getAllProjectComponentsProjectKeys() {
         return provisionerActionsService.listAllProjectsJsons().stream()
                 .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
@@ -180,6 +241,10 @@ public class ProjectComponentsFacade {
         if (!oid.map(permittedOids::contains).orElse(false)) {
             throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
         }
+    }
+
+    private static String componentNotFoundMessage(String componentId, String projectKey) {
+        return COMPONENT_NOT_FOUND_MESSAGE_TEMPLATE.formatted(componentId, projectKey);
     }
 
     private boolean hasNoDates(ProjectComponent c) {
@@ -234,7 +299,7 @@ public class ProjectComponentsFacade {
                         // Badly formed project components shouldn't be returned
                         // in the response
                         data.add(p.orElseThrow(() -> new InvalidComponentStateException(
-                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
+                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed." )
                         ));
                         index++;
                     }
@@ -249,36 +314,4 @@ public class ProjectComponentsFacade {
         return Pair.of(data, pagination);
     }
 
-    @SneakyThrows
-    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
-        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
-        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
-        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
-
-        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
-                .map(components -> components.get(componentId))
-                .orElseThrow( () -> new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey));
-
-        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
-                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
-
-        var mergedParameters = Stream.concat(requestParameters.entrySet().stream(), projectComponentParameters.entrySet().stream())
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (oldValue, newValue) -> newValue,
-                        HashMap::new
-                ));
-
-        var mergedParametersList = mergedParameters.entrySet().stream()
-                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
-                .sorted()
-                .toList();
-
-        projectComponent.setParameters(mergedParametersList);
-
-        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
-
-        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
-    }
 }

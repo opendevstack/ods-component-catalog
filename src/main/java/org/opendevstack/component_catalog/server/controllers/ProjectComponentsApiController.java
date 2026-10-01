@@ -65,4 +65,12 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
                 .toUri()).build();
     }
 
+    @Override
+    public ResponseEntity<Void> deleteProjectComponentParameters(String projectKey, String componentId, List<String> requestBody) {
+        projectComponentsFacade.deleteProjectComponentParameters(projectKey, componentId, requestBody);
+
+        return ResponseEntity.noContent()
+                .build();
+
+    }
 }

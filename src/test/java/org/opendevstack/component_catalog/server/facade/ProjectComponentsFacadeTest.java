@@ -706,7 +706,7 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
-    void givenExistingComponentParameters_whenUpdateProjectComponentParameters_thenMergedValuesAreSortedAndSaved() throws Exception {
+    void givenExistingComponentParameters_whenUpdateProjectComponentParameters_thenRequestValuesOverrideAndParametersAreSortedAndSaved() throws Exception {
         // given
         var projectKey = "PRJ-123";
         var componentId = "component-1";
@@ -744,9 +744,93 @@ class ProjectComponentsFacadeTest {
                 .containsExactly(
                         List.of("existing-null"),
                         List.of("request-alpha"),
-                        List.of("existing-beta"),
+                        List.of("request-beta"),
                         List.of("existing-zeta")
                 );
+
+        verify(projectComponentsService).updateExistingComponent(projectComponents, projectComponent);
+        verify(projectComponentsService).saveProjectComponents(pathAt, sourceCommitId, projectComponents);
+    }
+
+    @Test
+    void givenExistingComponentParameters_whenDeleteProjectComponentParameters_thenRemoveMatchingParametersAndSave()
+            throws Exception {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "component-1";
+        var sourceCommitId = "commit-123";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponent = ProjectComponent.builder()
+                .componentId(componentId)
+                .parameters(List.of(
+                        new Parameter("alpha", List.of("existing-alpha")),
+                        new Parameter("beta", List.of("existing-beta")),
+                        new Parameter("gamma", List.of("existing-gamma"))
+                ))
+                .build();
+        var projectComponents = ProjectComponents.builder()
+                .components(new LinkedHashMap<>(Map.of(componentId, projectComponent)))
+                .build();
+        var requestParameters = List.of("alpha", "gamma");
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+        when(projectComponentsService.updateExistingComponent(projectComponents, projectComponent)).thenReturn(projectComponents);
+
+        // when
+        projectComponentsFacade.deleteProjectComponentParameters(projectKey, componentId, requestParameters);
+
+        // then
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getName)
+                .containsExactly("beta");
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getValues)
+                .containsExactly(List.of("existing-beta"));
+
+        verify(projectComponentsService).updateExistingComponent(projectComponents, projectComponent);
+        verify(projectComponentsService).saveProjectComponents(pathAt, sourceCommitId, projectComponents);
+    }
+
+    @Test
+    void givenExistingParameterWithSameName_whenUpdateProjectComponentParameters_thenRequestValueOverridesExistingValue()
+            throws Exception {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "component-1";
+        var sourceCommitId = "commit-123";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponent = ProjectComponent.builder()
+                .componentId(componentId)
+                .parameters(List.of(
+                        new Parameter("a", List.of("existing-value")),
+                        new Parameter("b", List.of("existing-b"))
+                ))
+                .build();
+        var projectComponentsMap = new LinkedHashMap<String, ProjectComponent>();
+        projectComponentsMap.put(componentId, projectComponent);
+        var projectComponents = ProjectComponents.builder()
+                .components(projectComponentsMap)
+                .build();
+        var requestParameters = new LinkedHashMap<String, List<String>>();
+        requestParameters.put("a", List.of("request-value"));
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn(sourceCommitId);
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+        when(projectComponentsService.updateExistingComponent(projectComponents, projectComponent)).thenReturn(projectComponents);
+
+        // when
+        projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestParameters);
+
+        // then
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getName)
+                .containsExactly("a", "b");
+        assertThat(projectComponent.getParameters())
+                .extracting(Parameter::getValues)
+                .containsExactly(List.of("request-value"), List.of("existing-b"));
 
         verify(projectComponentsService).updateExistingComponent(projectComponents, projectComponent);
         verify(projectComponentsService).saveProjectComponents(pathAt, sourceCommitId, projectComponents);
