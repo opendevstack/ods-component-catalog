@@ -204,7 +204,7 @@ paths:
                  items:
                    type: string
       responses:
-        "200":
+        "201":
           description: The updated parameters of a project component.
         "401":
           description: Invalid client token on the request.

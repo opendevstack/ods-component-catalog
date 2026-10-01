@@ -59,7 +59,10 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
     public ResponseEntity<Void> updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestBody) {
         projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, requestBody);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.created(ServletUriComponentsBuilder
+                .fromCurrentRequestUri()
+                .build()
+                .toUri()).build();
     }
 
 }

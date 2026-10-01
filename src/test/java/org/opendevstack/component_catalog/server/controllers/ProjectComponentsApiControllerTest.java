@@ -240,7 +240,7 @@ class ProjectComponentsApiControllerTest {
         var response = projectComponentsApiController.updateProjectComponentParameters(projectKey, componentId, requestBody);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNull();
 
         verify(projectComponentsFacade).updateProjectComponentParameters(projectKey, componentId, requestBody);
