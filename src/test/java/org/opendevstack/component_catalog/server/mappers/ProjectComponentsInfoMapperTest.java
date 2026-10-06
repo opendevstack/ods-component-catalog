@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
 import org.opendevstack.component_catalog.server.model.ProvisioningStatus;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,7 +55,7 @@ class ProjectComponentsInfoMapperTest {
         var component = ProjectComponentMother.of(componentId, catalogItemId, "ref-100", Status.CREATED, "https://www.google.com");
         var catalogItem = CatalogItemMother.of("cat-001", "logo-100.png");
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -69,7 +71,7 @@ class ProjectComponentsInfoMapperTest {
         assertThat(info.getLogoUrl()).isEqualTo("logo-100.png");
         verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(argThat(p ->
                 p != null && ("ce-_vX7vv71N77-977-977-977-9TQ==").equals(p.getCatalogItemId())
-        ));
+        ), eq(false));
     }
 
     @Test
@@ -78,7 +80,7 @@ class ProjectComponentsInfoMapperTest {
         var component = ProjectComponentMother.of("C-200", "cat-200", "ref-200", Status.CREATING);
         var catalogItem = CatalogItemMother.of("cat-001", "     ");
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -88,7 +90,7 @@ class ProjectComponentsInfoMapperTest {
         assertThat(maybeInfo).isPresent();
         assertThat(maybeInfo.get().getLogoUrl()).isEmpty();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -97,7 +99,7 @@ class ProjectComponentsInfoMapperTest {
         var component = ProjectComponentMother.of("C-201", "cat-201", "ref-201", Status.DELETING);
         var catalogItem = CatalogItemMother.of("cat-001", null);
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -107,7 +109,7 @@ class ProjectComponentsInfoMapperTest {
         assertThat(maybeInfo).isPresent();
         assertThat(maybeInfo.get().getLogoUrl()).isEmpty();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -115,7 +117,7 @@ class ProjectComponentsInfoMapperTest {
         // given
         var component = ProjectComponentMother.of("C-ERR", "cat-ERR", "ref-ERR", Status.UNKNOWN);
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenThrow(new InvalidIdException("invalid id"));
 
         // when / then
@@ -123,13 +125,13 @@ class ProjectComponentsInfoMapperTest {
                 .isInstanceOf(InvalidIdException.class)
                 .hasMessageContaining("invalid id");
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
     void givenDifferentStatuses_whenMap_thenStatusIsEnumName() throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(CatalogItemMother.of("CI1", "logo.png"));
 
         var c1 = ProjectComponentMother.of("C1", "Q0lELTE", "UkVGLTE", Status.CREATED);
@@ -147,7 +149,7 @@ class ProjectComponentsInfoMapperTest {
         assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c4, token, projectKey, List.of())).get()
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.UNKNOWN);
 
-        verify(catalogItemsApiFacade, times(4)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(4)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -159,7 +161,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -168,7 +170,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -179,7 +181,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(otherParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -188,7 +190,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -198,7 +200,7 @@ class ProjectComponentsInfoMapperTest {
         var otherAction = CatalogItemUserActionMother.of("OTHER", List.of());
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(otherAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -207,7 +209,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -219,7 +221,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -228,7 +230,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -240,7 +242,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -249,7 +251,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -263,7 +265,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowParam, deletionWorkflowNameParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -272,7 +274,7 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -284,7 +286,7 @@ class ProjectComponentsInfoMapperTest {
         var provisionAction = CatalogItemUserActionMother.of("PROVISION", List.of(deletionWorkflowNameParam));
         var catalogItem = CatalogItemMother.of("cat-001", "logo.png", List.of(provisionAction));
 
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenReturn(catalogItem);
 
         // when
@@ -293,6 +295,6 @@ class ProjectComponentsInfoMapperTest {
         // then
         assertThat(maybeInfo).isPresent();
 
-        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any());
+        verify(catalogItemsApiFacade, times(1)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 }

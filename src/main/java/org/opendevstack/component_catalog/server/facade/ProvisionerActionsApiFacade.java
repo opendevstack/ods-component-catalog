@@ -29,18 +29,15 @@ public class ProvisionerActionsApiFacade {
     private final ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps;
     private final AuthenticationFacade authenticationFacade;
 
-    private final List<String> permittedOids;
-
     public ProvisionerActionsApiFacade(ProjectsInfoService projectsInfoService,
                                        GroupsRestrictionsEvaluator groupsRestrictionsEvaluator,
                                        ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps groupsRestrictionProps,
-                                       AuthenticationFacade authenticationFacade,
-                                       @Value("${devstack.marketplace-api.permitted-oids}") List<String> permittedOids) {
+                                       AuthenticationFacade authenticationFacade
+                                       ) {
         this.projectsInfoService = projectsInfoService;
         this.groupsRestrictionsEvaluator = groupsRestrictionsEvaluator;
         this.groupsRestrictionProps = groupsRestrictionProps;
         this.authenticationFacade = authenticationFacade;
-        this.permittedOids = permittedOids;
     }
 
 
@@ -60,14 +57,12 @@ public class ProvisionerActionsApiFacade {
             throw new InvalidRestEntityException("Catalog item id is null. Cannot validate group restrictions");
         }
 
-        var oid = JwtUtils.extractClaim(accessToken, "oid");
-
-        boolean isAValidApplicationToken = oid.map(permittedOids::contains).orElse(false);
+        boolean isAValidApplicationToken = authenticationFacade.isAValidApplicationToken(accessToken);
 
         if (isAValidApplicationToken) {
-            log.debug("Token with oid '{}' is allowed to bypass group restrictions for project {}", oid.orElse("unknown"), projectKey);
+            log.debug("Token is allowed to bypass group restrictions for project {}", projectKey);
         } else {
-            log.debug("Token with oid '{}' is NOT allowed to bypass group restrictions for project {}. Validating group restrictions", oid.orElse("unknown"), projectKey);
+            log.debug("Token is NOT allowed to bypass group restrictions for project {}. Validating group restrictions", projectKey);
 
             validateGroupRestrictions(projectKey, catalogItemId, accessToken);
         }

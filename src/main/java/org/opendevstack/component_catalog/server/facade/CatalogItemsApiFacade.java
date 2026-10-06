@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
@@ -45,13 +46,29 @@ public class CatalogItemsApiFacade {
     private final AuthenticationFacade authenticationFacade;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
+        return asCatalogItem(catalogRequestParams, false);
+    }
+
+    public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
-        return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams);
+        return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams, skipClustersAndGroups);
     }
 
     private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams) {
-        var clusters = getClusters(catalogRequestParams);
-        var userGroups = getProjectGroups(catalogRequestParams);
+        return asCatalogItemWithoutMandatoryToken(catalogRequestParams, false);
+    }
+
+    private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups) {
+        List<String> clusters;
+        List<String> userGroups;
+
+        if (skipClustersAndGroups) {
+            clusters = Collections.emptyList();
+            userGroups = Collections.emptyList();
+        } else {
+            clusters = getClusters(catalogRequestParams);
+            userGroups = getProjectGroups(catalogRequestParams);
+        }
 
         var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
@@ -156,7 +173,12 @@ public class CatalogItemsApiFacade {
         }
     }
 
-    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams)
+    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams) throws InvalidIdException, InvalidCatalogItemEntityException {
+        return fetchCatalogItem(catalogRequestParams, false);
+    }
+
+
+    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups)
             throws InvalidIdException, InvalidCatalogItemEntityException {
         var principalPermissions = currentPrincipalCatalogPermissions(catalogRequestParams.getCatalogItemId());
         var maybeItemEntityCtx = catalogEntitiesService.getCatalogItemEntity(catalogRequestParams.getCatalogItemId());
@@ -168,7 +190,8 @@ public class CatalogItemsApiFacade {
                                         .catalogItemEntityContext(catalogItemEntityContext)
                                         .userActionsEntity(userActionsEntity)
                                         .permissions(principalPermissions)
-                                        .build()
+                                        .build(),
+                                skipClustersAndGroups
                         )
                 )
                 .filter(item -> applyVisibilityFilter(item, catalogRequestParams.isIgnoreVisibilityRestrictions()))

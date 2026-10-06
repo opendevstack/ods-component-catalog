@@ -24,6 +24,14 @@ public class ProjectComponentExtendedInfoMapper {
                                                                                     String accessToken,
                                                                                     String projectKey,
                                                                                     List<String> userGroups) throws ComponentNotFoundException {
+        return mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, userGroups, false);
+    }
+
+    public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp,
+                                                                                    String accessToken,
+                                                                                    String projectKey,
+                                                                                    List<String> userGroups,
+                                                                                    boolean skipGroupsValidation) throws ComponentNotFoundException {
         var projectComponentParameters = Optional.ofNullable(comp.getParameters())
                 .orElse(List.of())
                 .stream()
@@ -33,7 +41,7 @@ public class ProjectComponentExtendedInfoMapper {
 
         Optional<ProjectComponentInfo> compOpt;
         try {
-            compOpt = projectComponentsInfoMapper.mapToProjectComponentInfo(comp, accessToken, projectKey, userGroups);
+            compOpt = projectComponentsInfoMapper.mapToProjectComponentInfo(comp, accessToken, projectKey, userGroups, skipGroupsValidation);
         } catch (InvalidIdException e) {
             log.error("Unable to map component: {}", comp, e);
             return Optional.empty();

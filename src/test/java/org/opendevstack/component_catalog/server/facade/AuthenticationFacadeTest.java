@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -15,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 class AuthenticationFacadeTest {
 
-    private final AuthenticationFacade authenticationFacade = new AuthenticationFacade();
+    private final AuthenticationFacade authenticationFacade = new AuthenticationFacade(List.of("oid-1"));
 
     @AfterEach
     void tearDown() {

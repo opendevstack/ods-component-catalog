@@ -107,7 +107,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
                     if (p == null) return null;
@@ -136,9 +136,9 @@ class ProjectComponentsFacadeTest {
 
         verify(provisionerActionsService, times(1)).getProjectComponents(projectKey);
         verify(catalogItemsApiFacade, times(1))
-                .fetchCatalogItem(argThat(p -> "Y2F0LTFyZWYtMQ==".equals(p.getCatalogItemId())));
+                .fetchCatalogItem(argThat(p -> "Y2F0LTFyZWYtMQ==".equals(p.getCatalogItemId())), eq(false));
         verify(catalogItemsApiFacade, times(1))
-                .fetchCatalogItem(argThat(p -> "Y2F0LTJyZWYtMg==".equals(p.getCatalogItemId())));
+                .fetchCatalogItem(argThat(p -> "Y2F0LTJyZWYtMg==".equals(p.getCatalogItemId())), eq(false));
     }
 
     @Test
@@ -157,7 +157,7 @@ class ProjectComponentsFacadeTest {
         var pc = ProjectComponentsMother.of(comps);
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
                     if (p == null) return null;
@@ -177,9 +177,9 @@ class ProjectComponentsFacadeTest {
         assertThat(result.getFirst().getLogoUrl()).isEqualTo("logo-ok.png");
 
         verify(catalogItemsApiFacade, times(1))
-                .fetchCatalogItem(argThat(p -> "b2stMXJlZi0x".equals(p.getCatalogItemId())));
+                .fetchCatalogItem(argThat(p -> "b2stMXJlZi0x".equals(p.getCatalogItemId())), eq(false));
         verify(catalogItemsApiFacade, times(1))
-                .fetchCatalogItem(argThat(p -> "YmFkLTFyZWYtMg==".equals(p.getCatalogItemId())));
+                .fetchCatalogItem(argThat(p -> "YmFkLTFyZWYtMg==".equals(p.getCatalogItemId())), eq(false));
     }
 
     @Test
@@ -198,13 +198,13 @@ class ProjectComponentsFacadeTest {
         var pc = ProjectComponentsMother.of(comps);
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
                     if (p == null) return null;
                     return switch (p.getCatalogItemId()) {
                         case "b2stMXJlZi0x" -> CatalogItemMother.of("CID-1", "logo-ok.png");
-                        case "YmFkLTFyZWYtMg==" -> throw new InvalidIdException("invalid");
+                        case "YmFkLTFyZWYtMg==" -> throw new InvalidCatalogItemEntityException("invalid");
                         default -> throw new AssertionError("Unexpected id: " + p.getCatalogItemId());
                     };
                 });
@@ -236,7 +236,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(pc);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(catalogItemsApiFacade.fetchCatalogItem(any()))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(false)))
                 .thenAnswer(inv -> {
                     var p = (CatalogRequestParams) inv.getArgument(0);
                     if (p == null) return null;
@@ -297,12 +297,12 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
         var result = projectComponentsFacade
-                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false);
 
         // then
         assertThat(result).isNotNull();
@@ -321,7 +321,7 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C2", accessToken)
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C2", accessToken, false)
         ).isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining("C2");
     }
@@ -337,12 +337,12 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.empty());
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken)
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false)
         ).isInstanceOf(ComponentNotFoundException.class);
     }
 
@@ -435,7 +435,7 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken))
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken, false))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("User must belong to the project to get its components");
     }
@@ -451,7 +451,7 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken))
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken, false))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("User must belong to the project to get its components");
     }
@@ -467,7 +467,7 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken))
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken, false))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("User must belong to the project to get its components");
     }
@@ -483,7 +483,7 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() ->
-                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken))
+                projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, "C1", accessToken, false))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("User must belong to the project to get its components");
     }
@@ -496,12 +496,12 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-PRJ-123"));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList()))
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
         ProjectComponentExtendedInfo result = projectComponentsFacade
-                .getProjectComponentExtendedInfo(projectKey, "C1", accessToken);
+                .getProjectComponentExtendedInfo(projectKey, "C1", accessToken, false);
 
         // then
         assertThat(result).isNotNull();
