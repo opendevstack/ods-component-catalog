@@ -89,6 +89,8 @@ public class ProjectComponentsFacade {
                 .toList();
     }
 
+    // This method flag skipGroupsValidation is intended to be temporal. Proper refactor should come, and different methods should be created for different use cases.
+    // This is a temporary solution to allow the marketplace to get the component info without validating the user groups.
     public ProjectComponentExtendedInfo getProjectComponentExtendedInfo(String projectKey, String componentId, String accessToken, boolean skipGroupsValidation) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
 

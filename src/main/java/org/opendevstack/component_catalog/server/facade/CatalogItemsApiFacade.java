@@ -1,7 +1,6 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
@@ -13,8 +12,19 @@ import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
+import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
+import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -22,7 +32,12 @@ import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,6 +73,8 @@ public class CatalogItemsApiFacade {
         return asCatalogItemWithoutMandatoryToken(catalogRequestParams, false);
     }
 
+    // This method flag skipClustersAndGroups is intended to be temporal. Proper refactor should come, and different methods should be created for different use cases.
+    // This is a temporary solution to allow the marketplace to get the component info without validating the user groups.
     private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups) {
         List<String> clusters;
         List<String> userGroups;
