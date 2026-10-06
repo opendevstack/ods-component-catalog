@@ -113,6 +113,19 @@ class ProjectComponentsInfoMapperTest {
     }
 
     @Test
+    void givenBlankAccessToken_whenMap_thenReturnEmptyOptional() throws InvalidIdException, InvalidCatalogItemEntityException {
+        // given
+        var component = ProjectComponentMother.of("C-202", "cat-202", "ref-202", Status.CREATED);
+
+        // when
+        var result = projectComponentsInfoMapper.mapToProjectComponentInfo(component, "", projectKey, List.of());
+
+        // then
+        assertThat(result).isEmpty();
+        verify(catalogItemsApiFacade, times(0)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
+    }
+
+    @Test
     void givenFetchThrowsInvalidIdException_whenMap_thenPropagateException() throws InvalidIdException, InvalidCatalogItemEntityException {
         // given
         var component = ProjectComponentMother.of("C-ERR", "cat-ERR", "ref-ERR", Status.UNKNOWN);

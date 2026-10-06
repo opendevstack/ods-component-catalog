@@ -136,8 +136,8 @@ class CatalogItemsApiFacadeTest {
         var projectKey = "projectKey";
         var accessToken = "accessToken";
 
-        var projectInfo = new ProjectInfo();
-        projectInfo.setClusters(null);
+        var projectInfo = mock(ProjectInfo.class);
+        when(projectInfo.getClusters()).thenReturn(null);
 
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
@@ -204,6 +204,43 @@ class CatalogItemsApiFacadeTest {
         verify(authenticationFacade, times(1)).getAccessToken();
         verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
         verify(projectsInfoService, times(0)).getProjectGroups(any());
+    }
+
+    @Test
+    void GivenSkipClustersAndGroupsTrue_WhenAsCatalogItem_ThenUsesEmptyClustersAndGroups() {
+        // given
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
+        var catalogEntity = CatalogEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+        var projectKey = "projectKey";
+        var accessToken = "accessToken";
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .projectKey(projectKey)
+                .accessToken(accessToken)
+                .build();
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx))
+                .thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, Collections.emptyList(), Collections.emptyList(), null))
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
+
+        // when
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams, true);
+
+        // then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
+        verify(projectsInfoService, times(0)).getProjectGroups(any());
+        verify(catalogApiAdapter, times(1))
+                .asCatalogItem(catalogRequestParams, Collections.emptyList(), Collections.emptyList(), null);
     }
 
     @Test

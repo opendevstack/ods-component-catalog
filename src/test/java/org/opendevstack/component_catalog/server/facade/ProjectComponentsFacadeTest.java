@@ -276,6 +276,20 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
+    void givenNullProjectComponents_whenGetProjectComponentsInfo_thenReturnEmptyList() {
+        // given
+        var projectKey = "PRJ-NULL";
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(null);
+
+        // when
+        var result = projectComponentsFacade.getProjectComponentsInfo(projectKey, accessToken);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(projectsInfoService, never()).getProjectGroups(any());
+    }
+
+    @Test
     void getAccessToken_whenAuthIsNull_throwsForbiddenException() {
         // given
         when(authenticationFacade.getAccessToken()).thenThrow(new ForbiddenException("User not authenticated"));
@@ -306,6 +320,47 @@ class ProjectComponentsFacadeTest {
 
         // then
         assertThat(result).isNotNull();
+    }
+
+    @Test
+    void givenExistingComponentAndSkipGroupsValidation_whenGetExtendedInfo_thenBypassGroupValidation() {
+        // given
+        var projectKey = "PRJ-1";
+        var componentId = "C1";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var comps = ProjectComponentsMother.of(Map.of("k1", comp));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true))
+                .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
+
+        // when
+        var result = projectComponentsFacade
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken, true);
+
+        // then
+        assertThat(result).isNotNull();
+        verify(projectsInfoService, never()).getProjectGroups(any());
+        verify(projectComponentExtendedInfoMapper)
+                .mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true);
+    }
+
+    @Test
+    void givenBlankAccessToken_whenGetExtendedInfo_thenThrowIllegalArgumentException() {
+        // given
+        var projectKey = "PRJ-1";
+        var componentId = "C1";
+
+        ProjectComponent comp = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        var comps = ProjectComponentsMother.of(Map.of("k1", comp));
+
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
+
+        // when / then
+        assertThatThrownBy(() -> projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, "", false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Valid projectKey, componentId and accessToken are mandatory.");
     }
 
     @Test
@@ -637,6 +692,94 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
+    void givenComponentsWithOnlyUpdatedAt_whenGetAllProjectComponentsMetrics_thenSortByUpdatedAt() {
+        // given
+        String projectKey = "PRJ-1";
+
+        var firstComponent = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        firstComponent.setCreatedAt(null);
+        firstComponent.setUpdatedAt("200");
+
+        var secondComponent = ProjectComponentMother.of("C2", "cat", "ref", Status.CREATED);
+        secondComponent.setCreatedAt(null);
+        secondComponent.setUpdatedAt("100");
+
+        var projectComponents = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of(
+                "k1", firstComponent,
+                "k2", secondComponent
+        )));
+
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of(projectKey + ".json"));
+        when(provisionerActionsService.getProjectComponents(projectKey))
+                .thenReturn(projectComponents);
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), eq(projectKey)))
+                .thenAnswer(inv -> {
+                    ProjectComponent pc = inv.getArgument(0);
+                    return Optional.of(ProjectComponentMetrics.builder()
+                            .componentId(pc.getComponentId())
+                            .projectKey(projectKey)
+                            .build());
+                });
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 10, "url");
+
+        // then
+        assertThat(result.getData())
+                .extracting(ProjectComponentMetrics::getComponentId)
+                .containsExactly("C2", "C1");
+    }
+
+    @Test
+    void givenPaginationSkipsRemainingProjects_whenGetAllProjectComponentsMetrics_thenSkipLaterProjects() {
+        // given
+        String firstProjectKey = "PRJ-1";
+        String secondProjectKey = "PRJ-2";
+
+        var firstComponent = ProjectComponentMother.of("C1", "cat", "ref", Status.CREATED);
+        firstComponent.setCreatedAt("100");
+
+        var secondComponent = ProjectComponentMother.of("C2", "cat", "ref", Status.CREATED);
+        secondComponent.setCreatedAt("200");
+
+        var firstProjectComponents = ProjectComponentsMother.of(Map.of("k1", firstComponent));
+        var secondProjectComponents = ProjectComponentsMother.of(Map.of("k2", secondComponent));
+
+        when(provisionerActionsService.listAllProjectsJsons())
+                .thenReturn(List.of(firstProjectKey + ".json", secondProjectKey + ".json"));
+        when(provisionerActionsService.getProjectComponents(firstProjectKey))
+                .thenReturn(firstProjectComponents);
+        when(provisionerActionsService.getProjectComponents(secondProjectKey))
+                .thenReturn(secondProjectComponents);
+
+        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), any()))
+                .thenAnswer(inv -> {
+                    ProjectComponent pc = inv.getArgument(0);
+                    String projectKey = inv.getArgument(1);
+                    return Optional.of(ProjectComponentMetrics.builder()
+                            .componentId(pc.getComponentId())
+                            .projectKey(projectKey)
+                            .build());
+                });
+
+        String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponentsMetrics(validToken, 0, 1, "url");
+
+        // then
+        assertThat(result.getData()).hasSize(1);
+        verify(provisionerActionsService).getProjectComponents(firstProjectKey);
+        verify(provisionerActionsService).getProjectComponents(secondProjectKey);
+        verify(projectComponentListItemMapper, times(1)).mapToProjectComponentMetrics(any(), eq(firstProjectKey));
+        verify(projectComponentListItemMapper, never()).mapToProjectComponentMetrics(any(), eq(secondProjectKey));
+    }
+
+    @Test
     void givenMultipleProjects_whenGetAllProjectComponents_Metrics_thenProjectsSortedByKey() {
         // given
         when(provisionerActionsService.listAllProjectsJsons())
@@ -852,6 +995,27 @@ class ProjectComponentsFacadeTest {
 
         // when / then
         assertThatThrownBy(() -> projectComponentsFacade.updateProjectComponentParameters(projectKey, componentId, Map.of("alpha", List.of("value"))))
+                .isInstanceOf(ComponentNotFoundException.class)
+                .hasMessageContaining(componentId)
+                .hasMessageContaining(projectKey);
+    }
+
+    @Test
+    void givenMissingComponent_whenDeleteProjectComponentParameters_thenThrowComponentNotFoundException() {
+        // given
+        var projectKey = "PRJ-123";
+        var componentId = "missing-component";
+        var pathAt = mock(BitbucketPathAt.class);
+        var projectComponents = ProjectComponents.builder()
+                .components(new LinkedHashMap<>())
+                .build();
+
+        when(provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey)).thenReturn(pathAt);
+        when(projectComponentsService.getLastCommit(pathAt)).thenReturn("commit-123");
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+
+        // when / then
+        assertThatThrownBy(() -> projectComponentsFacade.deleteProjectComponentParameters(projectKey, componentId, List.of("alpha")))
                 .isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining(componentId)
                 .hasMessageContaining(projectKey);

@@ -4,14 +4,17 @@ import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrinci
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -72,5 +75,35 @@ class AuthenticationFacadeTest {
 
         // then
         assertThat(result).isEqualTo(accessToken);
+    }
+
+    @Test
+    void isAValidApplicationToken_whenOidIsPermitted_returnsTrue() {
+        // given
+        try (var mockedJwtUtils = mockStatic(JwtUtils.class)) {
+            mockedJwtUtils.when(() -> JwtUtils.extractClaim("token", "oid"))
+                    .thenReturn(Optional.of("oid-1"));
+
+            // when
+            var result = authenticationFacade.isAValidApplicationToken("token");
+
+            // then
+            assertThat(result).isTrue();
+        }
+    }
+
+    @Test
+    void isAValidApplicationToken_whenOidIsNotPermitted_returnsFalse() {
+        // given
+        try (var mockedJwtUtils = mockStatic(JwtUtils.class)) {
+            mockedJwtUtils.when(() -> JwtUtils.extractClaim("token", "oid"))
+                    .thenReturn(Optional.of("oid-2"));
+
+            // when
+            var result = authenticationFacade.isAValidApplicationToken("token");
+
+            // then
+            assertThat(result).isFalse();
+        }
     }
 }
