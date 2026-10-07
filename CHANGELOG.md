@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Used for New features.
+- Allow project components obtention via client credentials from marketplace tokens
+- Create a new endpoint to delete one or more parameters from an existing component
+- Add endpoints to update project component parameters
 
 ### FIXED
 - Used for Bug fixes.
@@ -46,14 +49,10 @@ All notable changes to this project will be documented in this file.
 - Improved retrieval of Bitbucket component files so only root files are returned where applicable.
 
 ### Fixed
-- Fixed catalog activity filtering so status and date filters are applied together using `AND`.
-- Fixed catalog activity filtering by catalog.
-- Fixed behavior when filtering activities by a non-existent project so empty results are returned consistently.
 - Fixed token handling when retrieving catalog items and project groups.
 - Fixed unnecessary `403` calls in project info lookup flows.
 - Fixed missing mapping for the `visible` property in catalog item responses.
 - Fixed `catalogItemId` resolution when validating whitelisted roles.
-- Fixed retrieval behavior for provisionable but non-visible items.
 
 ### Internal / Maintenance
 - Removed the custom RFC3339 date format implementation in favor of standard serialization behavior.
