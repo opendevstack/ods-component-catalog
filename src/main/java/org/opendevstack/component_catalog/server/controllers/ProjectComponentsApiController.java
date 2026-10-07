@@ -38,7 +38,11 @@ public class ProjectComponentsApiController implements ProjectComponentsApi {
     @Override
     public ResponseEntity<ProjectComponentExtendedInfo> getProjectComponentById(String projectKey, String componentId) {
         var accessToken = authenticationFacade.getAccessToken();
-        var projectComponent = projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+
+        boolean isAValidApplicationToken = authenticationFacade.isAValidApplicationToken(accessToken);
+
+        var projectComponent = projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken, isAValidApplicationToken);
+
         return ResponseEntity.ok(projectComponent);
     }
 

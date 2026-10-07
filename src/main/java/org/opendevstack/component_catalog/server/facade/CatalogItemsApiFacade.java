@@ -12,8 +12,19 @@ import org.opendevstack.component_catalog.server.model.CatalogDescriptor;
 import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.CatalogItemFilter;
 import org.opendevstack.component_catalog.server.security.AuthorizationInfo;
-import org.opendevstack.component_catalog.server.services.*;
-import org.opendevstack.component_catalog.server.services.catalog.*;
+import org.opendevstack.component_catalog.server.services.CatalogEntitiesService;
+import org.opendevstack.component_catalog.server.services.CatalogItemBySlugService;
+import org.opendevstack.component_catalog.server.services.CatalogsCollectionService;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
+import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
+import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
+import org.opendevstack.component_catalog.server.services.UserActionsEntitiesService;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityMetadata;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
@@ -21,7 +32,12 @@ import org.opendevstack.component_catalog.server.services.slug.CatalogItemSlug;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,13 +61,31 @@ public class CatalogItemsApiFacade {
     private final AuthenticationFacade authenticationFacade;
 
     public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams) {
+        return asCatalogItem(catalogRequestParams, false);
+    }
+
+    public CatalogItem asCatalogItem(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups) {
         var tokenizedCatalogRequestParams = tokenize(catalogRequestParams);
-        return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams);
+        return asCatalogItemWithoutMandatoryToken(tokenizedCatalogRequestParams, skipClustersAndGroups);
     }
 
     private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams) {
-        var clusters = getClusters(catalogRequestParams);
-        var userGroups = getProjectGroups(catalogRequestParams);
+        return asCatalogItemWithoutMandatoryToken(catalogRequestParams, false);
+    }
+
+    // This method flag skipClustersAndGroups is intended to be temporal. Proper refactor should come, and different methods should be created for different use cases.
+    // This is a temporary solution to allow the marketplace to get the component info without validating the user groups.
+    private CatalogItem asCatalogItemWithoutMandatoryToken(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups) {
+        List<String> clusters;
+        List<String> userGroups;
+
+        if (skipClustersAndGroups) {
+            clusters = Collections.emptyList();
+            userGroups = Collections.emptyList();
+        } else {
+            clusters = getClusters(catalogRequestParams);
+            userGroups = getProjectGroups(catalogRequestParams);
+        }
 
         var componentCount = calculateComponentCountForCatalogOwners(catalogRequestParams, userGroups);
 
@@ -156,7 +190,12 @@ public class CatalogItemsApiFacade {
         }
     }
 
-    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams)
+    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams) throws InvalidIdException, InvalidCatalogItemEntityException {
+        return fetchCatalogItem(catalogRequestParams, false);
+    }
+
+
+    public CatalogItem fetchCatalogItem(CatalogRequestParams catalogRequestParams, boolean skipClustersAndGroups)
             throws InvalidIdException, InvalidCatalogItemEntityException {
         var principalPermissions = currentPrincipalCatalogPermissions(catalogRequestParams.getCatalogItemId());
         var maybeItemEntityCtx = catalogEntitiesService.getCatalogItemEntity(catalogRequestParams.getCatalogItemId());
@@ -168,7 +207,8 @@ public class CatalogItemsApiFacade {
                                         .catalogItemEntityContext(catalogItemEntityContext)
                                         .userActionsEntity(userActionsEntity)
                                         .permissions(principalPermissions)
-                                        .build()
+                                        .build(),
+                                skipClustersAndGroups
                         )
                 )
                 .filter(item -> applyVisibilityFilter(item, catalogRequestParams.isIgnoreVisibilityRestrictions()))

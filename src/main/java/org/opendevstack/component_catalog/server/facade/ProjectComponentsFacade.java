@@ -89,16 +89,24 @@ public class ProjectComponentsFacade {
                 .toList();
     }
 
-    public ProjectComponentExtendedInfo getProjectComponentExtendedInfo(String projectKey, String componentId, String accessToken) {
+    // This method flag skipGroupsValidation is intended to be temporal. Proper refactor should come, and different methods should be created for different use cases.
+    // This is a temporary solution to allow the marketplace to get the component info without validating the user groups.
+    public ProjectComponentExtendedInfo getProjectComponentExtendedInfo(String projectKey, String componentId, String accessToken, boolean skipGroupsValidation) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
 
         if (notValid(projectComponents, projectKey, accessToken)) {
             throw new IllegalArgumentException("Valid projectKey, componentId and accessToken are mandatory.");
         }
 
-        List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
-        if (!userBelongsToProjectGroups(userGroups, projectKey)) {
-            throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
+        List<String> userGroups;
+
+        if (!skipGroupsValidation) {
+            userGroups = projectsInfoService.getProjectGroups(accessToken);
+            if (!userBelongsToProjectGroups(userGroups, projectKey)) {
+                throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
+            }
+        } else {
+            userGroups = Collections.emptyList();
         }
 
         return Optional.ofNullable(projectComponents.getComponents())
@@ -107,8 +115,9 @@ public class ProjectComponentsFacade {
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
-                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups))
+                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
                 .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
     }
 
     public ProjectComponentsMetrics getAllProjectComponentsMetrics(String accessToken, int page, int size, String paginationBaseUrl) {

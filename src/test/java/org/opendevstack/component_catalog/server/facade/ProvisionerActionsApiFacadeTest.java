@@ -16,16 +16,13 @@ import org.opendevstack.component_catalog.server.services.restrictions.evaluator
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.GroupsRestrictionsEvaluator;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsEvaluatorResultMother;
 import org.opendevstack.component_catalog.server.services.restrictions.evaluators.RestrictionsParams;
-import org.opendevstack.component_catalog.util.JwtUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,10 +46,8 @@ class ProvisionerActionsApiFacadeTest {
 
     @BeforeEach
     void setUp() {
-        var permittedOids = List.of("oid1", "oid2", "oid3");
-
         provisionerActionsApiFacade = new ProvisionerActionsApiFacade(projectsInfoService,
-                groupsRestrictionsEvaluator, groupsRestrictionProps, authenticationFacade, permittedOids);
+                groupsRestrictionsEvaluator, groupsRestrictionProps, authenticationFacade);
     }
 
     @Test
@@ -109,26 +104,22 @@ class ProvisionerActionsApiFacadeTest {
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                  .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.empty());
+         // when / then
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
-             // when / then
-             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-
-             verify(groupsRestrictionsEvaluator)
-                     .evaluate(any(EvaluationRestrictions.class), eq(RestrictionsParams.builder()
-                             .userGroups(userGroups)
-                             .projectKey(PROJECT_KEY)
-                             .catalogItemId(CATALOG_ITEM_ID)
-                             .build()));
-         }
+         verify(groupsRestrictionsEvaluator)
+                 .evaluate(any(EvaluationRestrictions.class), eq(RestrictionsParams.builder()
+                         .userGroups(userGroups)
+                         .projectKey(PROJECT_KEY)
+                         .catalogItemId(CATALOG_ITEM_ID)
+                         .build()));
      }
 
      @Test
@@ -139,21 +130,17 @@ class ProvisionerActionsApiFacadeTest {
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                  .thenReturn(RestrictionsEvaluatorResultMother.of(false, "forbidden"));
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.empty());
-
-             // when / then
-             assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request))
-                     .isInstanceOf(ForbiddenException.class)
-                     .hasMessage("User not allowed to perform this action");
-         }
+         // when / then
+         assertThatThrownBy(() -> provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request))
+                 .isInstanceOf(ForbiddenException.class)
+                 .hasMessage("User not allowed to perform this action");
      }
 
      @Test
@@ -164,60 +151,46 @@ class ProvisionerActionsApiFacadeTest {
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                  .thenReturn(null);
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.empty());
-
-             // when / then
-             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-         }
+         // when / then
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
      }
 
      @Test
      void validateGroupRestrictions_whenPermittedOidsContainsExtractedOid_bypassesGroupRestrictions() {
          // given
          var accessToken = "accessToken";
-         var permittedOid = "oid1";
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(true);
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.of(permittedOid));
+         // when
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
-             // when
-              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-
-             // then - Verify that the group restrictions evaluator is never called when oid is in permittedOids
-             verify(groupsRestrictionsEvaluator, never())
-                     .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
-             verify(projectsInfoService, never()).getProjectGroups(accessToken);
-         }
+         // then - Verify that the group restrictions evaluator is never called when oid is in permittedOids
+         verify(groupsRestrictionsEvaluator, never())
+                 .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
+         verify(projectsInfoService, never()).getProjectGroups(accessToken);
      }
 
      @Test
      void validateGroupRestrictions_whenPermittedOidsContainsExtractedOid_doesNotThrow() {
          // given
          var accessToken = "accessToken";
-         var permittedOid = "oid2";
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(true);
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.of(permittedOid));
-
-             // when / then - should not throw any exception
-              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-         }
+         // when / then - should not throw any exception
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
      }
 
      @Test
@@ -228,24 +201,20 @@ class ProvisionerActionsApiFacadeTest {
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                  .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.empty());
+         // when
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
-             // when
-              provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-
-             // then - Verify that the group restrictions evaluator is called when oid is not in permittedOids
-             verify(groupsRestrictionsEvaluator)
-                     .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
-             verify(projectsInfoService).getProjectGroups(accessToken);
-         }
+         // then - Verify that the group restrictions evaluator is called when oid is not in permittedOids
+         verify(groupsRestrictionsEvaluator)
+                 .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
+         verify(projectsInfoService).getProjectGroups(accessToken);
      }
 
      @Test
@@ -271,24 +240,20 @@ class ProvisionerActionsApiFacadeTest {
          var request = requestWithCatalogItemId(CATALOG_ITEM_ID);
 
          when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+         when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
          when(groupsRestrictionProps.getPrefix()).thenReturn(List.of("prefix-"));
          when(groupsRestrictionProps.getSuffix()).thenReturn(List.of("-suffix"));
          when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(userGroups);
          when(groupsRestrictionsEvaluator.evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class)))
                  .thenReturn(RestrictionsEvaluatorResultMother.of(true, "allowed"));
 
-         try (var jwtUtilsMocked = mockStatic(JwtUtils.class)) {
-             jwtUtilsMocked.when(() -> JwtUtils.extractClaim(accessToken, "oid"))
-                     .thenReturn(Optional.of("non-permitted-oid"));
+         // when
+         provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
 
-             // when
-             provisionerActionsApiFacade.validateGroupRestrictions(PROJECT_KEY, request);
-
-             // then
-             verify(groupsRestrictionsEvaluator)
-                     .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
-             verify(projectsInfoService).getProjectGroups(accessToken);
-         }
+         // then
+         verify(groupsRestrictionsEvaluator)
+                 .evaluate(any(EvaluationRestrictions.class), any(RestrictionsParams.class));
+         verify(projectsInfoService).getProjectGroups(accessToken);
      }
 }
 

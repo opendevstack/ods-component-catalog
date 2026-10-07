@@ -136,8 +136,8 @@ class CatalogItemsApiFacadeTest {
         var projectKey = "projectKey";
         var accessToken = "accessToken";
 
-        var projectInfo = new ProjectInfo();
-        projectInfo.setClusters(null);
+        var projectInfo = mock(ProjectInfo.class);
+        when(projectInfo.getClusters()).thenReturn(null);
 
         var clusters = Collections.<String>emptyList();
         var userGroups = Collections.<String>emptyList();
@@ -204,6 +204,43 @@ class CatalogItemsApiFacadeTest {
         verify(authenticationFacade, times(1)).getAccessToken();
         verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
         verify(projectsInfoService, times(0)).getProjectGroups(any());
+    }
+
+    @Test
+    void GivenSkipClustersAndGroupsTrue_WhenAsCatalogItem_ThenUsesEmptyClustersAndGroups() {
+        // given
+        var itemEntityCtx = CatalogItemEntityContextMother.of();
+        var userActionsEntity = UserActionsEntityMother.of();
+        var catalogEntity = CatalogEntityMother.of();
+        Set<CatalogEntityPermissionEnum> permissions = Collections.emptySet();
+        var projectKey = "projectKey";
+        var accessToken = "accessToken";
+
+        var catalogRequestParams = CatalogRequestParams.builder()
+                .catalogItemEntityContext(itemEntityCtx)
+                .userActionsEntity(userActionsEntity)
+                .permissions(permissions)
+                .projectKey(projectKey)
+                .accessToken(accessToken)
+                .build();
+
+        when(catalogEntitiesService.getCatalogEntityByCatalogItemEntityContext(itemEntityCtx))
+                .thenReturn(Optional.of(catalogEntity));
+
+        CatalogItem expectedCatalogItem = CatalogItemMother.of();
+
+        when(catalogApiAdapter.asCatalogItem(catalogRequestParams, Collections.emptyList(), Collections.emptyList(), null))
+                .thenReturn(new CatalogItemWrapper(expectedCatalogItem, true));
+
+        // when
+        var result = catalogItemsApiFacade.asCatalogItem(catalogRequestParams, true);
+
+        // then
+        assertThat(result).isSameAs(expectedCatalogItem);
+        verify(projectsInfoService, times(0)).getProjectClusters(any(), any());
+        verify(projectsInfoService, times(0)).getProjectGroups(any());
+        verify(catalogApiAdapter, times(1))
+                .asCatalogItem(catalogRequestParams, Collections.emptyList(), Collections.emptyList(), null);
     }
 
     @Test
@@ -401,7 +438,7 @@ class CatalogItemsApiFacadeTest {
             verify(userActionsEntitiesService).getDefaultUserActionsEntity();
             verify(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogId);
             verify(catalogItemsApiFacade).filterByContributingFileExists(catalogId);
-            verify(catalogItemsApiFacade, never()).asCatalogItem(any());
+            verify(catalogItemsApiFacade, never()).asCatalogItem(any(CatalogRequestParams.class), eq(false));
         }
     }
 
@@ -926,7 +963,7 @@ class CatalogItemsApiFacadeTest {
         var item = new CatalogItem();
         item.setId(catalogItemId);
         item.setTitle("X");
-        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
+        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class), eq(false));
 
         doReturn(true).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
@@ -943,7 +980,7 @@ class CatalogItemsApiFacadeTest {
         assertThat(response.getId()).isEqualTo(catalogItemId);
 
         verify(catalogEntitiesService, times(1)).getCatalogItemEntity(catalogItemId);
-        verify(catalogItemsApiFacade, times(1)).asCatalogItem(any(CatalogRequestParams.class));
+        verify(catalogItemsApiFacade, times(1)).asCatalogItem(any(CatalogRequestParams.class), eq(false));
         verify(catalogItemsApiFacade, times(1)).applyVisibilityFilter(eq(item), anyBoolean());
         verify(catalogItemsApiFacade, times(0)).filterByContributingFileExists(catalogItemId);
     }
@@ -965,7 +1002,7 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(response).isNull();
 
-        verify(catalogItemsApiFacade, times(0)).asCatalogItem(any());
+        verify(catalogItemsApiFacade, never()).asCatalogItem(any(CatalogRequestParams.class), eq(false));
     }
 
     @Test
@@ -982,7 +1019,7 @@ class CatalogItemsApiFacadeTest {
 
         var item = new CatalogItem();
         item.setId(catalogItemId);
-        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
+        doReturn(item).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class), eq(false));
 
         doReturn(false).when(catalogItemsApiFacade).applyVisibilityFilter(eq(item), anyBoolean());
 
@@ -1030,7 +1067,8 @@ class CatalogItemsApiFacadeTest {
         when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
         doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions(catalogItemId);
 
-        doThrow(new InvalidCatalogItemEntityException("invalid item")).when(catalogItemsApiFacade).asCatalogItem(any());
+        doThrow(new InvalidCatalogItemEntityException("invalid item")).when(catalogItemsApiFacade)
+                .asCatalogItem(any(CatalogRequestParams.class), eq(false));
 
         var params = CatalogRequestParams.builder().catalogItemId(catalogItemId).build();
 

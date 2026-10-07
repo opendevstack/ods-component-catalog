@@ -114,7 +114,7 @@ class ProjectComponentsApiControllerTest {
                 .build();
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false))
                 .thenReturn(extendedInfo);
 
         // when
@@ -127,7 +127,7 @@ class ProjectComponentsApiControllerTest {
 
         verify(authenticationFacade, times(1)).getAccessToken();
         verify(projectComponentsFacade, times(1))
-                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false);
     }
 
     @Test
@@ -136,7 +136,7 @@ class ProjectComponentsApiControllerTest {
         var componentId = "C404";
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false))
                 .thenThrow(new ComponentNotFoundException("Not found"));
 
         // when / then
@@ -146,7 +146,7 @@ class ProjectComponentsApiControllerTest {
                 .hasMessageContaining("Not found");
 
         verify(projectComponentsFacade, times(1))
-                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken);
+                .getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false);
     }
 
     @Test
@@ -155,7 +155,7 @@ class ProjectComponentsApiControllerTest {
         var componentId = "C1";
 
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken))
+        when(projectComponentsFacade.getProjectComponentExtendedInfo(projectKey, componentId, accessToken, false))
                 .thenThrow(new IllegalArgumentException("Invalid arguments"));
 
         // when / then
