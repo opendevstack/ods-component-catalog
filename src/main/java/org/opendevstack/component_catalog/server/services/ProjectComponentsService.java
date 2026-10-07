@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProjectComponentsService {
 
-    public static final String REFS_HEADS_MASTER = "refs/heads/master";
+    public static final String REFS_HEADS_MASTER = "?at=refs/heads/master";
 
     private final BitbucketService bitbucketService;
     private final ProjectComponentsCacheService projectComponentsCacheService;
@@ -101,20 +101,20 @@ public class ProjectComponentsService {
             throw new InvalidComponentStateException("Component with id " + request.getComponentId() + " does not exist");
         }
 
-        var existing = components.get(request.getComponentId());
+        var existingProjectComponent = components.get(request.getComponentId());
         var catalogItemIdWithoutBranch = getRepoPathFromCatalogItemId(request.getCatalogItemId());
         var branchReference = getBranchRefFromCatalogItemId(request.getCatalogItemId());
 
-        if (!existing.getCatalogItemId().equals(catalogItemIdWithoutBranch)) {
+        if (!existingProjectComponent.getCatalogItemId().equals(catalogItemIdWithoutBranch)) {
             return projectComponents;
         }
 
         ProjectComponent updated = ProjectComponent.builder()
-                .componentId(existing.getComponentId())
-                .catalogItemId(existing.getCatalogItemId())
+                .componentId(existingProjectComponent.getComponentId())
+                .catalogItemId(existingProjectComponent.getCatalogItemId())
                 .status(request.getStatus())
                 .catalogItemRef(branchReference)
-                .componentUrl(StringUtils.isBlank(request.getComponentUrl()) ? existing.getComponentUrl() : request.getComponentUrl())
+                .componentUrl(StringUtils.isBlank(request.getComponentUrl()) ? existingProjectComponent.getComponentUrl() : request.getComponentUrl())
                 .workflowJobId(request.getWorkflowJobId())
                 .deletionWorkflowJobId(request.getDeletionWorkflowJobId())
                 .createdAt(request.getCreatedAt())
