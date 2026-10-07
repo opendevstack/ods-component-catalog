@@ -161,7 +161,7 @@ class ProjectComponentsServiceTest {
         //then
         assertThat(updated.getComponents()).containsKey("comp1");
         assertThat(updated.getComponents().get("comp1").getCatalogItemRef())
-                .isEqualTo(base64(ProjectComponentsService.REFS_HEADS_MASTER));
+                .isEqualTo("P2F0PXJlZnMvaGVhZHMvbWFzdGVy"); // encoded value from ProjectComponentsService.REFS_HEADS_MASTER)
     }
 
     @Test
