@@ -1,4 +1,4 @@
-# Example CHANGELOG.md structure, following Keep a Changelog
+# Example CHANGELOG.md structure, following Keep a Changelog 
 see https://codersnexus.com/es/tutorials/github-complete-course/changelog-md-maintaining-human-readable-version-history
 
 see https://keepachangelog.com/en/1.0.0/
