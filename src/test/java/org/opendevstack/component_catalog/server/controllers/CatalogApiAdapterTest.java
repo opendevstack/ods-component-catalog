@@ -77,7 +77,7 @@ class CatalogApiAdapterTest {
         var groupsRestrictionProps =
                 ApplicationPropertiesConfiguration.CatalogItemUserActionGroupsRestrictionProps.builder()
                 .prefix(List.of("prefix1", "prefix2", "prefix3"))
-                .suffix(List.of("suffix1", "suffix2", "suffix3"))
+                .suffix("suffix1,suffix2,suffix3")
                 .build();
 
         var catalogItemUserActionParameterMapper = new CatalogItemUserActionParameterMapper();

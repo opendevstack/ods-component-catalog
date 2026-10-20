@@ -2,6 +2,8 @@ package org.opendevstack.component_catalog.config;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +13,7 @@ import org.springframework.util.unit.DataSize;
 import java.net.URL;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -165,11 +168,16 @@ public class ApplicationPropertiesConfiguration {
         private List<String> prefix;
     }
 
+    @Setter
     @Builder
-    @Data
     public static class CatalogItemUserActionGroupsRestrictionProps {
+        @Getter
         private List<String> prefix;
-        private List<String> suffix;
+        private String suffix;
+
+        public List<String> getSuffix() {
+            return Arrays.asList(suffix.split(","));
+        }
     }
 
     @Builder

@@ -75,15 +75,11 @@ component-catalog:
 catalog:
   project-components:
     groups-restriction:
-      prefix:
-        - BI-AS-ATLASSIAN
+      prefix: ${PROJECT_COMPONENT_GROUP_RESTRICTIONS_PREFIX}
   user-action:
     groups-restriction:
-      prefix:
-        - BI-AS-ATLASSIAN
-      suffix:
-        - MANAGER
-        - TEAM
+      prefix: ${USER_ACTION_GROUP_RESTRICTIONS_PREFIX}
+      suffix: ${USER_ACTION_GROUP_RESTRICTIONS_SUFFIX}
 catalog-item:
   reference:
     encoded: P2F0PXJlZnMvaGVhZHMvbWFzdGVy
