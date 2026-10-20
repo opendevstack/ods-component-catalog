@@ -7,7 +7,6 @@ import org.opendevstack.component_catalog.server.services.catalog.common.UserAct
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.util.Base64;
 import java.util.stream.Stream;
 
 @Service
@@ -57,10 +56,18 @@ public class GroupsRestrictionsEvaluator implements RestrictionsEvaluator {
     }
 
     private boolean evaluateConditions(UserActionEntityRestrictions restrictions, RestrictionsParams params) {
-        return params.getUserGroups().stream().anyMatch(group ->
-                restrictions.getGroups().getPrefix().stream().anyMatch(group::startsWith) &&
-                restrictions.getGroups().getSuffix().stream().anyMatch(group::endsWith) &&
-                group.contains(params.getProjectKey())
-        );
+        var anyMatchingGroup = params.userGroups.stream()
+                .filter(group -> restrictions.getGroups().getPrefix().stream().anyMatch(group::startsWith))
+                .filter(group -> restrictions.getGroups().getSuffix().stream().anyMatch(group::endsWith))
+                .filter(group -> group.contains(params.getProjectKey()))
+                .findFirst();
+
+        if (anyMatchingGroup.isPresent()) {
+            log.debug("There is one matching group for the restrictions {}", anyMatchingGroup.get());
+            return true;
+        } else {
+            log.debug("No matching groups found for the restrictions");
+            return false;
+        }
     }
 }
