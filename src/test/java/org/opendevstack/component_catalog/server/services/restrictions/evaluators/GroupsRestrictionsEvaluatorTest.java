@@ -158,4 +158,29 @@ class GroupsRestrictionsEvaluatorTest {
         // Then
         assertThat(evaluateResult.requestable()).isFalse();
     }
+
+    @Test
+    void givenSuffixStartingWithDash_WhenEvaluate_ThenEvaluationPass_AndReturnTrue() {
+        // Given
+        when(rolesWhitelistedService.resolveWhitelistedRolesForCatalogItemId(anyString())).thenReturn(List.of());
+
+        var projectKey = "projectKey";
+
+        CatalogItemUserActionGroupsRestriction groupsRestriction = CatalogItemUserActionGroupsRestriction.builder()
+                .prefix(List.of("prefix-1"))
+                .suffix(List.of("-suffix"))
+                .build();
+        UserActionEntityRestrictions restrictions = UserActionEntityRestrictionsMother.of(groupsRestriction);
+        RestrictionsParams params = RestrictionsParamsMother.of(List.of("prefix-1-projectKey-suffix"));
+        params.setProjectKey(projectKey);
+        params.setCatalogItemId(CATALOG_ITEM_ID);
+
+        var evaluationRestrictions = new EvaluationRestrictions(projectKey, restrictions);
+
+        // When
+        RestrictionsEvaluatorResult evaluateResult = groupsRestrictionsEvaluator.evaluate(evaluationRestrictions, params);
+
+        // Then
+        assertThat(evaluateResult.requestable()).isTrue();
+    }
 }
