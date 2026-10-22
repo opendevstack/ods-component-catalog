@@ -8,12 +8,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
-import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadataMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -96,12 +96,28 @@ class CatalogEntitiesServiceTest {
     void givenACatalogItemEntityMetadata_whenBuildCodeowners_thenReturnListOfCodeowners()
             throws InvalidEntityException {
         // Given
-        var metadata = CatalogItemEntityMetadataMother.of();
         var pathAt = mock(BitbucketPathAt.class);
         var firstUserEmailName = "any.user";
         var secondUserEmailName = "another.user";
         var thirdUserEmailName = "third.user";
 
+        Optional<String> textContentsAtPathAt = getTextContentsAtPathAt(firstUserEmailName, secondUserEmailName, thirdUserEmailName);
+
+        when(pathAt.copy()).thenReturn(pathAt);
+        when(pathAt.appendSubPath(".bitbucket/CODEOWNERS")).thenReturn(pathAt);
+        when(catalogServiceAdapter.textContentsAtPath(pathAt)).thenReturn(textContentsAtPathAt);
+
+        // When
+        var codeowners = catalogEntitiesService.buildCodeowners(pathAt);
+
+        // Then
+        assertThat(codeowners).isNotEmpty()
+                .hasSize(3)
+                .containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+    }
+
+    @NonNull
+    private static Optional<String> getTextContentsAtPathAt(String firstUserEmailName, String secondUserEmailName, String thirdUserEmailName) {
         var firstUserEmail = firstUserEmailName + "@my-domain.com";
         var secondUserEmail = secondUserEmailName + "@example.com";
         var thirdUserEmail = "@" + thirdUserEmailName + "@free-domain.com";
@@ -109,19 +125,7 @@ class CatalogEntitiesServiceTest {
                 + ".gitignore " + secondUserEmail + System.lineSeparator()
                 + "* " + secondUserEmail + " " + firstUserEmail + " " + thirdUserEmail;
 
-        Optional<String> textContentsAtPathAt = Optional.of(baseText);
-
-        when(pathAt.copy()).thenReturn(pathAt);
-        when(pathAt.appendSubPath("CODEOWNERS")).thenReturn(pathAt);
-        when(catalogServiceAdapter.textContentsAtPath(pathAt)).thenReturn(textContentsAtPathAt);
-
-        // When
-        var codeowners = catalogEntitiesService.buildCodeowners(metadata, pathAt);
-
-        // Then
-        assertThat(codeowners).isNotEmpty();
-        assertThat(codeowners.get()).hasSize(3);
-        assertThat(codeowners.get()).containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+        return Optional.of(baseText);
     }
 
     @Test

@@ -1,5 +1,7 @@
 package org.opendevstack.component_catalog.server.services;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestCommit;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
@@ -7,7 +9,6 @@ import org.opendevstack.component_catalog.server.services.catalog.CatalogEntity;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityContext;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityTarget;
-import org.opendevstack.component_catalog.server.services.catalog.CatalogItemEntityMetadata;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
@@ -17,8 +18,6 @@ import org.opendevstack.component_catalog.server.services.codeowners.CodeOwnersC
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.util.Either;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -30,11 +29,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Optional.ofNullable;
 import static org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder.idEncode;
 import static org.opendevstack.component_catalog.util.EitherUtils.either;
 import static org.opendevstack.component_catalog.util.EitherUtils.maybeValueFrom;
 import static org.opendevstack.component_catalog.util.EitherUtils.uncheckedFrom;
-import static java.util.Optional.ofNullable;
 
 @Service
 @AllArgsConstructor
@@ -123,13 +122,16 @@ public class CatalogEntitiesService {
                 .orElse(Set.of());
     }
 
-    protected Optional<List<String>> buildCodeowners(CatalogItemEntityMetadata metadata, BitbucketPathAt pathAtParent) {
-        return ofNullable(metadata.getContributors())
+    protected List<String> buildCodeowners(BitbucketPathAt pathAtParent) {
+        var contributors = ".bitbucket/CODEOWNERS";
+
+        return Optional.of(contributors)
                 .map(pathAtParent.copy()::appendSubPath)
                 .flatMap(maybeValueFrom(uncheckedFrom(catalogServiceAdapter::textContentsAtPath)))
                 .flatMap(txt -> txt)
                 .map(CodeownersCommentStripper::strip)
-                .flatMap(maybeValueFrom(this::parseContributors));
+                .flatMap(maybeValueFrom(this::parseContributors))
+                .orElseThrow(() -> new InvalidCatalogItemEntityException("Error while parsing codeowners file for catalog item: '%s'".formatted(pathAtParent.getPathAt())));
     }
 
     private Optional<CatalogEntity> getCatalogEntity(BitbucketPathAt catalogPathAt) {
@@ -214,7 +216,7 @@ public class CatalogEntitiesService {
         var pathAtParent = catalogItemPathAt.getParent();
 
         // Get the code owners, if possible - any error will be considered as "no code owners"
-        var codeOwners = buildCodeowners(metadata, pathAtParent);
+        var codeOwners = buildCodeowners(pathAtParent);
 
         var descriptionPathAt = ofNullable(metadata.getDescription())
                 .map(pathAtParent.copy()::appendSubPath);
@@ -230,7 +232,7 @@ public class CatalogEntitiesService {
                 .lastCommitDateUTC(lastCommitDate);
 
         // Set optional fields
-        codeOwners.ifPresent(catalogItemCtxBuilder::contributors);
+        catalogItemCtxBuilder.contributors(codeOwners);
         descriptionPathAt.ifPresent(catalogItemCtxBuilder::descriptionPath);
         imagePathAt.ifPresent(catalogItemCtxBuilder::imagePath);
 
