@@ -3,7 +3,6 @@ package org.opendevstack.component_catalog.server.services;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
@@ -29,10 +28,17 @@ import static org.mockito.Mockito.when;
 class CatalogEntitiesServiceTest {
 
     @Mock
+    private BitbucketService bitbucketService;
+
+    @Mock
     private CatalogServiceAdapter catalogServiceAdapter;
 
-    @InjectMocks
     private CatalogEntitiesService catalogEntitiesService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        catalogEntitiesService = new CatalogEntitiesService(bitbucketService, catalogServiceAdapter, ".bitbucket/CODEOWNERS");
+    }
 
     @Test
     void givenAnId_whenGetCatalogEntity_thenReturnCatalogEntity() throws InvalidIdException {

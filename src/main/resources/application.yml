@@ -65,6 +65,7 @@ component-catalog:
       base-rest-url: ${BITBUCKET_SERVICE_BASE_REST_URL}
       base-raw-url: ${BITBUCKET_SERVICE_BASE_RAW_URL}
       bearer-token: ${BITBUCKET_SERVICE_BEARER_TOKEN}
+      codeowners-path: ${BITBUCKET_CODEOWNERS_PATH:.bitbucket/CODEOWNERS}
   projects-info-service:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}

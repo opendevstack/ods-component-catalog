@@ -1,6 +1,5 @@
 package org.opendevstack.component_catalog.server.services;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestCommit;
 import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
@@ -18,6 +17,7 @@ import org.opendevstack.component_catalog.server.services.codeowners.CodeOwnersC
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
 import org.opendevstack.component_catalog.util.Either;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -36,13 +36,22 @@ import static org.opendevstack.component_catalog.util.EitherUtils.maybeValueFrom
 import static org.opendevstack.component_catalog.util.EitherUtils.uncheckedFrom;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class CatalogEntitiesService {
 
     private final BitbucketService bitbucketService;
 
     private final CatalogServiceAdapter catalogServiceAdapter;
+
+    private final String codeownersPath;
+
+    public CatalogEntitiesService(BitbucketService bitbucketService,
+                                CatalogServiceAdapter catalogServiceAdapter,
+                                @Value("${component-catalog.bitbucket.service.codeowners-path:.bitbucket/CODEOWNERS}") String codeownersPath) {
+        this.bitbucketService = bitbucketService;
+        this.catalogServiceAdapter = catalogServiceAdapter;
+        this.codeownersPath = codeownersPath;
+    }
 
     public Optional<CatalogEntity> getCatalogEntity(String id) throws InvalidIdException, InvalidCatalogEntityException {
         var catalogIdPathAt = catalogServiceAdapter.bitbucketPathAtFromId(id);
@@ -123,9 +132,7 @@ public class CatalogEntitiesService {
     }
 
     protected List<String> buildCodeowners(BitbucketPathAt pathAtParent) {
-        var contributors = ".bitbucket/CODEOWNERS";
-
-        return Optional.of(contributors)
+        return Optional.of(codeownersPath)
                 .map(pathAtParent.copy()::appendSubPath)
                 .flatMap(maybeValueFrom(uncheckedFrom(catalogServiceAdapter::textContentsAtPath)))
                 .flatMap(txt -> txt)
