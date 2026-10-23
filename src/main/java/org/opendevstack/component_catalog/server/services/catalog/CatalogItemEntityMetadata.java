@@ -16,7 +16,10 @@ public class CatalogItemEntityMetadata {
     private String name;
     private String shortDescription;
     private String description;
+
+    @Deprecated(forRemoval = true) // This is meant to be removed soon. It is here just for prevent error when loading the YAML files. It will not be used anymore.
     private String contributors;
+
     private String image;
     private Map<String, Set<String>> tags;
 }

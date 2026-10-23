@@ -3,20 +3,23 @@ package org.opendevstack.component_catalog.server.services;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.component_catalog.client.bitbucket.v89.model.RestPermittedUser.PermissionEnum;
 import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.CatalogEntityMother;
-import org.opendevstack.component_catalog.server.mother.CatalogItemEntityMetadataMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
+import org.opendevstack.component_catalog.server.services.catalog.CatalogEntityPermissionEnum;
 import org.opendevstack.component_catalog.server.services.catalog.CatalogServiceAdapter;
+import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogEntityException;
 import org.opendevstack.component_catalog.server.services.catalog.entity.CatalogItemEntityContext;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,10 +32,17 @@ import static org.mockito.Mockito.when;
 class CatalogEntitiesServiceTest {
 
     @Mock
+    private BitbucketService bitbucketService;
+
+    @Mock
     private CatalogServiceAdapter catalogServiceAdapter;
 
-    @InjectMocks
     private CatalogEntitiesService catalogEntitiesService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        catalogEntitiesService = new CatalogEntitiesService(bitbucketService, catalogServiceAdapter, ".bitbucket/CODEOWNERS");
+    }
 
     @Test
     void givenAnId_whenGetCatalogEntity_thenReturnCatalogEntity() throws InvalidIdException {
@@ -56,6 +66,21 @@ class CatalogEntitiesServiceTest {
     }
 
     @Test
+    void givenCatalogEntityParsingFails_whenGetCatalogEntity_thenThrowInvalidIdException() throws InvalidIdException {
+        // given
+        var id = "invalid-id";
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(catalogServiceAdapter.bitbucketPathAtFromId(id)).thenReturn(pathAt);
+        when(catalogServiceAdapter.getCatalogEntity(pathAt)).thenThrow(new InvalidCatalogEntityException("parse error"));
+
+        // when // then
+        assertThatThrownBy(() -> catalogEntitiesService.getCatalogEntity(id))
+                .isInstanceOf(InvalidIdException.class)
+                .hasCauseInstanceOf(InvalidCatalogEntityException.class);
+    }
+
+    @Test
     void givenACatalogId_whenGetCatalogItemsEntities_thenReturnCatalogItemEntityContextList()
             throws InvalidIdException {
         // given
@@ -71,6 +96,20 @@ class CatalogEntitiesServiceTest {
 
         // then
         assertThat(result).isNotNull();
+    }
+
+    @Test
+    void givenMissingCatalog_whenGetCatalogItemsEntities_thenThrowInvalidCatalogEntityException() throws InvalidIdException {
+        // given
+        var catalogId = "missing-catalog";
+        var catalogIdPathAt = mock(BitbucketPathAt.class);
+
+        when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(catalogIdPathAt);
+        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt)).thenReturn(Optional.empty());
+
+        // when // then
+        assertThatThrownBy(() -> catalogEntitiesService.getCatalogItemsEntities(catalogId))
+                .isInstanceOf(InvalidCatalogEntityException.class);
     }
 
     @Test
@@ -93,15 +132,88 @@ class CatalogEntitiesServiceTest {
     }
 
     @Test
+    void givenCatalogEntityWithoutCommunityPage_whenGetCatalogEntityContext_thenCommunityPageIsNull() throws InvalidIdException {
+        // given
+        var catalogId = "aSdFam...yCg==";
+        var catalogIdPathAt = BitbucketPathAtMother.of();
+        var catalogEntity = CatalogEntityMother.of();
+        catalogEntity.getMetadata().setCommunityPage(null);
+
+        when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(catalogIdPathAt);
+        when(catalogServiceAdapter.getCatalogEntity(catalogIdPathAt)).thenReturn(Optional.of(catalogEntity));
+
+        // when
+        var result = catalogEntitiesService.getCatalogEntityContext(catalogId);
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get().getCommunityPagePath()).isNull();
+    }
+
+    @Test
     void givenACatalogItemEntityMetadata_whenBuildCodeowners_thenReturnListOfCodeowners()
             throws InvalidEntityException {
         // Given
-        var metadata = CatalogItemEntityMetadataMother.of();
         var pathAt = mock(BitbucketPathAt.class);
         var firstUserEmailName = "any.user";
         var secondUserEmailName = "another.user";
         var thirdUserEmailName = "third.user";
 
+        Optional<String> textContentsAtPathAt = getTextContentsAtPathAt(firstUserEmailName, secondUserEmailName, thirdUserEmailName);
+
+        when(pathAt.copy()).thenReturn(pathAt);
+        when(pathAt.appendSubPath(".bitbucket/CODEOWNERS")).thenReturn(pathAt);
+        when(catalogServiceAdapter.textContentsAtPath(pathAt)).thenReturn(textContentsAtPathAt);
+
+        // When
+        var codeowners = catalogEntitiesService.buildCodeowners(pathAt);
+
+        // Then
+        assertThat(codeowners).isNotEmpty()
+                .hasSize(3)
+                .containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+    }
+
+    @Test
+    void givenMissingCatalogItemPermissions_whenCatalogPrincipalPermissions_thenReturnEmptySet() throws InvalidIdException {
+        // given
+        var catalogId = "catalog-id";
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(pathAt);
+
+        // when
+        var result = catalogEntitiesService.catalogPrincipalPermissions(catalogId, null);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void givenRepoPermissions_whenCatalogPrincipalPermissions_thenMapBitbucketPermissionsToCatalogPermissions()
+            throws InvalidIdException {
+        // given
+        var catalogId = "catalog-id";
+        var username = "alice";
+        var pathAt = mock(BitbucketPathAt.class);
+
+        when(catalogServiceAdapter.bitbucketPathAtFromId(catalogId)).thenReturn(pathAt);
+        when(bitbucketService.searchRepoUserPermissions(pathAt, username))
+                .thenReturn(Set.of(PermissionEnum.REPO_READ, PermissionEnum.PROJECT_WRITE));
+
+        // when
+        var result = catalogEntitiesService.catalogPrincipalPermissions(catalogId, username);
+
+        // then
+        assertThat(result)
+                .containsExactlyInAnyOrder(
+                        CatalogEntityPermissionEnum.REPO_READ,
+                        CatalogEntityPermissionEnum.PROJECT_WRITE
+                );
+    }
+
+    @NonNull
+    private static Optional<String> getTextContentsAtPathAt(String firstUserEmailName, String secondUserEmailName, String thirdUserEmailName) {
         var firstUserEmail = firstUserEmailName + "@my-domain.com";
         var secondUserEmail = secondUserEmailName + "@example.com";
         var thirdUserEmail = "@" + thirdUserEmailName + "@free-domain.com";
@@ -109,19 +221,7 @@ class CatalogEntitiesServiceTest {
                 + ".gitignore " + secondUserEmail + System.lineSeparator()
                 + "* " + secondUserEmail + " " + firstUserEmail + " " + thirdUserEmail;
 
-        Optional<String> textContentsAtPathAt = Optional.of(baseText);
-
-        when(pathAt.copy()).thenReturn(pathAt);
-        when(pathAt.appendSubPath("CODEOWNERS")).thenReturn(pathAt);
-        when(catalogServiceAdapter.textContentsAtPath(pathAt)).thenReturn(textContentsAtPathAt);
-
-        // When
-        var codeowners = catalogEntitiesService.buildCodeowners(metadata, pathAt);
-
-        // Then
-        assertThat(codeowners).isNotEmpty();
-        assertThat(codeowners.get()).hasSize(3);
-        assertThat(codeowners.get()).containsAll(List.of(firstUserEmailName, secondUserEmailName, thirdUserEmailName));
+        return Optional.of(baseText);
     }
 
     @Test

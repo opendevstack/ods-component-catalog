@@ -14,7 +14,6 @@ public class CatalogItemEntityMetadataMother {
                 .name(name)
                 .shortDescription(shortDescription)
                 .description("README.md")
-                .contributors("CODEOWNERS")
                 .image("./logo.png")
                 .tags(tags)
                 .build();
@@ -23,14 +22,12 @@ public class CatalogItemEntityMetadataMother {
     public static CatalogItemEntityMetadata of(String name,
                                                String shortDescription,
                                                String description,
-                                               String contributors,
                                                String image,
                                                Map<String, Set<String>> tags) {
         return CatalogItemEntityMetadata.builder()
                 .name(name)
                 .shortDescription(shortDescription)
                 .description(description)
-                .contributors(contributors)
                 .image(image)
                 .tags(tags)
                 .build();
