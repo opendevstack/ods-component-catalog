@@ -34,6 +34,9 @@ user-actions:
   id: ${USER_ACTIONS_ID}
   default-message-definition-id: ${USER_ACTIONS_DEFAULT_MESSAGE_DEFINITION_ID}
 component-catalog:
+  azure:
+    token:
+      url: ${AZURE_TOKEN_URL}
   security:
     shared-secret: ${SECURITY_SHARED_SECRET}
     basic-auth:
@@ -69,9 +72,15 @@ component-catalog:
   projects-info-service:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
+  marketplace-api:
+    client-id: ${DEVSTACK_MARKETPLACE_API_CLIENT_ID}
+    client-secret: ${DEVSTACK_MARKETPLACE_API_CLIENT_SECRET}
   ods-api-service:
     service:
       oid: ${ODS_API_SERVICE_OID}
+      base-rest-url: ${ODS_API_SERVICE_URL}
+    params:
+      scope: ${ODS_API_SERVICE_SCOPE}
 
 catalog:
   project-components:
