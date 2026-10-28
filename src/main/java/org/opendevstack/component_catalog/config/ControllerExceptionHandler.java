@@ -45,7 +45,7 @@ public class ControllerExceptionHandler {
         return new ResponseEntity<>(exception.getResponseBodyAsByteArray(), headers, exception.getStatusCode());
     }
 
-    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<RestErrorMessage> handleRequestParamsExceptions(Exception ex) {
         log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
         
