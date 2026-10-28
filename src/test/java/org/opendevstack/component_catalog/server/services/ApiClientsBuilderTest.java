@@ -5,12 +5,14 @@ import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.Ap
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.api.AzureGroupsApi;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.api.ProjectsApi;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.auth.HttpBearerAuth;
+import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.api.FeedbackSubmissionsApi;
+import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ApiClientsBuilderTest {
 
-    private final ApiClientsBuilder builder = new ApiClientsBuilder();
+    private final ApiClientsBuilder builder = new ApiClientsBuilder(new RestTemplate());
 
     @Test
     void givenAccessTokenAndBaseUrl_whenApiClient_thenClientConfiguredCorrectly() {
@@ -53,5 +55,23 @@ class ApiClientsBuilderTest {
         // then
         assertThat(api).isNotNull();
         assertThat(api.getApiClient()).isSameAs(client);
+    }
+
+    @Test
+    void givenFeedbackUrlWithoutTrailingSlash_whenFeedbackSubmissionsApi_thenConfigureBasePath() {
+        FeedbackSubmissionsApi api = builder.feedbackSubmissionsApi(
+            "test-token", "https://feedback.example.com");
+
+        assertThat(api.getApiClient().getBasePath())
+            .isEqualTo("https://feedback.example.com/api/v1/feedback");
+    }
+
+    @Test
+    void givenFeedbackUrlWithTrailingSlash_whenFeedbackSubmissionsApi_thenConfigureBasePath() {
+        FeedbackSubmissionsApi api = builder.feedbackSubmissionsApi(
+            "test-token", "https://feedback.example.com/");
+
+        assertThat(api.getApiClient().getBasePath())
+            .isEqualTo("https://feedback.example.com/api/v1/feedback");
     }
 }
