@@ -8,6 +8,7 @@ import org.opendevstack.component_catalog.server.services.exceptions.InvalidComp
 import org.opendevstack.component_catalog.server.services.exceptions.UnableToDeserializeEntityException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.client.RestClientResponseException;
+
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 @Slf4j
@@ -28,6 +32,17 @@ public class ControllerExceptionHandler {
         log.error("Unhandled exception", ex);
         
         return defaultErrResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(RestClientResponseException.class)
+    public ResponseEntity<byte[]> handleRestClientResponseException(RestClientResponseException exception) {
+        var headers = new HttpHeaders();
+        var responseHeaders = exception.getResponseHeaders();
+        if (responseHeaders != null) {
+            headers.putAll(responseHeaders);
+        }
+
+        return new ResponseEntity<>(exception.getResponseBodyAsByteArray(), headers, exception.getStatusCode());
     }
 
     @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
@@ -101,7 +116,26 @@ public class ControllerExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<RestErrorMessage> handleMethodArgumentNotValidException(MissingServletRequestParameterException ex) {
+    public ResponseEntity<RestErrorMessage> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
+
+        var message = ex.getFieldErrors().stream()
+            .filter(error -> error.getDefaultMessage() != null && !error.getDefaultMessage().isBlank())
+            .map(error -> "%s: %s".formatted(error.getField(), error.getDefaultMessage()))
+            .distinct()
+            .collect(Collectors.joining("; "));
+        if (message.isBlank()) {
+            message = "Request validation failed";
+        }
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+            .body(new RestErrorMessage(message));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<RestErrorMessage> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
         log.trace(SENDING_PREDEFINED_HTTP_STATUS, ex);
 
         return defaultErrResponse(ex, HttpStatus.BAD_REQUEST);
