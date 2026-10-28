@@ -30,7 +30,7 @@ class FeedbackApiClientTest {
         var mockServer = MockRestServiceServer.bindTo(restTemplate).build();
         mockServer.expect(requestTo("http://feedback.example.com/api/v1/feedback/submissions"))
                 .andExpect(method(POST))
-                .andRespond(withSuccess("{\"projectKey\":\"IVRI\"}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"projectKey\":\"PROJECT_KEY\"}", MediaType.APPLICATION_JSON));
         var apiClient = new org.opendevstack.component_catalog.client.feedback_api.v0_0_1.ApiClient(restTemplate);
         apiClient.setBasePath("http://feedback.example.com/api/v1/feedback");
         var api = new FeedbackSubmissionsApi(apiClient);
@@ -43,7 +43,8 @@ class FeedbackApiClientTest {
         var response = api.registerFeedbackSubmissionWithHttpInfo(request);
 
         // then
-        assertThat(response.getBody().getProjectKey()).isEqualTo("IVRI");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getProjectKey()).isEqualTo("PROJECT_KEY");
         mockServer.verify();
     }
 }
