@@ -34,4 +34,20 @@ class ControllerExceptionHandlerTest {
         assertThat(response.getBody().getMessage())
             .isEqualTo("submitter: must be a well-formed email address");
     }
+
+    @Test
+    void givenValidationErrorsWithoutMessages_whenHandled_thenReturnFallbackMessage() {
+        var exception = mock(MethodArgumentNotValidException.class);
+        when(exception.getFieldErrors()).thenReturn(List.of(
+            new FieldError("feedbackSubmissionRequest", "submitter", "invalid", false,
+                null, null, null),
+            new FieldError("feedbackSubmissionRequest", "projectKey", "", false,
+                null, null, "   ")));
+
+        var response = new ControllerExceptionHandler().handleMethodArgumentNotValidException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Request validation failed");
+    }
 }
