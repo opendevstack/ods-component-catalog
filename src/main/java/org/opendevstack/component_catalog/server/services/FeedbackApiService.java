@@ -8,6 +8,7 @@ import org.opendevstack.component_catalog.config.ApplicationPropertiesConfigurat
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 @Service
 @AllArgsConstructor
@@ -20,9 +21,13 @@ public class FeedbackApiService {
     private final ApplicationPropertiesConfiguration.OdsApiServerServiceProps odsApiServiceProps;
 
     public ResponseEntity<FeedbackSubmission> registerFeedbackSubmission(FeedbackSubmissionRequest request) {
-        FeedbackSubmissionsApi feedbackSubmissionsApi = apiClientsBuilder.feedbackSubmissionsApi(
-            applicationAuthenticationProvider.getAccessToken(), odsApiServiceProps.getBaseRestUrl().toString());
+        try {
+            FeedbackSubmissionsApi feedbackSubmissionsApi = apiClientsBuilder.feedbackSubmissionsApi(
+                applicationAuthenticationProvider.getAccessToken(), odsApiServiceProps.getBaseRestUrl().toString());
 
-        return feedbackSubmissionsApi.registerFeedbackSubmissionWithHttpInfo(request);
+            return feedbackSubmissionsApi.registerFeedbackSubmissionWithHttpInfo(request);
+        } catch (RestClientException exception) {
+            throw new RuntimeException("Unable to submit feedback", exception);
+        }
     }
 }
