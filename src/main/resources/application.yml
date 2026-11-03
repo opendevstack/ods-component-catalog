@@ -73,7 +73,7 @@ component-catalog:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
   marketplace-api:
-    client-id: ${DEVSTACK_MARKETPLACE_API_CLIENT_ID}
+    client-id: ${SPRING_CLOUD_AZURE_ACTIVE_DIRECTORY_APP_ID_URI}
     client-secret: ${DEVSTACK_MARKETPLACE_API_CLIENT_SECRET}
   ods-api-service:
     service:
