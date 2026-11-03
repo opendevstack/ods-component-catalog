@@ -72,7 +72,7 @@ class FeedbackApiControllerTest {
 
     @ParameterizedTest
     @ValueSource(ints = {400, 401, 403, 404, 429, 500, 503})
-    void givenUpstreamError_whenRegisterSubmission_thenReturnGenericInternalServerError(int upstreamStatus)
+    void givenUpstreamError_whenRegisterSubmission_thenHideOnlyAuthenticationErrors(int upstreamStatus)
         throws Exception {
         var body = "{\"message\":\"internal authorization details\"}".getBytes(StandardCharsets.UTF_8);
         var upstreamHeaders = new HttpHeaders();
@@ -100,14 +100,21 @@ class FeedbackApiControllerTest {
             .setControllerAdvice(new ControllerExceptionHandler())
             .build();
 
-        mockMvc.perform(post("/v1/feedback/submissions")
+        var result = mockMvc.perform(post("/v1/feedback/submissions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"submitter":"submitter@example.com","questions":[{"id":"rating"}],"answers":{"rating":5}}
-                    """))
-            .andExpect(status().isInternalServerError())
-            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-            .andExpect(content().json("{\"message\":\"Unable to submit feedback\"}"))
-            .andExpect(header().doesNotExist("X-Internal-Details"));
+                    """));
+        if (upstreamStatus == 401 || upstreamStatus == 403) {
+            result.andExpect(status().isInternalServerError())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content().json("{\"message\":\"Unable to submit feedback\"}"))
+                .andExpect(header().doesNotExist("X-Internal-Details"));
+        } else {
+            result.andExpect(status().is(upstreamStatus))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().bytes(body))
+                .andExpect(header().string("X-Internal-Details", "private-upstream-info"));
+        }
     }
 }

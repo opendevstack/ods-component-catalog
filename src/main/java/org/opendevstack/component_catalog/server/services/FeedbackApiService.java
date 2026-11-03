@@ -6,9 +6,10 @@ import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.model.Feedb
 import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.model.FeedbackSubmissionRequest;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 @AllArgsConstructor
@@ -26,8 +27,12 @@ public class FeedbackApiService {
                 applicationAuthenticationProvider.getAccessToken(), odsApiServiceProps.getBaseRestUrl().toString());
 
             return feedbackSubmissionsApi.registerFeedbackSubmissionWithHttpInfo(request);
-        } catch (RestClientException exception) {
-            throw new RuntimeException("Unable to submit feedback", exception);
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)
+                || exception.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
+                throw new RuntimeException("Unable to submit feedback", exception);
+            }
+            throw exception;
         }
     }
 }

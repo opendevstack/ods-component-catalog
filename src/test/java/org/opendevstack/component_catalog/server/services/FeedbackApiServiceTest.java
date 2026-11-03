@@ -61,8 +61,8 @@ class FeedbackApiServiceTest {
     }
 
     @ParameterizedTest
-    @MethodSource("upstreamFailures")
-    void givenUpstreamFailure_whenRegisterSubmission_thenHideExternalDetails(RestClientException failure)
+    @MethodSource("upstreamAuthenticationFailures")
+    void givenUpstreamAuthenticationFailure_whenRegisterSubmission_thenHideExternalDetails(RestClientException failure)
         throws Exception {
         var baseUrl = new URL("https://ods.example.com");
         var properties = ApplicationPropertiesConfiguration.OdsApiServerServiceProps.builder()
@@ -82,10 +82,37 @@ class FeedbackApiServiceTest {
             .hasCause(failure);
     }
 
-    private static Stream<RestClientException> upstreamFailures() {
+    private static Stream<RestClientException> upstreamAuthenticationFailures() {
         return Stream.of(
-            new HttpClientErrorException(HttpStatus.FORBIDDEN, "Internal authorization details"),
+            new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Internal authentication details"),
+            new HttpClientErrorException(HttpStatus.FORBIDDEN, "Internal authorization details"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("otherUpstreamFailures")
+    void givenOtherUpstreamFailure_whenRegisterSubmission_thenPropagateUnchanged(RestClientException failure)
+        throws Exception {
+        var baseUrl = new URL("https://ods.example.com");
+        var properties = ApplicationPropertiesConfiguration.OdsApiServerServiceProps.builder()
+            .baseRestUrl(baseUrl)
+            .build();
+        var feedbackApi = mock(FeedbackSubmissionsApi.class);
+        var request = new FeedbackSubmissionRequest();
+
+        when(applicationAuthenticationProvider.getAccessToken()).thenReturn("access-token");
+        when(apiClientsBuilder.feedbackSubmissionsApi("access-token", baseUrl.toString())).thenReturn(feedbackApi);
+        when(feedbackApi.registerFeedbackSubmissionWithHttpInfo(request)).thenThrow(failure);
+        var service = new FeedbackApiService(apiClientsBuilder, applicationAuthenticationProvider, properties);
+
+        assertThatThrownBy(() -> service.registerFeedbackSubmission(request)).isSameAs(failure);
+    }
+
+    private static Stream<RestClientException> otherUpstreamFailures() {
+        return Stream.of(
+            new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid email"),
+            new HttpClientErrorException(HttpStatus.NOT_FOUND, "Not found"),
             new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server details"),
+            new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable"),
             new ResourceAccessException("Internal connection details"));
     }
 }
