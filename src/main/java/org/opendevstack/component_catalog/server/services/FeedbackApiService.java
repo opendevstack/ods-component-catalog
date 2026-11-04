@@ -28,6 +28,7 @@ public class FeedbackApiService {
 
             return feedbackSubmissionsApi.registerFeedbackSubmissionWithHttpInfo(request);
         } catch (RestClientResponseException exception) {
+            // This 401/403 is from our internal account, not the user's token. Handle it here to avoid a misleading token error or not-found redirect in the UI.
             if (exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)
                 || exception.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
                 throw new RuntimeException("Unable to submit feedback", exception);
