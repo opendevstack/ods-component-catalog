@@ -2,17 +2,26 @@ package org.opendevstack.component_catalog.server.services;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.api.FeedbackSubmissionsApi;
 import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.model.FeedbackSubmission;
 import org.opendevstack.component_catalog.client.feedback_api.v0_0_1.model.FeedbackSubmissionRequest;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 
 import java.net.URL;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,5 +58,61 @@ class FeedbackApiServiceTest {
         verify(applicationAuthenticationProvider).getAccessToken();
         verify(apiClientsBuilder).feedbackSubmissionsApi(accessToken, baseUrl.toString());
         verify(feedbackApi).registerFeedbackSubmissionWithHttpInfo(request);
+    }
+
+    @ParameterizedTest
+    @MethodSource("upstreamAuthenticationFailures")
+    void givenUpstreamAuthenticationFailure_whenRegisterSubmission_thenHideExternalDetails(RestClientException failure)
+        throws Exception {
+        var baseUrl = new URL("https://ods.example.com");
+        var properties = ApplicationPropertiesConfiguration.OdsApiServerServiceProps.builder()
+            .baseRestUrl(baseUrl)
+            .build();
+        var feedbackApi = mock(FeedbackSubmissionsApi.class);
+        var request = new FeedbackSubmissionRequest();
+
+        when(applicationAuthenticationProvider.getAccessToken()).thenReturn("access-token");
+        when(apiClientsBuilder.feedbackSubmissionsApi("access-token", baseUrl.toString())).thenReturn(feedbackApi);
+        when(feedbackApi.registerFeedbackSubmissionWithHttpInfo(request)).thenThrow(failure);
+        var service = new FeedbackApiService(apiClientsBuilder, applicationAuthenticationProvider, properties);
+
+        assertThatThrownBy(() -> service.registerFeedbackSubmission(request))
+            .isExactlyInstanceOf(RuntimeException.class)
+            .hasMessage("Unable to submit feedback")
+            .hasCause(failure);
+    }
+
+    private static Stream<RestClientException> upstreamAuthenticationFailures() {
+        return Stream.of(
+            new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Internal authentication details"),
+            new HttpClientErrorException(HttpStatus.FORBIDDEN, "Internal authorization details"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("otherUpstreamFailures")
+    void givenOtherUpstreamFailure_whenRegisterSubmission_thenPropagateUnchanged(RestClientException failure)
+        throws Exception {
+        var baseUrl = new URL("https://ods.example.com");
+        var properties = ApplicationPropertiesConfiguration.OdsApiServerServiceProps.builder()
+            .baseRestUrl(baseUrl)
+            .build();
+        var feedbackApi = mock(FeedbackSubmissionsApi.class);
+        var request = new FeedbackSubmissionRequest();
+
+        when(applicationAuthenticationProvider.getAccessToken()).thenReturn("access-token");
+        when(apiClientsBuilder.feedbackSubmissionsApi("access-token", baseUrl.toString())).thenReturn(feedbackApi);
+        when(feedbackApi.registerFeedbackSubmissionWithHttpInfo(request)).thenThrow(failure);
+        var service = new FeedbackApiService(apiClientsBuilder, applicationAuthenticationProvider, properties);
+
+        assertThatThrownBy(() -> service.registerFeedbackSubmission(request)).isSameAs(failure);
+    }
+
+    private static Stream<RestClientException> otherUpstreamFailures() {
+        return Stream.of(
+            new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid email"),
+            new HttpClientErrorException(HttpStatus.NOT_FOUND, "Not found"),
+            new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server details"),
+            new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable"),
+            new ResourceAccessException("Internal connection details"));
     }
 }
