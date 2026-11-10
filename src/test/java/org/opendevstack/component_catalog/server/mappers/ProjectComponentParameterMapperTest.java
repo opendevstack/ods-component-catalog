@@ -29,7 +29,7 @@ class ProjectComponentParameterMapperTest {
 
         // when
         Optional<ProjectComponentParameter> result =
-                mapper.mapToProjectComponentParameter(param);
+                mapper.asProjectComponentParameter(param);
 
         // then
         assertThat(result).isPresent();
@@ -49,7 +49,7 @@ class ProjectComponentParameterMapperTest {
 
         // when
         Optional<ProjectComponentParameter> result =
-                mapper.mapToProjectComponentParameter(param);
+                mapper.asProjectComponentParameter(param);
 
         // then
         assertThat(result).isPresent();

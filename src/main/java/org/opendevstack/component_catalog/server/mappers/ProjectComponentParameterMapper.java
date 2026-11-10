@@ -13,7 +13,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class ProjectComponentParameterMapper {
 
-    public Optional<ProjectComponentParameter> mapToProjectComponentParameter(Parameter param) {
+    public Optional<ProjectComponentParameter> asProjectComponentParameter(Parameter param) {
         var pcp = ProjectComponentParameter.builder()
                 .name(param.getName())
                 .values(param.getValues())

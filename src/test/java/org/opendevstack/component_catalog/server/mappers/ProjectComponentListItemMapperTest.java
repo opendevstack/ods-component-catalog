@@ -53,7 +53,7 @@ class ProjectComponentListItemMapperTest {
 
         // when
         Optional<ProjectComponentMetrics> result =
-                mapper.mapToProjectComponentMetrics(component, projectKey);
+                mapper.asProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -78,7 +78,7 @@ class ProjectComponentListItemMapperTest {
 
         // when
         Optional<ProjectComponentMetrics> result =
-                mapper.mapToProjectComponentMetrics(component, projectKey);
+                mapper.asProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -98,7 +98,7 @@ class ProjectComponentListItemMapperTest {
 
         // when
         Optional<ProjectComponentMetrics> result =
-                mapper.mapToProjectComponentMetrics(component, projectKey);
+                mapper.asProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -117,7 +117,7 @@ class ProjectComponentListItemMapperTest {
 
         // when
         Optional<ProjectComponentMetrics> result =
-                mapper.mapToProjectComponentMetrics(component, projectKey);
+                mapper.asProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result).isPresent();
@@ -146,7 +146,7 @@ class ProjectComponentListItemMapperTest {
 
         // when
         Optional<ProjectComponentMetrics> result =
-                mapper.mapToProjectComponentMetrics(component, projectKey);
+                mapper.asProjectComponentMetrics(component, projectKey);
 
         // then
         assertThat(result.isPresent());

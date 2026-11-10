@@ -79,7 +79,7 @@ public class ProjectComponentsFacade {
                 .stream()
                 .map(component -> {
                     try {
-                        return projectComponentsInfoMapper.mapToProjectComponentInfo(component, accessToken, projectKey, userGroups);
+                        return projectComponentsInfoMapper.asProjectComponentInfo(component, accessToken, projectKey, userGroups);
                     } catch (InvalidIdException | InvalidCatalogItemEntityException | NullPointerException e) {
                         log.error("Unable to map component: {}", component, e);
                         return Optional.<ProjectComponentInfo>empty();
@@ -115,7 +115,7 @@ public class ProjectComponentsFacade {
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
-                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
+                .flatMap(p -> projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
                 .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
 
     }
@@ -311,7 +311,7 @@ public class ProjectComponentsFacade {
 
             for (ProjectComponent component : sortedComponents) {
                 if (index >= fromIndex && index < toIndex) {
-                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
+                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.asProjectComponentMetrics(component, projectKey);
                     if (p.isPresent()) {
                         // Badly formed project components shouldn't be returned
                         // in the response
