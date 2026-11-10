@@ -7,6 +7,7 @@ import org.opendevstack.component_catalog.server.mappers.ProjectTechnologiesMapp
 import org.opendevstack.component_catalog.server.model.ProjectTechnology;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,10 +29,10 @@ public class ProjectTechnologiesFacade {
             var projectComponents = Optional.ofNullable(projectComponentsFacade.getAllProjectComponents(projectKey));
 
             var projectTechnologies = projectComponents.map(projectTechnologiesMapper::asProjectTechnologies)
-                    .orElse(List.of());
+                    .orElse(Collections.emptySet());
 
             log.debug("Retrieved {} technologies for project '{}'", projectTechnologies.size(), projectKey);
-            return projectTechnologies;
+            return projectTechnologies.stream().toList();
         } else {
             log.warn("Access denied for user to get technologies for project '{}'. Invalid application token.", projectKey);
 
