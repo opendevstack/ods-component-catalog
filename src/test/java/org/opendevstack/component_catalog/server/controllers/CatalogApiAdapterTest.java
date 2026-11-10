@@ -153,6 +153,7 @@ class CatalogApiAdapterTest {
                 .findFirst();
 
         assertThat(item.catalogItem().getId()).isEqualTo("id");
+        assertThat(item.catalogItem().getSlug()).isEqualTo("myproject_repo-slug");
         assertThat(item.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
         assertThat(item.catalogItem().getShortDescription())
                 .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");
@@ -241,6 +242,7 @@ class CatalogApiAdapterTest {
 
         // Mandatory fields
         assertThat(item.catalogItem().getId()).isEqualTo("id");
+        assertThat(item.catalogItem().getSlug()).isEqualTo("myproject_repo-slug");
         assertThat(item.catalogItem().getTitle()).isEqualTo("Appshell in Angular");
         assertThat(item.catalogItem().getShortDescription())
                 .isEqualTo("Quickstart template to boost the development of web applications on the EDP.");

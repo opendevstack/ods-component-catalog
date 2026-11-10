@@ -458,6 +458,7 @@ public class CatalogApiAdapter {
             // Mind that, if user has no repo access, the path and itemSrc will NOT be populated
             return CatalogItem.builder()
                     .id(sourceItem.getId())
+                    .slug(sourceItem.getSlug())
                     .title(sourceItem.getTitle())
                     .shortDescription(sourceItem.getShortDescription())
                     .descriptionFileId(sourceItem.getDescriptionFileId())

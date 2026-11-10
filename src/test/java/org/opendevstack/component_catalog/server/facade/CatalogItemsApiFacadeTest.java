@@ -4,6 +4,8 @@ package org.opendevstack.component_catalog.server.facade;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -1078,20 +1080,25 @@ class CatalogItemsApiFacadeTest {
                 .hasMessageContaining("invalid item");
     }
 
-    @Test
-    void GivenExistingSlug_WhenFetchCatalogItemBySlug_ThenReturnsMappedCatalogItem()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void GivenMarketplaceTokenStatus_WhenFetchCatalogItemBySlug_ThenPassesSkipGroupsFlag(boolean isMarketplaceToken)
             throws Exception {
         // given
         var slug = CatalogItemSlug.parse("myproject_my-repo");
+        var accessToken = "access-token";
         var itemCtx = mock(CatalogItemEntityContext.class);
         when(itemCtx.getId()).thenReturn("item-id-1");
         when(catalogItemBySlugService.findByCatalogItemSlug(slug)).thenReturn(Optional.of(itemCtx));
         when(userActionsEntitiesService.getDefaultUserActionsEntity()).thenReturn(mock(UserActionsEntity.class));
         doReturn(Set.of()).when(catalogItemsApiFacade).currentPrincipalCatalogPermissions("item-id-1");
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(isMarketplaceToken);
 
         var expected = new CatalogItem();
         expected.setId("item-id-1");
-        doReturn(expected).when(catalogItemsApiFacade).asCatalogItem(any(CatalogRequestParams.class));
+        doReturn(expected).when(catalogItemsApiFacade)
+                .asCatalogItem(any(CatalogRequestParams.class), eq(isMarketplaceToken));
 
         // when
         var result = catalogItemsApiFacade.fetchCatalogItemBySlug(slug);
@@ -1099,6 +1106,8 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isEqualTo(expected);
         verify(catalogItemBySlugService).findByCatalogItemSlug(slug);
+        verify(catalogItemsApiFacade).asCatalogItem(
+                argThat(params -> accessToken.equals(params.getAccessToken())), eq(isMarketplaceToken));
     }
 
     @Test
@@ -1114,6 +1123,7 @@ class CatalogItemsApiFacadeTest {
         // then
         assertThat(result).isNull();
         verify(userActionsEntitiesService, never()).getDefaultUserActionsEntity();
+        verifyNoInteractions(authenticationFacade);
     }
 
     @Test
