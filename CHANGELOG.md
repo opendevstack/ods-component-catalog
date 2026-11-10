@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### FIXED
 - Used for Bug fixes.
+- Fix get catalog item by slug endpoint to support calls with client credentials token from the component-provisioner.
 
 ### Changed
 - Used for Changes to existing functionality.
