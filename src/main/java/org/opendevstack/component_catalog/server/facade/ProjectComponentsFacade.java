@@ -164,6 +164,14 @@ public class ProjectComponentsFacade {
 
     }
 
+    public ProjectComponents getAllProjectComponents(String projectKey) {
+        log.debug("Getting all project components for project key: {}", projectKey);
+        var allProjectComponents = getAllProjectComponents();
+
+        log.debug("All project components: {}", allProjectComponents);
+        return allProjectComponents.get(projectKey);
+    }
+
     @SneakyThrows
     public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
         var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
