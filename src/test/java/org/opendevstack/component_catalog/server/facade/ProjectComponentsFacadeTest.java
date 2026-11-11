@@ -833,6 +833,36 @@ class ProjectComponentsFacadeTest {
     }
 
     @Test
+    void givenProjectKey_whenGetAllProjectComponents_thenReturnComponentsForProject() {
+        // given
+        var projectKey = "PRJ-123";
+        var projectComponents = ProjectComponentsMother.of();
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of(projectKey));
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(projectKey);
+
+        // then
+        assertThat(result).isSameAs(projectComponents);
+        verify(provisionerActionsService).getProjectComponents(projectKey);
+    }
+
+    @Test
+    void givenUnknownProjectKey_whenGetAllProjectComponents_thenReturnNull() {
+        // given
+        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("OTHER"));
+        when(provisionerActionsService.getProjectComponents("OTHER")).thenReturn(new ProjectComponents());
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents("PRJ-123");
+
+        // then
+        assertThat(result).isNull();
+        verify(provisionerActionsService, never()).getProjectComponents("PRJ-123");
+    }
+
+    @Test
     void givenListAllProjectsJsons_whenGetAllProjectComponentsProjectKeys_thenReturnSortedKeys()
             throws Exception {
         // given
@@ -1022,5 +1052,3 @@ class ProjectComponentsFacadeTest {
     }
 
 }
-
-
