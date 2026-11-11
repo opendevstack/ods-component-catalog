@@ -12,10 +12,12 @@ import org.opendevstack.component_catalog.server.model.CatalogItem;
 import org.opendevstack.component_catalog.server.model.ProjectTechnology;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +65,31 @@ class ProjectTechnologiesMapperTest {
     }
 
     @Test
-    void givenCatalogItemCannotBeFetched_whenMap_thenReturnEmptyTechnology() throws Exception {
+    void givenCatalogItemIdParameter_whenMap_thenUseParameterValue() throws Exception {
+        // given
+        var catalogItemId = IdEncoderDecoder.idEncode("projects/CATALOG/repos/java/raw/catalog-item.yaml"
+                + "?at=refs/heads/parameter");
+        var component = component("projects/CATALOG/repos/java/raw/catalog-item.yaml", "refs/heads/main")
+                .toBuilder()
+                .parameters(List.of(Parameter.builder()
+                        .name("catalog_item_id")
+                        .values(List.of(catalogItemId))
+                        .build()))
+                .build();
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class)))
+                .thenReturn(new CatalogItem().slug("java").title("Java"));
+
+        // when
+        projectTechnologiesMapper.asProjectTechnologies(projectComponentsWith(component));
+
+        // then
+        var requestCaptor = ArgumentCaptor.forClass(CatalogRequestParams.class);
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getCatalogItemId()).isEqualTo(catalogItemId);
+    }
+
+    @Test
+    void givenCatalogItemCannotBeFetched_whenMap_thenOmitTechnology() throws Exception {
         // given
         var projectComponents = projectComponentsWith(component("projects/CATALOG/repos/java/raw/catalog-item.yaml",
                 "refs/heads/main"));
@@ -74,11 +100,11 @@ class ProjectTechnologiesMapperTest {
         var result = projectTechnologiesMapper.asProjectTechnologies(projectComponents);
 
         // then
-        assertThat(result).containsExactly(ProjectTechnology.builder().build());
+        assertThat(result).isEmpty();
     }
 
     @Test
-    void givenCatalogItemIsNull_whenMap_thenReturnEmptyTechnology() throws Exception {
+    void givenCatalogItemIsNull_whenMap_thenOmitTechnology() throws Exception {
         // given
         var projectComponents = projectComponentsWith(component("projects/CATALOG/repos/java/raw/catalog-item.yaml",
                 "refs/heads/main"));
@@ -88,7 +114,7 @@ class ProjectTechnologiesMapperTest {
         var result = projectTechnologiesMapper.asProjectTechnologies(projectComponents);
 
         // then
-        assertThat(result).containsExactly(ProjectTechnology.builder().build());
+        assertThat(result).isEmpty();
     }
 
     private ProjectComponents projectComponentsWith(ProjectComponent component) {
