@@ -24,7 +24,7 @@ public class ProjectTechnologiesFacade {
     private final AuthenticationFacade authenticationFacade;
     private final ProjectTechnologiesMapper projectTechnologiesMapper;
 
-    @Cacheable(key = "#root.methodName + #projectKey", condition = "@projectTechnologiesCacheConfig.enabled")
+    @Cacheable(key = "#projectKey", condition = "@projectTechnologiesCacheConfig.enabled")
     public List<ProjectTechnology> getProjectTechnologies(String projectKey) {
         var accessToken = authenticationFacade.getAccessToken();
 

@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
+import org.opendevstack.component_catalog.server.services.cache.ProjectTechnologiesCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
@@ -50,6 +51,9 @@ class ProjectComponentsServiceTest {
 
     @Mock
     private ProjectComponentsCacheService projectComponentsCacheService;
+
+    @Mock
+    private ProjectTechnologiesCacheService projectTechnologiesCacheService;
 
     @InjectMocks
     private ProjectComponentsService service;
@@ -626,6 +630,8 @@ class ProjectComponentsServiceTest {
         verify(bitbucketService).pushFile(pathAt, "commit-123", serializedProjectComponents);
         verify(projectComponentsCacheService).evict("PRJ-123");
         verify(projectComponentsCacheService).evict("allProjectKeys");
+        verify(projectTechnologiesCacheService).evict("PRJ-123");
+        verify(projectTechnologiesCacheService).evict("allProjectKeys");
     }
 
     @Test

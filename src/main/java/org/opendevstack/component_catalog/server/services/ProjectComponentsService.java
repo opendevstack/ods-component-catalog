@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
+import org.opendevstack.component_catalog.server.services.cache.ProjectTechnologiesCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
@@ -34,6 +35,7 @@ public class ProjectComponentsService {
 
     private final BitbucketService bitbucketService;
     private final ProjectComponentsCacheService projectComponentsCacheService;
+    private final ProjectTechnologiesCacheService projectTechnologiesCacheService;
     private final ObjectMapper objectMapper;
 
     public ProjectComponents createNewComponent() {
@@ -166,6 +168,8 @@ public class ProjectComponentsService {
 
             projectComponentsCacheService.evict(pathAt.getProjectKeyFromSubPath());
             projectComponentsCacheService.evict("allProjectKeys");
+            projectTechnologiesCacheService.evict(pathAt.getProjectKeyFromSubPath());
+            projectTechnologiesCacheService.evict("allProjectKeys");
         } catch (HttpClientErrorException httpClientErrorException) {
             log.warn("There were an issue persisting project components: {}", updatedProjectComponents, httpClientErrorException);
 
