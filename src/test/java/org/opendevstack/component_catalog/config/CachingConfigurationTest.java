@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectTechnologiesCacheProps;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectsInfoServiceCacheProps;
 import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.springframework.cache.jcache.JCacheCacheManager;
@@ -41,6 +42,9 @@ class CachingConfigurationTest {
         var projectsInfoServiceCacheProps = ProjectsInfoServiceCacheProps.builder()
                 .enabled(false)
                 .build();
+        var projectTechnologiesCacheProps = ProjectTechnologiesCacheProps.builder()
+                .enabled(false)
+                .build();
         var projectComponentsCacheProps = ProvisionedComponentsCacheProps.builder()
                 .enabled(false)
                 .build();
@@ -49,6 +53,7 @@ class CachingConfigurationTest {
         var cacheManager = config.cacheManager(
                 catalogsCollectionCacheProps,
                 projectsInfoServiceCacheProps,
+                projectTechnologiesCacheProps,
                 projectComponentsCacheProps
         );
 
@@ -74,6 +79,11 @@ class CachingConfigurationTest {
                 .maxSize(DataSize.ofMegabytes(100))
                 .evictionInterval(Duration.ofMinutes(120))
                 .build();
+        var projectTechnologiesCacheProps = ProjectTechnologiesCacheProps.builder()
+                .enabled(true)
+                .maxSize(DataSize.ofMegabytes(100))
+                .evictionInterval(Duration.ofMinutes(120))
+                .build();
         var projectComponentsCacheProps = ProvisionedComponentsCacheProps.builder()
                 .enabled(true)
                 .maxSize(DataSize.ofMegabytes(100))
@@ -84,6 +94,7 @@ class CachingConfigurationTest {
         var cacheManager = config.cacheManager(
                 catalogsCollectionCacheProps,
                 projectsInfoServiceCacheProps,
+                projectTechnologiesCacheProps,
                 projectComponentsCacheProps
         );
 
@@ -92,6 +103,7 @@ class CachingConfigurationTest {
 
         var nativeCacheManager = ((JCacheCacheManager) cacheManager).getCacheManager();
         assertThat(nativeCacheManager).isNotNull();
+        assertThat(nativeCacheManager.getCache(ProjectTechnologiesCacheProps.CACHE_NAME)).isNotNull();
     }
 
     // -------------------------------------------------------------------------
@@ -115,4 +127,3 @@ class CachingConfigurationTest {
         // then: no exception is thrown
     }
 }
-
