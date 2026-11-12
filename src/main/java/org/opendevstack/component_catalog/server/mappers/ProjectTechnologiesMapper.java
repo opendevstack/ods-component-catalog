@@ -90,6 +90,7 @@ public class ProjectTechnologiesMapper {
             var idWithRef = catalogItemId + catalogItemRefWithParamDelimiter;
             var encodedIdWithRef = IdEncoderDecoder.idEncode(idWithRef);
 
+            log.trace("Encoded catalog item id with ref for project component {}: {}", component, encodedIdWithRef);
             return encodedIdWithRef;
         }
     }
