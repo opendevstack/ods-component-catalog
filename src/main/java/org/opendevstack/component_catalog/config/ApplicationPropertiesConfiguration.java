@@ -67,6 +67,12 @@ public class ApplicationPropertiesConfiguration {
         return OdsApiServerServiceProps.builder().build();
     }
 
+    @Bean("azureAdTokenServiceProps")
+    @ConfigurationProperties(prefix = "component-catalog.azure.token")
+    public AzureAdTokenServiceProps azureAdTokenServiceProps() {
+        return AzureAdTokenServiceProps.builder().build();
+    }
+
     @Bean("catalogProjectComponentsGroupsRestrictionConfig")
     @ConfigurationProperties(prefix = "catalog.project-components.groups-restriction")
     public CatalogProjectComponentsGroupsRestrictionProps catalogProjectComponentsGroupsRestrictionConfig() {
@@ -136,6 +142,13 @@ public class ApplicationPropertiesConfiguration {
     @Data
     public static class OdsApiServerServiceProps {
         private String oid;
+        private URL baseRestUrl;
+    }
+
+    @Builder
+    @Data
+    public static class AzureAdTokenServiceProps {
+        private String url;
     }
 
     @Builder

@@ -80,7 +80,7 @@ class ProjectComponentExtendedInfoMapperTest {
         );
         component.setParameters(List.of(param1, param2));
 
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
             .thenReturn(Optional.of(ProjectComponentInfo.builder()
                 .componentId("C1")
                 .componentUrl(component.getComponentUrl())
@@ -108,7 +108,7 @@ class ProjectComponentExtendedInfoMapperTest {
 
         verify(projectComponentParameterMapper).mapToProjectComponentParameter(param1);
         verify(projectComponentParameterMapper).mapToProjectComponentParameter(param2);
-        verify(projectComponentsInfoMapper).mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
+        verify(projectComponentsInfoMapper).mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false);
     }
 
     @Test
@@ -121,7 +121,7 @@ class ProjectComponentExtendedInfoMapperTest {
                 Status.CREATING
         );
         component.setParameters(null);
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
             .thenReturn(Optional.of(ProjectComponentInfo.builder()
                 .componentId(component.getComponentId())
                 .status(ProvisioningStatus.CREATING)
@@ -140,7 +140,7 @@ class ProjectComponentExtendedInfoMapperTest {
     }
 
     @Test
-    void givenParameterMappingReturnsEmptyOptional_whenMap_thenThrowComponentNotFoundException() throws InvalidIdException {
+    void givenParameterMappingReturnsEmptyOptional_whenMap_thenThrowComponentNotFoundException() {
         // given
         Parameter param = Parameter.builder()
                 .name("bad-param")
@@ -171,7 +171,7 @@ class ProjectComponentExtendedInfoMapperTest {
     void givenProjectComponentInfoMapperReturnsEmpty_whenMap_thenReturnEmpty() throws InvalidIdException {
         // given
         ProjectComponent component = ProjectComponentMother.of();
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
                 .thenReturn(Optional.empty());
 
         // when / then
@@ -183,7 +183,7 @@ class ProjectComponentExtendedInfoMapperTest {
     void givenProjectComponentInfoMapperThrowsInvalidIdException_whenMap_thenReturnEmpty() throws InvalidIdException {
         // given
         ProjectComponent component = ProjectComponentMother.of();
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
                 .thenThrow(new InvalidIdException("invalid id"));
 
         // when / then

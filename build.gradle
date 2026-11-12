@@ -242,12 +242,45 @@ tasks.register("openApiGenerateProjectInfoServicesClient", GenerateTask) {
     ]
 }
 
+tasks.register("openApiGenerateFeedbackApiClient", GenerateTask) {
+    generatorName = "java"
+    outputDir = "$projectDir/target/generated-sources/openapi-client-feedback-api"
+    inputSpec = "$projectDir/openapi/openapi-feedback-api-v0.0.1.yaml"
+    library = "resttemplate"
+
+    globalProperties = [
+            generateAliasAsModel: "true",
+            apiDocs             : "true",
+            modelDocs           : "true",
+            apiTests            : "false",
+            modelTests          : "false"
+    ]
+
+    additionalProperties = [
+            serializableModel               : "true",
+            useJakartaEe                    : "true",
+            java8                           : "true",
+            groupId                         : "feedback",
+            artifactId                      : "feedback-api-v0-client",
+            artifactVersion                 : "0.0.0-SNAPSHOT",
+            invokerPackage                  : "org.opendevstack.component_catalog.client.feedback_api.v0_0_1",
+            apiPackage                      : "org.opendevstack.component_catalog.client.feedback_api.v0_0_1.api",
+            modelPackage                    : "org.opendevstack.component_catalog.client.feedback_api.v0_0_1.model",
+            additionalModelTypeAnnotations  : "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            generateBuilders                : "true",
+            generateClientAsBean            : "true",
+            useSingleRequestParameter       : "true",
+            hideGenerationTimestamp         : "true"
+    ]
+}
+
 // Ensure code generation runs before Java compilation
 tasks.named("compileJava") {
     dependsOn(
             tasks.named("openApiGenerate"),
             tasks.named("openApiGenerateBitbucketClient"),
-            tasks.named("openApiGenerateProjectInfoServicesClient")
+            tasks.named("openApiGenerateProjectInfoServicesClient"),
+            tasks.named("openApiGenerateFeedbackApiClient")
     )
 }
 
@@ -264,7 +297,8 @@ sourceSets {
                     "src/main/java",
                     "$projectDir/target/generated-sources/openapi-server-component_catalog/src/main/java",
                     "$projectDir/target/generated-sources/openapi-client-bitbucket/src/main/java",
-                    "$projectDir/target/generated-sources/openapi-client-projects-info-service/src/main/java"
+                    "$projectDir/target/generated-sources/openapi-client-projects-info-service/src/main/java",
+                    "$projectDir/target/generated-sources/openapi-client-feedback-api/src/main/java"
             ]
         }
         resources {

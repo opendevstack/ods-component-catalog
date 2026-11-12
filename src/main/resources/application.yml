@@ -34,6 +34,9 @@ user-actions:
   id: ${USER_ACTIONS_ID}
   default-message-definition-id: ${USER_ACTIONS_DEFAULT_MESSAGE_DEFINITION_ID}
 component-catalog:
+  azure:
+    token:
+      url: ${AZURE_TOKEN_URL}
   security:
     shared-secret: ${SECURITY_SHARED_SECRET}
     basic-auth:
@@ -65,12 +68,19 @@ component-catalog:
       base-rest-url: ${BITBUCKET_SERVICE_BASE_REST_URL}
       base-raw-url: ${BITBUCKET_SERVICE_BASE_RAW_URL}
       bearer-token: ${BITBUCKET_SERVICE_BEARER_TOKEN}
+      codeowners-path: ${BITBUCKET_CODEOWNERS_PATH:.bitbucket/CODEOWNERS}
   projects-info-service:
     service:
       base-rest-url: ${PROJECTS_INFO_SERVICE_BASE_REST_URL}
+  marketplace-api:
+    client-id: ${SPRING_CLOUD_AZURE_ACTIVE_DIRECTORY_APP_ID_URI}
+    client-secret: ${DEVSTACK_MARKETPLACE_API_CLIENT_SECRET}
   ods-api-service:
     service:
       oid: ${ODS_API_SERVICE_OID}
+      base-rest-url: ${ODS_API_SERVICE_URL}
+    params:
+      scope: ${ODS_API_SERVICE_SCOPE}
 
 catalog:
   project-components:

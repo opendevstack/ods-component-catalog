@@ -1,6 +1,7 @@
 package org.opendevstack.component_catalog.server.facade;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -11,26 +12,43 @@ import org.opendevstack.component_catalog.server.controllers.exceptions.Forbidde
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentExtendedInfoMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentMetricsMapper;
 import org.opendevstack.component_catalog.server.mappers.ProjectComponentsInfoMapper;
-import org.opendevstack.component_catalog.server.model.*;
+import org.opendevstack.component_catalog.server.model.Pagination;
+import org.opendevstack.component_catalog.server.model.ProjectComponentExtendedInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentInfo;
+import org.opendevstack.component_catalog.server.model.ProjectComponentMetrics;
+import org.opendevstack.component_catalog.server.model.ProjectComponentsMetrics;
+import org.opendevstack.component_catalog.server.services.ProjectComponentsService;
 import org.opendevstack.component_catalog.server.services.ProjectsInfoService;
 import org.opendevstack.component_catalog.server.services.ProvisionerActionsService;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
 import org.opendevstack.component_catalog.server.services.common.PaginationUtils;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidComponentStateException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
+import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @AllArgsConstructor
 @Slf4j
 public class ProjectComponentsFacade {
+
+    private static final String USER_MUST_BELONG_TO_PROJECT_MESSAGE = "User must belong to the project to get its components";
+    private static final String COMPONENT_NOT_FOUND_MESSAGE_TEMPLATE = "Component with ID %s not found in project %s";
 
     private final ProvisionerActionsService provisionerActionsService;
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
@@ -41,6 +59,7 @@ public class ProjectComponentsFacade {
 
     @Value("${devstack.marketplace-api.permitted-oids}")
     private final List<String> permittedOids;
+    private final ProjectComponentsService projectComponentsService;
 
     public List<ProjectComponentInfo> getProjectComponentsInfo(String projectKey, String accessToken) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
@@ -52,7 +71,7 @@ public class ProjectComponentsFacade {
         List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
 
         if (!userBelongsToProjectGroups(userGroups, projectKey)) {
-            throw new ForbiddenException("User must belong to the project to get its components");
+            throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
         }
 
         return projectComponents.getComponents()
@@ -70,16 +89,24 @@ public class ProjectComponentsFacade {
                 .toList();
     }
 
-    public ProjectComponentExtendedInfo getProjectComponentExtendedInfo(String projectKey, String componentId, String accessToken) {
+    // This method flag skipGroupsValidation is intended to be temporal. Proper refactor should come, and different methods should be created for different use cases.
+    // This is a temporary solution to allow the marketplace to get the component info without validating the user groups.
+    public ProjectComponentExtendedInfo getProjectComponentExtendedInfo(String projectKey, String componentId, String accessToken, boolean skipGroupsValidation) {
         var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
 
         if (notValid(projectComponents, projectKey, accessToken)) {
             throw new IllegalArgumentException("Valid projectKey, componentId and accessToken are mandatory.");
         }
 
-        List<String> userGroups = projectsInfoService.getProjectGroups(accessToken);
-        if (!userBelongsToProjectGroups(userGroups, projectKey)) {
-            throw new ForbiddenException("User must belong to the project to get its components");
+        List<String> userGroups;
+
+        if (!skipGroupsValidation) {
+            userGroups = projectsInfoService.getProjectGroups(accessToken);
+            if (!userBelongsToProjectGroups(userGroups, projectKey)) {
+                throw new ForbiddenException(USER_MUST_BELONG_TO_PROJECT_MESSAGE);
+            }
+        } else {
+            userGroups = Collections.emptyList();
         }
 
         return Optional.ofNullable(projectComponents.getComponents())
@@ -88,10 +115,9 @@ public class ProjectComponentsFacade {
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
-                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups))
-                .orElseThrow(() ->
-                    new ComponentNotFoundException("Component with ID " + componentId + " not found in project " + projectKey)
-                );
+                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
     }
 
     public ProjectComponentsMetrics getAllProjectComponentsMetrics(String accessToken, int page, int size, String paginationBaseUrl) {
@@ -138,6 +164,66 @@ public class ProjectComponentsFacade {
 
     }
 
+    @SneakyThrows
+    public void updateProjectComponentParameters(String projectKey, String componentId, Map<String, List<String>> requestParameters) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        var mergedParameters = Stream.concat(projectComponentParameters.entrySet().stream(), requestParameters.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (oldValue, newValue) -> newValue,
+                        HashMap::new
+                ));
+
+        var mergedParametersList = mergedParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(mergedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
+
+    @SneakyThrows
+    public void deleteProjectComponentParameters(String projectKey, String componentId, List<String> requestBody) {
+        var projectcomponentByProjectKeyBitbucketPathAt = provisionerActionsService.getProjectComponentBitbucketPathAt(projectKey);
+        var sourceCommitId = projectComponentsService.getLastCommit(projectcomponentByProjectKeyBitbucketPathAt);
+        var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        var projectComponent = Optional.ofNullable(projectComponents.getComponents())
+                .map(components -> components.get(componentId))
+                .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
+
+        Map<String, List<String>> projectComponentParameters = projectComponent.getParameters().stream()
+                .collect(HashMap::new, (m, p) -> m.put(p.getName(), p.getValues()), HashMap::putAll);
+
+        requestBody.forEach(projectComponentParameters::remove);
+
+        var updatedParametersList = projectComponentParameters.entrySet().stream()
+                .map(entry -> new Parameter(entry.getKey(), entry.getValue()))
+                .sorted()
+                .toList();
+
+        projectComponent.setParameters(updatedParametersList);
+
+        var updatedProjectComponents = projectComponentsService.updateExistingComponent(projectComponents, projectComponent);
+
+        projectComponentsService.saveProjectComponents(projectcomponentByProjectKeyBitbucketPathAt, sourceCommitId, updatedProjectComponents);
+    }
+
     private @NonNull List<String> getAllProjectComponentsProjectKeys() {
         return provisionerActionsService.listAllProjectsJsons().stream()
                 .map(projectKeyJson -> projectKeyJson.replaceAll(".json", ""))
@@ -164,6 +250,10 @@ public class ProjectComponentsFacade {
         if (!oid.map(permittedOids::contains).orElse(false)) {
             throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
         }
+    }
+
+    private static String componentNotFoundMessage(String componentId, String projectKey) {
+        return COMPONENT_NOT_FOUND_MESSAGE_TEMPLATE.formatted(componentId, projectKey);
     }
 
     private boolean hasNoDates(ProjectComponent c) {
@@ -218,7 +308,7 @@ public class ProjectComponentsFacade {
                         // Badly formed project components shouldn't be returned
                         // in the response
                         data.add(p.orElseThrow(() -> new InvalidComponentStateException(
-                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed.")
+                                "The project component" + component.getComponentId() + " provisioned in project" + projectKey + " couldn't be correctly processed." )
                         ));
                         index++;
                     }

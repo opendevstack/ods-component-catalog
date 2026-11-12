@@ -31,6 +31,14 @@ public class ProjectComponentsInfoMapper {
                                                                     String accessToken,
                                                                     String projectKey,
                                                                     List<String> userGroups) throws InvalidIdException {
+        return mapToProjectComponentInfo(comp, accessToken, projectKey, userGroups, false);
+    }
+
+    public Optional<ProjectComponentInfo> mapToProjectComponentInfo(ProjectComponent comp,
+                                                                    String accessToken,
+                                                                    String projectKey,
+                                                                    List<String> userGroups,
+                                                                    boolean skipGroupsAndClustersCalculation) throws InvalidIdException {
         if (isNotValid(comp, accessToken, projectKey)) {
             return Optional.empty();
         }
@@ -43,7 +51,7 @@ public class ProjectComponentsInfoMapper {
                 .projectKey(projectKey)
                 .build();
 
-        CatalogItem catalogItem = catalogItemsApiFacade.fetchCatalogItem(params);
+        CatalogItem catalogItem = catalogItemsApiFacade.fetchCatalogItem(params, skipGroupsAndClustersCalculation);
 
         var logoUrl = "";
 
