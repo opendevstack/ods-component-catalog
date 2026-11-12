@@ -39,10 +39,13 @@ class ProjectTechnologiesMapperTest {
     void givenProjectComponents_whenMap_thenFetchCatalogItemsAndReturnUniqueTechnologies()
             throws Exception {
         // given
-        var catalogItemPath = "projects/CATALOG/repos/java/raw/catalog-item.yaml";
+        var catalogItemId = IdEncoderDecoder.idEncode(
+                "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main");
+        var otherCatalogItemId = IdEncoderDecoder.idEncode(
+                "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/release");
         var components = new LinkedHashMap<String, ProjectComponent>();
-        components.put("C1", component(catalogItemPath, "refs/heads/main"));
-        components.put("C2", component(catalogItemPath, "?at=refs/heads/main"));
+        components.put("C1", component(catalogItemId));
+        components.put("C2", component(otherCatalogItemId));
 
         var catalogItem = new CatalogItem().slug("java").title("Java");
         when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class))).thenReturn(catalogItem);
@@ -59,7 +62,7 @@ class ProjectTechnologiesMapperTest {
         verify(catalogItemsApiFacade, times(2)).fetchCatalogItem(requestCaptor.capture());
         assertThat(requestCaptor.getAllValues())
                 .extracting(CatalogRequestParams::getCatalogItemId)
-                .containsOnly(IdEncoderDecoder.idEncode(catalogItemPath + "?at=refs/heads/main"));
+                .containsExactlyInAnyOrder(catalogItemId, otherCatalogItemId);
         assertThat(requestCaptor.getAllValues()).allSatisfy(params ->
                 assertThat(params.isIgnoreVisibilityRestrictions()).isTrue());
     }
@@ -69,7 +72,8 @@ class ProjectTechnologiesMapperTest {
         // given
         var catalogItemId = IdEncoderDecoder.idEncode("projects/CATALOG/repos/java/raw/catalog-item.yaml"
                 + "?at=refs/heads/parameter");
-        var component = component("projects/CATALOG/repos/java/raw/catalog-item.yaml", "refs/heads/main")
+        var component = component(IdEncoderDecoder.idEncode(
+                        "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main"))
                 .toBuilder()
                 .parameters(List.of(Parameter.builder()
                         .name("catalog_item_id")
@@ -91,8 +95,9 @@ class ProjectTechnologiesMapperTest {
     @Test
     void givenCatalogItemCannotBeFetched_whenMap_thenOmitTechnology() throws Exception {
         // given
-        var projectComponents = projectComponentsWith(component("projects/CATALOG/repos/java/raw/catalog-item.yaml",
-                "refs/heads/main"));
+        var catalogItemId = IdEncoderDecoder.idEncode(
+                "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main");
+        var projectComponents = projectComponentsWith(component(catalogItemId));
         when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class)))
                 .thenThrow(new InvalidCatalogItemEntityException("invalid catalog item"));
 
@@ -106,8 +111,9 @@ class ProjectTechnologiesMapperTest {
     @Test
     void givenCatalogItemIsNull_whenMap_thenOmitTechnology() throws Exception {
         // given
-        var projectComponents = projectComponentsWith(component("projects/CATALOG/repos/java/raw/catalog-item.yaml",
-                "refs/heads/main"));
+        var catalogItemId = IdEncoderDecoder.idEncode(
+                "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main");
+        var projectComponents = projectComponentsWith(component(catalogItemId));
         when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class))).thenReturn(null);
 
         // when
@@ -121,10 +127,14 @@ class ProjectTechnologiesMapperTest {
         return ProjectComponents.builder().components(Map.of("C1", component)).build();
     }
 
-    private ProjectComponent component(String catalogItemPath, String catalogItemRef) {
+    private ProjectComponent component(String catalogItemId) {
         return ProjectComponent.builder()
-                .catalogItemId(IdEncoderDecoder.idEncode(catalogItemPath))
-                .catalogItemRef(IdEncoderDecoder.idEncode(catalogItemRef))
+                .catalogItemId(IdEncoderDecoder.idEncode("projects/CATALOG/repos/java/raw/catalog-item.yaml"))
+                .catalogItemRef(IdEncoderDecoder.idEncode("refs/heads/main"))
+                .parameters(List.of(Parameter.builder()
+                        .name("catalog_item_id")
+                        .values(List.of(catalogItemId))
+                        .build()))
                 .build();
     }
 }

@@ -7,14 +7,12 @@ import org.opendevstack.component_catalog.server.controllers.CatalogRequestParam
 import org.opendevstack.component_catalog.server.facade.CatalogItemsApiFacade;
 import org.opendevstack.component_catalog.server.model.ProjectTechnology;
 import org.opendevstack.component_catalog.server.services.catalog.InvalidCatalogItemEntityException;
-import org.opendevstack.component_catalog.server.services.common.IdEncoderDecoder;
-import org.opendevstack.component_catalog.server.services.exceptions.InvalidIdException;
-import org.opendevstack.component_catalog.server.services.provisioner.Parameter;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,28 +25,34 @@ public class ProjectTechnologiesMapper {
     private final CatalogItemsApiFacade catalogItemsApiFacade;
 
     public Set<ProjectTechnology> asProjectTechnologies(ProjectComponents projectComponents) {
-        var projectComponentList = projectComponents.getComponents()
+        var catalogItemIds = projectComponents.getComponents()
                 .values()
                     .stream()
+                .map(ProjectComponent::getParameters)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                    .filter(parameter -> parameter.getName().equals("catalog_item_id"))
+                    .distinct()
+                .map(parameter -> parameter.getValues().stream().findAny())
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
                 .toList();
 
-        Set<ProjectTechnology> projectTechnologies =  projectComponentList.stream()
-                .map(this::asProjectTechnology)
-                .collect(Collectors.toSet());
+        var projectTechnologiesSet = catalogItemIds.stream()
+        .map(this::asProjectTechnology)
+        .collect(Collectors.toSet());
 
         // Cleaning up the list of project technologies to remove any entries that have a null or empty slug
-        projectTechnologies.removeIf(pt -> pt.getSlug() == null || pt.getSlug().isEmpty());
+        projectTechnologiesSet.removeIf(pt -> pt.getSlug() == null || pt.getSlug().isEmpty());
 
-        log.trace("Mapped project components {} to project technologies {}", projectComponentList, projectTechnologies);
-        return projectTechnologies;
+        log.trace("Mapped project components {} to project technologies {}", projectComponents, projectTechnologiesSet);
+        return projectTechnologiesSet;
     }
 
     @SneakyThrows
-    private ProjectTechnology asProjectTechnology(ProjectComponent component) {
-        var encodedIdWithRef = getEncodedIdWithRef(component);
-
+    private ProjectTechnology asProjectTechnology(String catalogItemId) {
         var catalogRequestParams = CatalogRequestParams.builder()
-                .catalogItemId(encodedIdWithRef)
+                .catalogItemId(catalogItemId)
                 .ignoreVisibilityRestrictions(true)
                 .build();
 
@@ -62,36 +66,10 @@ public class ProjectTechnologiesMapper {
                             .build())
                     .orElse(ProjectTechnology.builder().build());
         } catch (InvalidCatalogItemEntityException iciee) {
-            log.debug("Catalog item with id '{}' could not be fetched. Returning empty project technology.", encodedIdWithRef, iciee);
+            log.debug("Catalog item with id '{}' could not be fetched. Returning empty project technology.", catalogItemId, iciee);
 
             return ProjectTechnology.builder().build();
         }
     }
 
-    private static String getEncodedIdWithRef(ProjectComponent component) throws InvalidIdException {
-        var catalogItemIdParam = Optional.ofNullable(component.getParameters())
-                .orElseGet(List::of)
-                .stream()
-                .filter(p -> p.getName().equals("catalog_item_id"))
-                .map(Parameter::getValues)
-                .flatMap(List::stream)
-                .findAny();
-
-
-        if (catalogItemIdParam.isPresent()) {
-            return catalogItemIdParam.get();
-        } else {
-            log.debug("Project component {} does not have a catalog_item_id parameter. Using catalogItemId and catalogItemRef to build the encoded id with ref.", component);
-
-            var catalogItemId = IdEncoderDecoder.idDecode(component.getCatalogItemId());
-            var catalogItemRef = IdEncoderDecoder.idDecode(component.getCatalogItemRef());
-            var catalogItemRefWithParamDelimiter = catalogItemRef.startsWith("?at=") ? catalogItemRef : "?at=" + catalogItemRef;
-
-            var idWithRef = catalogItemId + catalogItemRefWithParamDelimiter;
-            var encodedIdWithRef = IdEncoderDecoder.idEncode(idWithRef);
-
-            log.trace("Encoded catalog item id with ref for project component {}: {}", component, encodedIdWithRef);
-            return encodedIdWithRef;
-        }
-    }
 }
