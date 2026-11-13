@@ -837,7 +837,6 @@ class ProjectComponentsFacadeTest {
         // given
         var projectKey = "PRJ-123";
         var projectComponents = ProjectComponentsMother.of();
-        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of(projectKey));
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
 
         // when
@@ -851,15 +850,14 @@ class ProjectComponentsFacadeTest {
     @Test
     void givenUnknownProjectKey_whenGetAllProjectComponents_thenReturnNull() {
         // given
-        when(provisionerActionsService.getAllProjectComponentsProjectKeys()).thenReturn(List.of("OTHER"));
-        when(provisionerActionsService.getProjectComponents("OTHER")).thenReturn(new ProjectComponents());
+        when(provisionerActionsService.getProjectComponents("PRJ-123")).thenReturn(null);
 
         // when
         var result = projectComponentsFacade.getAllProjectComponents("PRJ-123");
 
         // then
         assertThat(result).isNull();
-        verify(provisionerActionsService, never()).getProjectComponents("PRJ-123");
+        verify(provisionerActionsService).getProjectComponents("PRJ-123");
     }
 
     @Test

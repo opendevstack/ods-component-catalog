@@ -147,7 +147,7 @@ public class ProjectComponentsFacade {
         Map<String, ProjectComponents> projectComponentsByProjectKey = new HashMap<>();
 
         for (String projectKey : projectComponentsProjectKeys) {
-            var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+            var projectComponents = getAllProjectComponents(projectKey);
 
             if (projectComponents.getComponents() == null) {
                 log.warn("Project components for project key {} are null", projectKey);
@@ -166,10 +166,10 @@ public class ProjectComponentsFacade {
 
     public ProjectComponents getAllProjectComponents(String projectKey) {
         log.debug("Getting all project components for project key: {}", projectKey);
-        var allProjectComponents = getAllProjectComponents();
+        var allProjectComponents = provisionerActionsService.getProjectComponents(projectKey);
 
         log.debug("All project components: {}", allProjectComponents);
-        return allProjectComponents.get(projectKey);
+        return allProjectComponents;
     }
 
     @SneakyThrows
