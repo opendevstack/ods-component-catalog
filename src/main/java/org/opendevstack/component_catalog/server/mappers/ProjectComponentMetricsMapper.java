@@ -27,7 +27,7 @@ public class ProjectComponentMetricsMapper {
     @Qualifier("bitbucketServiceConfig")
     private final ApplicationPropertiesConfiguration.BitbucketServiceProps bitbucketServiceProps;
 
-    public Optional<ProjectComponentMetrics> mapToProjectComponentMetrics(ProjectComponent comp, String projectKey) {
+    public Optional<ProjectComponentMetrics> asProjectComponentMetrics(ProjectComponent comp, String projectKey) {
         return Optional.of(ProjectComponentMetrics.builder()
             .projectKey(projectKey)
             .componentId(comp.getComponentId())

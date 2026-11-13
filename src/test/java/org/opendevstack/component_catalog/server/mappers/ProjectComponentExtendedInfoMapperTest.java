@@ -67,9 +67,9 @@ class ProjectComponentExtendedInfoMapperTest {
                         .values(List.of("v2a", "v2b"))
                         .build();
 
-        when(projectComponentParameterMapper.mapToProjectComponentParameter(param1))
+        when(projectComponentParameterMapper.asProjectComponentParameter(param1))
                 .thenReturn(Optional.of(mappedParam1));
-        when(projectComponentParameterMapper.mapToProjectComponentParameter(param2))
+        when(projectComponentParameterMapper.asProjectComponentParameter(param2))
                 .thenReturn(Optional.of(mappedParam2));
 
         ProjectComponent component = ProjectComponentMother.of(
@@ -80,7 +80,7 @@ class ProjectComponentExtendedInfoMapperTest {
         );
         component.setParameters(List.of(param1, param2));
 
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
+        when(projectComponentsInfoMapper.asProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
             .thenReturn(Optional.of(ProjectComponentInfo.builder()
                 .componentId("C1")
                 .componentUrl(component.getComponentUrl())
@@ -90,7 +90,7 @@ class ProjectComponentExtendedInfoMapperTest {
 
         // when
         Optional<ProjectComponentExtendedInfo> result =
-            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
+            mapper.asProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
 
         // then
         assertThat(result).isPresent();
@@ -106,9 +106,9 @@ class ProjectComponentExtendedInfoMapperTest {
         assertThat(info.getParameters()).hasSize(2);
         assertThat(info.getParameters()).containsExactly(mappedParam1, mappedParam2);
 
-        verify(projectComponentParameterMapper).mapToProjectComponentParameter(param1);
-        verify(projectComponentParameterMapper).mapToProjectComponentParameter(param2);
-        verify(projectComponentsInfoMapper).mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false);
+        verify(projectComponentParameterMapper).asProjectComponentParameter(param1);
+        verify(projectComponentParameterMapper).asProjectComponentParameter(param2);
+        verify(projectComponentsInfoMapper).asProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false);
     }
 
     @Test
@@ -121,7 +121,7 @@ class ProjectComponentExtendedInfoMapperTest {
                 Status.CREATING
         );
         component.setParameters(null);
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
+        when(projectComponentsInfoMapper.asProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
             .thenReturn(Optional.of(ProjectComponentInfo.builder()
                 .componentId(component.getComponentId())
                 .status(ProvisioningStatus.CREATING)
@@ -130,7 +130,7 @@ class ProjectComponentExtendedInfoMapperTest {
 
         // when
         Optional<ProjectComponentExtendedInfo> result =
-            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
+            mapper.asProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS);
 
         // then
         assertThat(result).isPresent();
@@ -147,7 +147,7 @@ class ProjectComponentExtendedInfoMapperTest {
                 .values(List.of("x"))
                 .build();
 
-        when(projectComponentParameterMapper.mapToProjectComponentParameter(param))
+        when(projectComponentParameterMapper.asProjectComponentParameter(param))
                 .thenReturn(Optional.empty());
 
         ProjectComponent component = ProjectComponentMother.of(
@@ -160,22 +160,22 @@ class ProjectComponentExtendedInfoMapperTest {
 
         // when / then
         assertThatThrownBy(() ->
-            mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS)
+            mapper.asProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS)
         ).isInstanceOf(ComponentNotFoundException.class)
                 .hasMessageContaining("C404");
 
-        verify(projectComponentParameterMapper).mapToProjectComponentParameter(param);
+        verify(projectComponentParameterMapper).asProjectComponentParameter(param);
     }
 
     @Test
     void givenProjectComponentInfoMapperReturnsEmpty_whenMap_thenReturnEmpty() throws InvalidIdException {
         // given
         ProjectComponent component = ProjectComponentMother.of();
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
+        when(projectComponentsInfoMapper.asProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
                 .thenReturn(Optional.empty());
 
         // when / then
-        assertThat(mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        assertThat(mapper.asProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
                 .isEmpty();
     }
 
@@ -183,11 +183,11 @@ class ProjectComponentExtendedInfoMapperTest {
     void givenProjectComponentInfoMapperThrowsInvalidIdException_whenMap_thenReturnEmpty() throws InvalidIdException {
         // given
         ProjectComponent component = ProjectComponentMother.of();
-        when(projectComponentsInfoMapper.mapToProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
+        when(projectComponentsInfoMapper.asProjectComponentInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS, false))
                 .thenThrow(new InvalidIdException("invalid id"));
 
         // when / then
-        assertThat(mapper.mapToProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
+        assertThat(mapper.asProjectComponentExtendedInfo(component, ACCESS_TOKEN, PROJECT_KEY, USER_GROUPS))
                 .isEmpty();
     }
 }
