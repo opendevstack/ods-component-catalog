@@ -18,7 +18,6 @@ import org.opendevstack.component_catalog.server.mother.BitbucketPathAtMother;
 import org.opendevstack.component_catalog.server.mother.ProjectComponentsMother;
 import org.opendevstack.component_catalog.server.services.bitbucket.BitbucketPathAt;
 import org.opendevstack.component_catalog.server.services.cache.ProjectComponentsCacheService;
-import org.opendevstack.component_catalog.server.services.cache.ProjectTechnologiesCacheService;
 import org.opendevstack.component_catalog.server.services.exceptions.ComponentAlreadyExistsException;
 import org.opendevstack.component_catalog.server.services.exceptions.ElementNotFoundException;
 import org.opendevstack.component_catalog.server.services.exceptions.InvalidEntityException;
@@ -59,9 +58,6 @@ class ProvisionerActionsServiceTest {
 
     @Mock
     private ProjectComponentsCacheService projectComponentsCacheService;
-
-    @Mock
-    private ProjectTechnologiesCacheService projectTechnologiesCacheService;
 
     private ProvisionerActionsConfiguration provisionerActionsConfiguration;
 
@@ -317,12 +313,7 @@ class ProvisionerActionsServiceTest {
         var pathAt = BitbucketPathAtMother.of();
         var serializedProjectComponents = "{ invalid-json";
         var bitbucketFileContent = Pair.of(MediaType.APPLICATION_JSON, serializedProjectComponents);
-        var localProjectComponentsService = new ProjectComponentsService(
-                bitbucketService,
-                projectComponentsCacheService,
-                projectTechnologiesCacheService,
-                objectMapper
-        );
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         when(bitbucketService.getTextFileContents(pathAt)).thenReturn(Optional.of(bitbucketFileContent));
         when(objectMapper.readValue(serializedProjectComponents, ProjectComponents.class))
@@ -506,12 +497,7 @@ class ProvisionerActionsServiceTest {
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
         prepareMocksForSave();
-        var localProjectComponentsService = new ProjectComponentsService(
-                bitbucketService,
-                projectComponentsCacheService,
-                projectTechnologiesCacheService,
-                objectMapper
-        );
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         // when
         assertThatCode(() -> localProjectComponentsService.saveProjectComponents(
@@ -535,12 +521,7 @@ class ProvisionerActionsServiceTest {
 
         doThrow(httpClientErrorException).when(bitbucketService).pushFile(eq(pathAt), eq(sourceCommitId), anyString());
         prepareMocksForSave();
-        var localProjectComponentsService = new ProjectComponentsService(
-                bitbucketService,
-                projectComponentsCacheService,
-                projectTechnologiesCacheService,
-                objectMapper
-        );
+        var localProjectComponentsService = new ProjectComponentsService(bitbucketService, projectComponentsCacheService, objectMapper);
 
         // then
         assertThatThrownBy(
@@ -962,3 +943,4 @@ class ProvisionerActionsServiceTest {
         when(bitbucketPathAtBuilder.build()).thenReturn(bitbucketPathAt);
     }
 }
+
