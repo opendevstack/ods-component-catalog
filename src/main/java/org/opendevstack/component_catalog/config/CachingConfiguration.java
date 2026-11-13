@@ -1,5 +1,8 @@
 package org.opendevstack.component_catalog.config;
 
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectsInfoServiceCacheProps;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import lombok.extern.slf4j.Slf4j;
 import org.ehcache.config.CacheConfiguration;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
@@ -9,24 +12,19 @@ import org.ehcache.core.config.DefaultConfiguration;
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.CacheEventListener;
 import org.ehcache.jsr107.EhcacheCachingProvider;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.BitbucketServiceCacheProps;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectTechnologiesCacheProps;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProjectsInfoServiceCacheProps;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.ProvisionedComponentsCacheProps;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.cache.Cache;
 import javax.cache.Caching;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.ehcache.config.units.EntryUnit.ENTRIES;
-import static org.ehcache.event.EventType.EVICTED;
-import static org.ehcache.event.EventType.EXPIRED;
-import static org.ehcache.event.EventType.REMOVED;
+import static org.ehcache.event.EventType.*;
 
 @Configuration
 @Slf4j
@@ -36,12 +34,10 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
     public CacheManager cacheManager(
             BitbucketServiceCacheProps bitbucketCacheConfig,
             ProjectsInfoServiceCacheProps projectsInfoServiceCacheConfig,
-            ProjectTechnologiesCacheProps projectTechnologiesCacheConfig,
             ProvisionedComponentsCacheProps provisionedComponentsCacheConfig)
     {
         if (!bitbucketCacheConfig.isEnabled() &&
                 !projectsInfoServiceCacheConfig.isEnabled() &&
-                !projectTechnologiesCacheConfig.isEnabled() &&
                 !provisionedComponentsCacheConfig.isEnabled()) {
             log.info("All caches are disabled");
             return new NoOpCacheManager();
@@ -49,8 +45,6 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
 
         var bitbucketServiceEhCacheConfig = buildBitbucketServiceCacheConfig(bitbucketCacheConfig.getMaxSize().toMegabytes());
         var projectsInfoServiceEhCacheConfig = buildProjectsInfoServiceCacheConfig(projectsInfoServiceCacheConfig.getMaxSize().toMegabytes());
-        var projectTechnologiesEhCacheConfig = buildProjectTechnologiesCacheConfig(
-                projectTechnologiesCacheConfig.getMaxSize().toMegabytes());
         var provisionedComponentsEhCacheConfig = buildProjectComponentsCacheConfig(provisionedComponentsCacheConfig.getMaxSize().toMegabytes());
 
         var ehCaches = new HashMap<String, CacheConfiguration<?, ?>>();
@@ -63,11 +57,6 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
             ehCaches.putAll(projectsInfoServiceEhCacheConfig);
         } else {
             log.info("Projects info service cache is disabled");
-        }
-        if (projectTechnologiesCacheConfig.isEnabled()) {
-            ehCaches.putAll(projectTechnologiesEhCacheConfig);
-        } else {
-            log.info("Project technologies cache is disabled");
         }
         if (provisionedComponentsCacheConfig.isEnabled()) {
             ehCaches.putAll(provisionedComponentsEhCacheConfig);
@@ -97,13 +86,6 @@ public class CachingConfiguration implements CacheEventListener<Object, Object> 
         // cacheSize is in MB; we convert to an approximate number of entries (assuming ~10KB per entry on average).
         long maxEntries = Math.max(100, cacheSize * 1024 * 1024 / 10_000);
         return ehCachesConfig(maxEntries, ProjectsInfoServiceCacheProps.CACHE_NAME);
-    }
-
-    private Map<String, CacheConfiguration<?, ?>> buildProjectTechnologiesCacheConfig(long cacheSize) {
-        // NOTE: heap tier is used instead of offheap because cached values are not Serializable.
-        // cacheSize is in MB; we convert to an approximate number of entries (assuming ~10KB per entry on average).
-        long maxEntries = Math.max(100, cacheSize * 1024 * 1024 / 10_000);
-        return ehCachesConfig(maxEntries, ProjectTechnologiesCacheProps.CACHE_NAME);
     }
 
     private Map<String, CacheConfiguration<?, ?>> buildProjectComponentsCacheConfig(long cacheSize) {

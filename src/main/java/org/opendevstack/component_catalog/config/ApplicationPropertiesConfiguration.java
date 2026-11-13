@@ -49,12 +49,6 @@ public class ApplicationPropertiesConfiguration {
         return ProjectsInfoServiceCacheProps.builder().build();
     }
 
-    @Bean("projectTechnologiesCacheConfig")
-    @ConfigurationProperties(prefix = "component-catalog.caching.project-technologies-cache")
-    public ProjectTechnologiesCacheProps projectTechnologiesCacheProps() {
-        return ProjectTechnologiesCacheProps.builder().build();
-    }
-
     @Bean("provisionedComponentsCacheConfig")
     @ConfigurationProperties(prefix = "component-catalog.caching.provisioned-components-cache")
     public ProvisionedComponentsCacheProps provisionedComponentsCacheProps() {
@@ -161,18 +155,6 @@ public class ApplicationPropertiesConfiguration {
     @Data
     public static class ProjectsInfoServiceCacheProps {
         public static final String CACHE_NAME = "projects-info-service-cache";
-
-        @Builder.Default
-        private boolean enabled = true;
-        private DataSize maxSize;
-        @DurationUnit(ChronoUnit.MINUTES) // default units, e.g. 5 -> 5m (minutes)
-        private Duration evictionInterval;
-    }
-
-    @Builder
-    @Data
-    public static class ProjectTechnologiesCacheProps {
-        public static final String CACHE_NAME = "project-technologies-cache";
 
         @Builder.Default
         private boolean enabled = true;
