@@ -57,7 +57,7 @@ public class ProjectTechnologiesMapper {
                 .build();
 
         try {
-            var catItem = catalogItemsApiFacade.fetchCatalogItem(catalogRequestParams);
+            var catItem = catalogItemsApiFacade.fetchCatalogItem(catalogRequestParams, true);
 
             return Optional.ofNullable(catItem)
                     .map(item -> ProjectTechnology.builder()

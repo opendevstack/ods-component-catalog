@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,7 +49,7 @@ class ProjectTechnologiesMapperTest {
         components.put("C2", component(otherCatalogItemId));
 
         var catalogItem = new CatalogItem().slug("java").title("Java");
-        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class))).thenReturn(catalogItem);
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(true))).thenReturn(catalogItem);
 
         // when
         var result = projectTechnologiesMapper.asProjectTechnologies(ProjectComponents.builder()
@@ -59,7 +60,7 @@ class ProjectTechnologiesMapperTest {
         assertThat(result).containsExactly(ProjectTechnology.builder().slug("java").name("Java").build());
 
         var requestCaptor = ArgumentCaptor.forClass(CatalogRequestParams.class);
-        verify(catalogItemsApiFacade, times(2)).fetchCatalogItem(requestCaptor.capture());
+        verify(catalogItemsApiFacade, times(2)).fetchCatalogItem(requestCaptor.capture(), eq(true));
         assertThat(requestCaptor.getAllValues())
                 .extracting(CatalogRequestParams::getCatalogItemId)
                 .containsExactlyInAnyOrder(catalogItemId, otherCatalogItemId);
@@ -80,7 +81,7 @@ class ProjectTechnologiesMapperTest {
                         .values(List.of(catalogItemId))
                         .build()))
                 .build();
-        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class)))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(true)))
                 .thenReturn(new CatalogItem().slug("java").title("Java"));
 
         // when
@@ -88,7 +89,7 @@ class ProjectTechnologiesMapperTest {
 
         // then
         var requestCaptor = ArgumentCaptor.forClass(CatalogRequestParams.class);
-        verify(catalogItemsApiFacade).fetchCatalogItem(requestCaptor.capture());
+        verify(catalogItemsApiFacade).fetchCatalogItem(requestCaptor.capture(), eq(true));
         assertThat(requestCaptor.getValue().getCatalogItemId()).isEqualTo(catalogItemId);
     }
 
@@ -98,7 +99,7 @@ class ProjectTechnologiesMapperTest {
         var catalogItemId = IdEncoderDecoder.idEncode(
                 "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main");
         var projectComponents = projectComponentsWith(component(catalogItemId));
-        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class)))
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(true)))
                 .thenThrow(new InvalidCatalogItemEntityException("invalid catalog item"));
 
         // when
@@ -114,7 +115,7 @@ class ProjectTechnologiesMapperTest {
         var catalogItemId = IdEncoderDecoder.idEncode(
                 "projects/CATALOG/repos/java/raw/catalog-item.yaml?at=refs/heads/main");
         var projectComponents = projectComponentsWith(component(catalogItemId));
-        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class))).thenReturn(null);
+        when(catalogItemsApiFacade.fetchCatalogItem(any(CatalogRequestParams.class), eq(true))).thenReturn(null);
 
         // when
         var result = projectTechnologiesMapper.asProjectTechnologies(projectComponents);
