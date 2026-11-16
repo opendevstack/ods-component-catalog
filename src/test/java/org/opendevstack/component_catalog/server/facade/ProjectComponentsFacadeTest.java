@@ -311,7 +311,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
+        when(projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
@@ -332,7 +332,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(Map.of("k1", comp));
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true))
+        when(projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
@@ -343,7 +343,7 @@ class ProjectComponentsFacadeTest {
         assertThat(result).isNotNull();
         verify(projectsInfoService, never()).getProjectGroups(any());
         verify(projectComponentExtendedInfoMapper)
-                .mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true);
+                .asProjectComponentExtendedInfo(comp, accessToken, projectKey, List.of(), true);
     }
 
     @Test
@@ -392,7 +392,7 @@ class ProjectComponentsFacadeTest {
 
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-" + projectKey));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
+        when(projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.empty());
 
         // when / then
@@ -551,7 +551,7 @@ class ProjectComponentsFacadeTest {
         var comps = ProjectComponentsMother.of(new LinkedHashMap<>(Map.of("k1", comp)));
         when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(comps);
         when(projectsInfoService.getProjectGroups(accessToken)).thenReturn(List.of("BI-AS-ATLASSIAN-P-PRJ-123"));
-        when(projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
+        when(projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(eq(comp), eq(accessToken), eq(projectKey), anyList(), eq(false)))
                 .thenReturn(Optional.of(new ProjectComponentExtendedInfo()));
 
         // when
@@ -607,7 +607,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(component, projectKey))
                 .thenReturn(Optional.of(ProjectComponentMetrics.builder()
                         .componentId("C1")
                         .projectKey(projectKey)
@@ -638,7 +638,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(component, projectKey))
                 .thenReturn(Optional.empty());
 
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
@@ -673,7 +673,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), eq(projectKey)))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(any(), eq(projectKey)))
                 .thenAnswer(inv -> {
                     ProjectComponent pc = inv.getArgument(0);
                     return Optional.of(ProjectComponentMetrics.builder()
@@ -714,7 +714,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(projectKey))
                 .thenReturn(projectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), eq(projectKey)))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(any(), eq(projectKey)))
                 .thenAnswer(inv -> {
                     ProjectComponent pc = inv.getArgument(0);
                     return Optional.of(ProjectComponentMetrics.builder()
@@ -756,7 +756,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents(secondProjectKey))
                 .thenReturn(secondProjectComponents);
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), any()))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(any(), any()))
                 .thenAnswer(inv -> {
                     ProjectComponent pc = inv.getArgument(0);
                     String projectKey = inv.getArgument(1);
@@ -775,8 +775,8 @@ class ProjectComponentsFacadeTest {
         assertThat(result.getData()).hasSize(1);
         verify(provisionerActionsService).getProjectComponents(firstProjectKey);
         verify(provisionerActionsService).getProjectComponents(secondProjectKey);
-        verify(projectComponentListItemMapper, times(1)).mapToProjectComponentMetrics(any(), eq(firstProjectKey));
-        verify(projectComponentListItemMapper, never()).mapToProjectComponentMetrics(any(), eq(secondProjectKey));
+        verify(projectComponentListItemMapper, times(1)).asProjectComponentMetrics(any(), eq(firstProjectKey));
+        verify(projectComponentListItemMapper, never()).asProjectComponentMetrics(any(), eq(secondProjectKey));
     }
 
     @Test
@@ -792,7 +792,7 @@ class ProjectComponentsFacadeTest {
         when(provisionerActionsService.getProjectComponents("B"))
                 .thenReturn(ProjectComponentsMother.of(Map.of("k1", comp)));
 
-        when(projectComponentListItemMapper.mapToProjectComponentMetrics(any(), any()))
+        when(projectComponentListItemMapper.asProjectComponentMetrics(any(), any()))
                 .thenReturn(Optional.of(ProjectComponentMetrics.builder().build()));
 
         String validToken = "eyJhbGciOiJub25lIn0.eyJvaWQiOiJvaWQxIn0."; // Payload has oid "oid1"
@@ -830,6 +830,34 @@ class ProjectComponentsFacadeTest {
 
         // returned map should be unmodifiable
         assertThatThrownBy(() -> result.put("X", pcB)).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void givenProjectKey_whenGetAllProjectComponents_thenReturnComponentsForProject() {
+        // given
+        var projectKey = "PRJ-123";
+        var projectComponents = ProjectComponentsMother.of();
+        when(provisionerActionsService.getProjectComponents(projectKey)).thenReturn(projectComponents);
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents(projectKey);
+
+        // then
+        assertThat(result).isSameAs(projectComponents);
+        verify(provisionerActionsService).getProjectComponents(projectKey);
+    }
+
+    @Test
+    void givenUnknownProjectKey_whenGetAllProjectComponents_thenReturnNull() {
+        // given
+        when(provisionerActionsService.getProjectComponents("PRJ-123")).thenReturn(null);
+
+        // when
+        var result = projectComponentsFacade.getAllProjectComponents("PRJ-123");
+
+        // then
+        assertThat(result).isNull();
+        verify(provisionerActionsService).getProjectComponents("PRJ-123");
     }
 
     @Test
@@ -1022,5 +1050,3 @@ class ProjectComponentsFacadeTest {
     }
 
 }
-
-

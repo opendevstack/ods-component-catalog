@@ -59,7 +59,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -84,7 +84,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -103,7 +103,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -118,7 +118,7 @@ class ProjectComponentsInfoMapperTest {
         var component = ProjectComponentMother.of("C-202", "cat-202", "ref-202", Status.CREATED);
 
         // when
-        var result = projectComponentsInfoMapper.mapToProjectComponentInfo(component, "", projectKey, List.of());
+        var result = projectComponentsInfoMapper.asProjectComponentInfo(component, "", projectKey, List.of());
 
         // then
         assertThat(result).isEmpty();
@@ -134,7 +134,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenThrow(new InvalidIdException("invalid id"));
 
         // when / then
-        assertThatThrownBy(() -> projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of()))
+        assertThatThrownBy(() -> projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of()))
                 .isInstanceOf(InvalidIdException.class)
                 .hasMessageContaining("invalid id");
 
@@ -153,13 +153,13 @@ class ProjectComponentsInfoMapperTest {
         var c4 = ProjectComponentMother.of("C4", "Q0lELTQ", "UkVGLTE", Status.UNKNOWN);
 
         // when / then
-        assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c1, token, projectKey, List.of())).get()
+        assertThat(projectComponentsInfoMapper.asProjectComponentInfo(c1, token, projectKey, List.of())).get()
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.CREATED);
-        assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c2, token, projectKey, List.of())).get()
+        assertThat(projectComponentsInfoMapper.asProjectComponentInfo(c2, token, projectKey, List.of())).get()
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.CREATING);
-        assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c3, token, projectKey, List.of())).get()
+        assertThat(projectComponentsInfoMapper.asProjectComponentInfo(c3, token, projectKey, List.of())).get()
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.DELETING);
-        assertThat(projectComponentsInfoMapper.mapToProjectComponentInfo(c4, token, projectKey, List.of())).get()
+        assertThat(projectComponentsInfoMapper.asProjectComponentInfo(c4, token, projectKey, List.of())).get()
                 .extracting(ProjectComponentInfo::getStatus).isEqualTo(ProvisioningStatus.UNKNOWN);
 
         verify(catalogItemsApiFacade, times(4)).fetchCatalogItem(any(CatalogRequestParams.class), eq(false));
@@ -178,7 +178,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -198,7 +198,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -217,7 +217,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -238,7 +238,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -259,7 +259,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -282,7 +282,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();
@@ -303,7 +303,7 @@ class ProjectComponentsInfoMapperTest {
                 .thenReturn(catalogItem);
 
         // when
-        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.mapToProjectComponentInfo(component, token, projectKey, List.of());
+        Optional<ProjectComponentInfo> maybeInfo = projectComponentsInfoMapper.asProjectComponentInfo(component, token, projectKey, List.of());
 
         // then
         assertThat(maybeInfo).isPresent();

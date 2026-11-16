@@ -20,14 +20,14 @@ public class ProjectComponentExtendedInfoMapper {
     private final ProjectComponentParameterMapper projectComponentParameterMapper;
     private final ProjectComponentsInfoMapper projectComponentsInfoMapper;
 
-    public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp,
+    public Optional<ProjectComponentExtendedInfo> asProjectComponentExtendedInfo(ProjectComponent comp,
                                                                                     String accessToken,
                                                                                     String projectKey,
                                                                                     List<String> userGroups) throws ComponentNotFoundException {
-        return mapToProjectComponentExtendedInfo(comp, accessToken, projectKey, userGroups, false);
+        return asProjectComponentExtendedInfo(comp, accessToken, projectKey, userGroups, false);
     }
 
-    public Optional<ProjectComponentExtendedInfo> mapToProjectComponentExtendedInfo(ProjectComponent comp,
+    public Optional<ProjectComponentExtendedInfo> asProjectComponentExtendedInfo(ProjectComponent comp,
                                                                                     String accessToken,
                                                                                     String projectKey,
                                                                                     List<String> userGroups,
@@ -35,13 +35,13 @@ public class ProjectComponentExtendedInfoMapper {
         var projectComponentParameters = Optional.ofNullable(comp.getParameters())
                 .orElse(List.of())
                 .stream()
-                .map(p -> projectComponentParameterMapper.mapToProjectComponentParameter(p)
+                .map(p -> projectComponentParameterMapper.asProjectComponentParameter(p)
                         .orElseThrow(() -> new ComponentNotFoundException("Component with ID " + comp.getComponentId() + " not found.")))
                 .toList();
 
         Optional<ProjectComponentInfo> compOpt;
         try {
-            compOpt = projectComponentsInfoMapper.mapToProjectComponentInfo(comp, accessToken, projectKey, userGroups, skipGroupsValidation);
+            compOpt = projectComponentsInfoMapper.asProjectComponentInfo(comp, accessToken, projectKey, userGroups, skipGroupsValidation);
         } catch (InvalidIdException e) {
             log.error("Unable to map component: {}", comp, e);
             return Optional.empty();

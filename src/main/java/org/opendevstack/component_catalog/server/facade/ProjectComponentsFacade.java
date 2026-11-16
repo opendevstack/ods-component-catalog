@@ -79,7 +79,7 @@ public class ProjectComponentsFacade {
                 .stream()
                 .map(component -> {
                     try {
-                        return projectComponentsInfoMapper.mapToProjectComponentInfo(component, accessToken, projectKey, userGroups);
+                        return projectComponentsInfoMapper.asProjectComponentInfo(component, accessToken, projectKey, userGroups);
                     } catch (InvalidIdException | InvalidCatalogItemEntityException | NullPointerException e) {
                         log.error("Unable to map component: {}", component, e);
                         return Optional.<ProjectComponentInfo>empty();
@@ -115,7 +115,7 @@ public class ProjectComponentsFacade {
                 .stream()
                 .filter(component -> component.getComponentId().equals(componentId))
                 .findFirst()
-                .flatMap(p -> projectComponentExtendedInfoMapper.mapToProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
+                .flatMap(p -> projectComponentExtendedInfoMapper.asProjectComponentExtendedInfo(p, accessToken, projectKey, userGroups, skipGroupsValidation))
                 .orElseThrow(() -> new ComponentNotFoundException(componentNotFoundMessage(componentId, projectKey)));
 
     }
@@ -147,7 +147,7 @@ public class ProjectComponentsFacade {
         Map<String, ProjectComponents> projectComponentsByProjectKey = new HashMap<>();
 
         for (String projectKey : projectComponentsProjectKeys) {
-            var projectComponents = provisionerActionsService.getProjectComponents(projectKey);
+            var projectComponents = getAllProjectComponents(projectKey);
 
             if (projectComponents.getComponents() == null) {
                 log.warn("Project components for project key {} are null", projectKey);
@@ -162,6 +162,14 @@ public class ProjectComponentsFacade {
 
         return immutableProjectComponentsByProjectKey;
 
+    }
+
+    public ProjectComponents getAllProjectComponents(String projectKey) {
+        log.debug("Getting all project components for project key: {}", projectKey);
+        var allProjectComponents = provisionerActionsService.getProjectComponents(projectKey);
+
+        log.debug("All project components: {}", allProjectComponents);
+        return allProjectComponents;
     }
 
     @SneakyThrows
@@ -303,7 +311,7 @@ public class ProjectComponentsFacade {
 
             for (ProjectComponent component : sortedComponents) {
                 if (index >= fromIndex && index < toIndex) {
-                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.mapToProjectComponentMetrics(component, projectKey);
+                    Optional<ProjectComponentMetrics> p =  projectComponentListItemMapper.asProjectComponentMetrics(component, projectKey);
                     if (p.isPresent()) {
                         // Badly formed project components shouldn't be returned
                         // in the response

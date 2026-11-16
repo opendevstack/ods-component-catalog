@@ -56,6 +56,8 @@ If the project conventions change, update this document first so future edits st
 - Always use parameterized logging (for example, `log.info("Project {} loaded", projectId)`).
 - NEVER log secrets or sensitive values (tokens, passwords, API keys, auth headers, private keys, PII).
 - Preserve current null-handling behavior unless a bug fix requires a change.
+- Mappers methods are often used to convert between DTOs and domain/service models.
+- Mappers methods naming commonly follows `asXxx` style. An example would be `asProjectTechnologies`.
 
 ## Test conventions
 - Test framework: JUnit 5 (Jupiter).

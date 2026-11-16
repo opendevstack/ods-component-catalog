@@ -31,7 +31,9 @@ public class CatalogServiceAdapter {
     public BitbucketPathAt bitbucketPathAtFromId(String id) throws InvalidIdException {
         var builder = bitbucketService.pathAtBuilder();
 
-        return Optional.of(idDecode(id))
+        var decodedId = idDecode(id);
+
+        return Optional.of(decodedId)
                 .flatMap(maybeValueFrom(builder::pathAt))
                 .flatMap(maybeValueFrom(BitbucketPathAt.BitbucketPathAtBuilder::build))
                 .orElseThrow(() -> new InvalidIdException(id));

@@ -27,14 +27,14 @@ public class ProjectComponentsInfoMapper {
     private final CatalogItemsApiFacade catalogItemsApiFacade;
     private final ApplicationPropertiesConfiguration.CatalogItemDefaultProps catalogItemDefaultProps;
 
-    public Optional<ProjectComponentInfo> mapToProjectComponentInfo(ProjectComponent comp,
+    public Optional<ProjectComponentInfo> asProjectComponentInfo(ProjectComponent comp,
                                                                     String accessToken,
                                                                     String projectKey,
                                                                     List<String> userGroups) throws InvalidIdException {
-        return mapToProjectComponentInfo(comp, accessToken, projectKey, userGroups, false);
+        return asProjectComponentInfo(comp, accessToken, projectKey, userGroups, false);
     }
 
-    public Optional<ProjectComponentInfo> mapToProjectComponentInfo(ProjectComponent comp,
+    public Optional<ProjectComponentInfo> asProjectComponentInfo(ProjectComponent comp,
                                                                     String accessToken,
                                                                     String projectKey,
                                                                     List<String> userGroups,
