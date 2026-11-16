@@ -6,11 +6,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.mappers.ProjectTechnologiesMapper;
 import org.opendevstack.component_catalog.server.model.ProjectTechnology;
+import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponent;
 import org.opendevstack.component_catalog.server.services.provisioner.ProjectComponents;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +42,9 @@ class ProjectTechnologiesFacadeTest {
     @Test
     void givenValidOdsToken_whenGetProjectTechnologies_thenReturnMappedTechnologies() {
         // given
-        var projectComponents = ProjectComponents.builder().build();
+        var projectComponents = ProjectComponents.builder()
+                .components(Map.of("component-1", ProjectComponent.builder().build()))
+                .build();
         var technology = ProjectTechnology.builder().slug("java").name("Java").build();
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
@@ -70,17 +74,45 @@ class ProjectTechnologiesFacadeTest {
     }
 
     @Test
-    void givenNoProjectComponents_whenGetProjectTechnologies_thenReturnEmptyList() {
+    void givenNullProjectComponents_whenGetProjectTechnologies_thenThrowRestEntityNotFoundException() {
         // given
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
         when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
         when(projectComponentsFacade.getAllProjectComponents(projectKey)).thenReturn(null);
 
-        // when
-        List<ProjectTechnology> result = projectTechnologiesFacade.getProjectTechnologies(projectKey);
+        // when / then
+        assertThatThrownBy(() -> projectTechnologiesFacade.getProjectTechnologies(projectKey))
+                .isInstanceOf(RestEntityNotFoundException.class)
+                .hasMessage("No project components found for project key: " + projectKey);
+        verifyNoInteractions(projectTechnologiesMapper);
+    }
 
-        // then
-        assertThat(result).isEmpty();
+    @Test
+    void givenProjectComponentsWithNullComponents_whenGetProjectTechnologies_thenThrowRestEntityNotFoundException() {
+        // given
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
+        when(projectComponentsFacade.getAllProjectComponents(projectKey)).thenReturn(ProjectComponents.builder().build());
+
+        // when / then
+        assertThatThrownBy(() -> projectTechnologiesFacade.getProjectTechnologies(projectKey))
+                .isInstanceOf(RestEntityNotFoundException.class)
+                .hasMessage("No project components found for project key: " + projectKey);
+        verifyNoInteractions(projectTechnologiesMapper);
+    }
+
+    @Test
+    void givenProjectComponentsWithEmptyComponents_whenGetProjectTechnologies_thenThrowRestEntityNotFoundException() {
+        // given
+        when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
+        when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
+        when(projectComponentsFacade.getAllProjectComponents(projectKey))
+                .thenReturn(ProjectComponents.builder().components(Map.of()).build());
+
+        // when / then
+        assertThatThrownBy(() -> projectTechnologiesFacade.getProjectTechnologies(projectKey))
+                .isInstanceOf(RestEntityNotFoundException.class)
+                .hasMessage("No project components found for project key: " + projectKey);
         verifyNoInteractions(projectTechnologiesMapper);
     }
 }
