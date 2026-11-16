@@ -38,12 +38,12 @@ class ProjectTechnologiesFacadeTest {
     private ProjectTechnologiesFacade projectTechnologiesFacade;
 
     @Test
-    void givenValidApplicationToken_whenGetProjectTechnologies_thenReturnMappedTechnologies() {
+    void givenValidOdsToken_whenGetProjectTechnologies_thenReturnMappedTechnologies() {
         // given
         var projectComponents = ProjectComponents.builder().build();
         var technology = ProjectTechnology.builder().slug("java").name("Java").build();
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(true);
+        when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
         when(projectComponentsFacade.getAllProjectComponents(projectKey)).thenReturn(projectComponents);
         when(projectTechnologiesMapper.asProjectTechnologies(projectComponents)).thenReturn(Set.of(technology));
 
@@ -57,10 +57,10 @@ class ProjectTechnologiesFacadeTest {
     }
 
     @Test
-    void givenInvalidApplicationToken_whenGetProjectTechnologies_thenThrowForbiddenException() {
+    void givenInvalidOdsToken_whenGetProjectTechnologies_thenThrowForbiddenException() {
         // given
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(false);
+        when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(false);
 
         // when / then
         assertThatThrownBy(() -> projectTechnologiesFacade.getProjectTechnologies(projectKey))
@@ -73,7 +73,7 @@ class ProjectTechnologiesFacadeTest {
     void givenNoProjectComponents_whenGetProjectTechnologies_thenReturnEmptyList() {
         // given
         when(authenticationFacade.getAccessToken()).thenReturn(accessToken);
-        when(authenticationFacade.isAValidApplicationToken(accessToken)).thenReturn(true);
+        when(authenticationFacade.isValidTokenFromOds(accessToken)).thenReturn(true);
         when(projectComponentsFacade.getAllProjectComponents(projectKey)).thenReturn(null);
 
         // when

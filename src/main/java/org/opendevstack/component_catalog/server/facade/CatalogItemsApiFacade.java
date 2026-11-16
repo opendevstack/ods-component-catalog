@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.OdsApiServerServiceProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -55,7 +54,6 @@ public class CatalogItemsApiFacade {
     private final UserActionsEntitiesService userActionsEntitiesService;
     private final CatalogItemBySlugService catalogItemBySlugService;
     private final CatalogsCollectionService catalogsCollectionService;
-    private final OdsApiServerServiceProps odsApiServerServiceProps;
     private final ProjectComponentsService projectComponentsService;
     private final ProvisionerActionsService provisionerActionsService;
     private final AuthenticationFacade authenticationFacade;
@@ -150,8 +148,9 @@ public class CatalogItemsApiFacade {
     }
 
     private void validateTokenFromOds(String accessToken) throws ForbiddenException {
-        var oid = JwtUtils.extractClaim(accessToken, "oid");
-        if (!oid.orElse("").equals(odsApiServerServiceProps.getOid())) {
+        var validTokenFromOds = authenticationFacade.isValidTokenFromOds(accessToken);
+
+        if (!validTokenFromOds) {
             throw new ForbiddenException("Invalid caller. Please, provide a valid token within the request.");
         }
     }

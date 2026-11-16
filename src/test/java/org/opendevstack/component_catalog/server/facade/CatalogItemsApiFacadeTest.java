@@ -10,7 +10,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.component_catalog.client.projects_info_service.v1_0_0.model.ProjectInfo;
-import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration.OdsApiServerServiceProps;
 import org.opendevstack.component_catalog.server.controllers.CatalogApiAdapter;
 import org.opendevstack.component_catalog.server.controllers.CatalogRequestParams;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
@@ -68,9 +67,6 @@ class CatalogItemsApiFacadeTest {
 
     @Mock
     private CatalogsCollectionService catalogsCollectionService;
-
-    @Mock
-    private OdsApiServerServiceProps odsApiServerServiceProps;
 
     @Mock
     private AuthenticationFacade authenticationFacade;
@@ -557,10 +553,7 @@ class CatalogItemsApiFacadeTest {
     void GivenEmptyCatalogsCollection_WhenFetchCatalogItems_ThenThrowsInvalidCatalogEntityException() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
-            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
-                    .thenReturn(Optional.of("expectedOid"));
-
-            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+            when(authenticationFacade.isValidTokenFromOds("validToken")).thenReturn(true);
 
             var params = CatalogRequestParams.builder()
                     .catalogId(null)
@@ -582,10 +575,7 @@ class CatalogItemsApiFacadeTest {
     void GivenNoCatalogId_WhenFetchCatalogItems_ThenFetchesItemsFromAllCatalogs() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
-            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
-                    .thenReturn(Optional.of("expectedOid"));
-
-            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+            when(authenticationFacade.isValidTokenFromOds("validToken")).thenReturn(true);
 
             var params = CatalogRequestParams.builder()
                     .catalogId(null)
@@ -716,23 +706,18 @@ class CatalogItemsApiFacadeTest {
 
     @Test
     void GivenNoCatalogIdAndInvalidOidToken_WhenFetchCatalogItems_ThenThrowsForbiddenException() {
-        try (var mockedJwt = mockStatic(JwtUtils.class)) {
-            // given
-            mockedJwt.when(() -> JwtUtils.extractClaim("badToken", "oid"))
-                    .thenReturn(Optional.of("wrongOid"));
+        // given
+        when(authenticationFacade.isValidTokenFromOds("badToken")).thenReturn(false);
 
-            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+        var params = CatalogRequestParams.builder()
+                .catalogId(null)
+                .accessToken("badToken")
+                .sortOrder(SortOrder.ASC)
+                .build();
 
-            var params = CatalogRequestParams.builder()
-                    .catalogId(null)
-                    .accessToken("badToken")
-                    .sortOrder(SortOrder.ASC)
-                    .build();
-
-            // when / then
-            assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
-                    .isInstanceOf(ForbiddenException.class);
-        }
+        // when / then
+        assertThatThrownBy(() -> catalogItemsApiFacade.fetchCatalogItems(params))
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
@@ -872,10 +857,7 @@ class CatalogItemsApiFacadeTest {
     void GivenNoCatalogId_WhenFetchCatalogItems_ThenSortsAllItemsAscendingByTitle() throws Exception {
         try (var mockedJwt = mockStatic(JwtUtils.class)) {
             // given
-            mockedJwt.when(() -> JwtUtils.extractClaim("validToken", "oid"))
-                    .thenReturn(Optional.of("expectedOid"));
-
-            when(odsApiServerServiceProps.getOid()).thenReturn("expectedOid");
+            when(authenticationFacade.isValidTokenFromOds("validToken")).thenReturn(true);
 
             var params = CatalogRequestParams.builder()
                     .catalogId(null)

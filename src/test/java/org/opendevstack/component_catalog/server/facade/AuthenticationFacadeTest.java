@@ -3,6 +3,7 @@ package org.opendevstack.component_catalog.server.facade;
 import com.azure.spring.cloud.autoconfigure.implementation.aad.filter.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.opendevstack.component_catalog.config.ApplicationPropertiesConfiguration;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
 import org.opendevstack.component_catalog.util.JwtUtils;
 import org.springframework.security.core.Authentication;
@@ -20,7 +21,11 @@ import static org.mockito.Mockito.when;
 
 class AuthenticationFacadeTest {
 
-    private final AuthenticationFacade authenticationFacade = new AuthenticationFacade(List.of("oid-1"));
+    private final AuthenticationFacade authenticationFacade = new AuthenticationFacade(
+            ApplicationPropertiesConfiguration.OdsApiServerServiceProps.builder()
+                    .oid("ods-oid")
+                    .build(),
+            List.of("oid-1"));
 
     @AfterEach
     void tearDown() {
@@ -101,6 +106,51 @@ class AuthenticationFacadeTest {
 
             // when
             var result = authenticationFacade.isAValidApplicationToken("token");
+
+            // then
+            assertThat(result).isFalse();
+        }
+    }
+
+    @Test
+    void isValidTokenFromOds_whenOidMatches_returnsTrue() {
+        // given
+        try (var mockedJwtUtils = mockStatic(JwtUtils.class)) {
+            mockedJwtUtils.when(() -> JwtUtils.extractClaim("token", "oid"))
+                    .thenReturn(Optional.of("ods-oid"));
+
+            // when
+            var result = authenticationFacade.isValidTokenFromOds("token");
+
+            // then
+            assertThat(result).isTrue();
+        }
+    }
+
+    @Test
+    void isValidTokenFromOds_whenOidDoesNotMatch_returnsFalse() {
+        // given
+        try (var mockedJwtUtils = mockStatic(JwtUtils.class)) {
+            mockedJwtUtils.when(() -> JwtUtils.extractClaim("token", "oid"))
+                    .thenReturn(Optional.of("another-oid"));
+
+            // when
+            var result = authenticationFacade.isValidTokenFromOds("token");
+
+            // then
+            assertThat(result).isFalse();
+        }
+    }
+
+    @Test
+    void isValidTokenFromOds_whenOidIsMissing_returnsFalse() {
+        // given
+        try (var mockedJwtUtils = mockStatic(JwtUtils.class)) {
+            mockedJwtUtils.when(() -> JwtUtils.extractClaim("token", "oid"))
+                    .thenReturn(Optional.empty());
+
+            // when
+            var result = authenticationFacade.isValidTokenFromOds("token");
 
             // then
             assertThat(result).isFalse();
