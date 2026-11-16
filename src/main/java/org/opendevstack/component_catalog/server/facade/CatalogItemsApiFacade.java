@@ -225,6 +225,8 @@ public class CatalogItemsApiFacade {
         var itemEntityCtx = maybeItemEntityCtx.get();
         var principalPermissions = currentPrincipalCatalogPermissions(itemEntityCtx.getId());
         var userActionsEntity = userActionsEntitiesService.getDefaultUserActionsEntity();
+        var accessToken = authenticationFacade.getAccessToken();
+        boolean skipClustersAndGroups = authenticationFacade.isAValidApplicationToken(accessToken);
 
         return asCatalogItem(
                 CatalogRequestParams.builder()
@@ -232,7 +234,9 @@ public class CatalogItemsApiFacade {
                         .catalogItemId(itemEntityCtx.getId())
                         .userActionsEntity(userActionsEntity)
                         .permissions(principalPermissions)
-                        .build()
+                        .accessToken(accessToken)
+                        .build(),
+                skipClustersAndGroups
         );
     }
 
