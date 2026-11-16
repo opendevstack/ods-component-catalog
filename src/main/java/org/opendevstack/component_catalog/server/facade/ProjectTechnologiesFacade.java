@@ -3,11 +3,11 @@ package org.opendevstack.component_catalog.server.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.component_catalog.server.controllers.exceptions.ForbiddenException;
+import org.opendevstack.component_catalog.server.controllers.exceptions.RestEntityNotFoundException;
 import org.opendevstack.component_catalog.server.mappers.ProjectTechnologiesMapper;
 import org.opendevstack.component_catalog.server.model.ProjectTechnology;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,10 +26,12 @@ public class ProjectTechnologiesFacade {
         boolean isAValidTokenFromODS = authenticationFacade.isValidTokenFromOds(accessToken);
 
         if (isAValidTokenFromODS) {
-            var projectComponents = Optional.ofNullable(projectComponentsFacade.getAllProjectComponents(projectKey));
+            var projectComponents = Optional.ofNullable(projectComponentsFacade.getAllProjectComponents(projectKey))
+                    .filter(pc -> pc.getComponents() != null)
+                    .filter(pc -> !pc.getComponents().isEmpty())
+                    .orElseThrow(() -> new RestEntityNotFoundException("No project components found for project key: " + projectKey));
 
-            var projectTechnologies = projectComponents.map(projectTechnologiesMapper::asProjectTechnologies)
-                    .orElse(Collections.emptySet());
+            var projectTechnologies = projectTechnologiesMapper.asProjectTechnologies(projectComponents);
 
             log.debug("Retrieved {} technologies for project '{}'", projectTechnologies.size(), projectKey);
             return projectTechnologies.stream().toList();
