@@ -23,9 +23,9 @@ public class ProjectTechnologiesFacade {
     public List<ProjectTechnology> getProjectTechnologies(String projectKey) {
         var accessToken = authenticationFacade.getAccessToken();
 
-        boolean isAValidApplicationToken = authenticationFacade.isAValidApplicationToken(accessToken);
+        boolean isAValidTokenFromODS = authenticationFacade.isValidTokenFromOds(accessToken);
 
-        if (isAValidApplicationToken) {
+        if (isAValidTokenFromODS) {
             var projectComponents = Optional.ofNullable(projectComponentsFacade.getAllProjectComponents(projectKey));
 
             var projectTechnologies = projectComponents.map(projectTechnologiesMapper::asProjectTechnologies)
